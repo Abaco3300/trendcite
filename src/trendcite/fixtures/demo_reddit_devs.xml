@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>top scoring links : ExperiencedDevs (fixture)</title>
+  <id>https://www.reddit.com/r/ExperiencedDevs/top/.rss</id>
+  <updated>2026-09-18T11:00:00+00:00</updated>
+  <entry>
+    <title>AI code review bots are drowning our PRs in nitpicks</title>
+    <link href="https://www.reddit.com/r/ExperiencedDevs/comments/fx0101/ai_code_review_bots_nitpicks/" />
+    <id>t3_fx0101</id>
+    <author><name>/u/fixture_dev_1</name></author>
+    <published>2026-09-17T16:00:00+00:00</published>
+    <content type="html">Signal to noise is the problem, not accuracy.</content>
+  </entry>
+  <entry>
+    <title>Anyone else worried about random MCP servers having shell access?</title>
+    <link href="https://www.reddit.com/r/ExperiencedDevs/comments/fx0102/mcp_servers_shell_access/" />
+    <id>t3_fx0102</id>
+    <author><name>/u/fixture_dev_2</name></author>
+    <published>2026-09-17T22:00:00+00:00</published>
+    <content type="html">Our security team wants an allowlist before anyone installs another one.</content>
+  </entry>
+</feed>

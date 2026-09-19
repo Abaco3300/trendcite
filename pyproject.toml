@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trendcite"
+version = "0.1.0"
+description = "Evidence-first trend intelligence for founders: traceable, cross-source content opportunity briefs."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Josh Gomez" }]
+keywords = ["trends", "evidence", "hacker-news", "rss", "github", "content-strategy", "cli"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Office/Business",
+]
+# The core has zero runtime dependencies (standard library only).
+dependencies = []
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.60"]
+openai = ["openai>=1.40"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10", "build>=1.2"]
+
+[project.scripts]
+trendcite = "trendcite.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+trendcite = ["fixtures/*.json", "fixtures/*.xml", "py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+ignore = ["S101", "S310", "RUF001", "SIM905"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "B"]
+"scripts/*" = ["S603", "S607"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src/trendcite"]
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["anthropic", "anthropic.*", "openai", "openai.*"]
+ignore_missing_imports = true

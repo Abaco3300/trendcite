@@ -1,0 +1,54 @@
+{
+  "total_count": 4,
+  "incomplete_results": false,
+  "items": [
+    {
+      "full_name": "fixture-labs/mcp-permission-audit",
+      "html_url": "https://github.com/fixture-labs/mcp-permission-audit",
+      "description": "Static audit for MCP server manifests and tool permission scopes",
+      "owner": {"login": "fixture-labs"},
+      "created_at": "2026-09-13T09:00:00Z",
+      "pushed_at": "2026-09-18T08:00:00Z",
+      "stargazers_count": 1840,
+      "forks_count": 96,
+      "language": "Python",
+      "topics": ["security", "supply-chain"]
+    },
+    {
+      "full_name": "fixture-sync/tinysync",
+      "html_url": "https://github.com/fixture-sync/tinysync",
+      "description": "CRDT-based local-first sync engine for SQLite",
+      "owner": {"login": "fixture-sync"},
+      "created_at": "2026-09-09T12:00:00Z",
+      "pushed_at": "2026-09-17T22:00:00Z",
+      "stargazers_count": 920,
+      "forks_count": 31,
+      "language": "Rust",
+      "topics": ["crdt", "sqlite"]
+    },
+    {
+      "full_name": "fixture-evals/agent-evals",
+      "html_url": "https://github.com/fixture-evals/agent-evals",
+      "description": "Regression tests for AI agent evals in CI",
+      "owner": {"login": "fixture-evals"},
+      "created_at": "2026-09-15T12:00:00Z",
+      "pushed_at": "2026-09-18T10:00:00Z",
+      "stargazers_count": 610,
+      "forks_count": 22,
+      "language": "TypeScript",
+      "topics": ["testing", "ci"]
+    },
+    {
+      "full_name": "fixture-person/dotfiles",
+      "html_url": "https://github.com/fixture-person/dotfiles",
+      "description": "My personal configuration files",
+      "owner": {"login": "fixture-person"},
+      "created_at": "2026-09-16T12:00:00Z",
+      "pushed_at": "2026-09-16T12:00:00Z",
+      "stargazers_count": 30,
+      "forks_count": 2,
+      "language": "Shell",
+      "topics": []
+    }
+  ]
+}

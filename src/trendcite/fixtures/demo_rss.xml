@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Example Engineering Digest (fixture)</title>
+    <link>https://example.com/</link>
+    <description>Synthetic feed for the TrendCite offline demo.</description>
+    <item>
+      <title>What we learned running 40 MCP servers in production</title>
+      <link>https://example.com/eng/mcp-servers-in-production</link>
+      <pubDate>Thu, 17 Sep 2026 06:00:00 GMT</pubDate>
+      <dc:creator>Fixture Author One</dc:creator>
+      <description>&lt;p&gt;Permission scopes, version pinning and audit logs mattered more than which MCP server framework we picked.&lt;/p&gt;</description>
+      <guid>fixture-rss-1</guid>
+    </item>
+    <item>
+      <title>Seat-based pricing is breaking for AI features</title>
+      <link>https://example.com/pricing/seats-vs-usage</link>
+      <pubDate>Fri, 18 Sep 2026 02:00:00 GMT</pubDate>
+      <dc:creator>Fixture Author Two</dc:creator>
+      <description>Inference cost scales with usage, not seats. Several SaaS teams are testing usage-based pricing and credits.</description>
+      <guid>fixture-rss-2</guid>
+    </item>
+    <item>
+      <title>Building a local-first app with SQLite and CRDTs</title>
+      <link>https://example.com/eng/local-first-sqlite</link>
+      <pubDate>Wed, 16 Sep 2026 10:00:00 GMT</pubDate>
+      <dc:creator>Fixture Author Three</dc:creator>
+      <description>A walkthrough of offline edits, merge semantics and sync conflicts.</description>
+      <guid>fixture-rss-3</guid>
+    </item>
+    <item>
+      <title>Measuring whether AI code review actually catches bugs</title>
+      <link>https://example.com/eng/ai-code-review-measured</link>
+      <pubDate>Wed, 16 Sep 2026 00:00:00 GMT</pubDate>
+      <dc:creator>Fixture Author Four</dc:creator>
+      <description>We labelled 500 review comments. Most were style nitpicks; a small share found real defects.</description>
+      <guid>fixture-rss-4</guid>
+    </item>
+    <item>
+      <title>Your AI agent needs evals, not vibes</title>
+      <link>https://example.com/eng/agent-evals-not-vibes</link>
+      <pubDate>Tue, 15 Sep 2026 04:00:00 GMT</pubDate>
+      <dc:creator>Fixture Author Five</dc:creator>
+      <description>How to turn production failures into regression evals that run on every pull request.</description>
+      <guid>fixture-rss-5</guid>
+    </item>
+    <item>
+      <title>Introducing our MCP server</title>
+      <link>https://example.com/news/introducing-mcp-server</link>
+      <pubDate>Sun, 30 Aug 2026 12:00:00 GMT</pubDate>
+      <dc:creator>Fixture Author Six</dc:creator>
+      <description>An older launch post, included to show how recency decay works.</description>
+      <guid>fixture-rss-6</guid>
+    </item>
+    <item>
+      <title>Quarterly market update</title>
+      <link>https://example.com/news/quarterly-update</link>
+      <pubDate>Thu, 17 Sep 2026 15:00:00 GMT</pubDate>
+      <description>General commentary with no specific topic.</description>
+      <guid>fixture-rss-7</guid>
+    </item>
+    <item>
+      <title>Item without a link is dropped as untraceable</title>
+      <pubDate>Thu, 17 Sep 2026 15:00:00 GMT</pubDate>
+      <guid>fixture-rss-8</guid>
+    </item>
+  </channel>
+</rss>

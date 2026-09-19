@@ -1,0 +1,12 @@
+{
+  "_notice": "SYNTHETIC FIXTURE DATA for the offline demo and tests. All titles, authors, metrics and URLs are invented and illustrative; they do not describe real events. Example URLs use reserved example.* domains where possible.",
+  "reference_time": "2026-09-18T12:00:00+00:00",
+  "niche": ["ai agents", "developer tools", "mcp", "pricing", "saas"],
+  "files": {
+    "hackernews": "demo_hackernews.json",
+    "github": "demo_github.json",
+    "rss": "demo_rss.xml",
+    "reddit_saas": "demo_reddit_saas.xml",
+    "reddit_devs": "demo_reddit_devs.xml"
+  }
+}

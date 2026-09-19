@@ -1,0 +1,13 @@
+[
+  {"id": 99000001, "type": "story", "by": "fixture_user_a", "time": 1789711200, "title": "MCP servers are the new npm supply-chain risk", "url": "https://example.com/blog/mcp-supply-chain?utm_source=hn", "score": 412, "descendants": 188},
+  {"id": 99000002, "type": "story", "by": "fixture_user_b", "time": 1789660800, "title": "Show HN: mcpscan – audit MCP servers for over-broad permissions", "url": "https://example.org/mcpscan", "score": 156, "descendants": 41},
+  {"id": 99000003, "type": "story", "by": "fixture_user_c", "time": 1789668000, "title": "Ask HN: How are you pricing AI features – seats, credits or usage-based pricing?", "text": "We added an AI assistant to our SaaS and per-seat pricing no longer maps to cost. What are you doing?", "score": 233, "descendants": 301},
+  {"id": 99000004, "type": "story", "by": "fixture_user_d", "time": 1789689600, "title": "Local-first sync engines are finally boring (in a good way)", "url": "https://example.net/local-first-boring", "score": 298, "descendants": 97},
+  {"id": 99000005, "type": "story", "by": "fixture_user_e", "time": 1789480800, "title": "AI code review caught a real bug in our payments service", "url": "https://example.com/ai-code-review-bug", "score": 88, "descendants": 30},
+  {"id": 99000006, "type": "story", "by": "fixture_user_f", "time": 1789632000, "title": "Show HN: Agent evals that run in CI like unit tests", "url": "https://example.org/agent-evals-ci", "score": 121, "descendants": 22},
+  {"id": 99000007, "type": "story", "by": "fixture_user_g", "time": 1789700400, "title": "The history of the QWERTY keyboard", "url": "https://example.net/qwerty-history", "score": 340, "descendants": 120},
+  {"id": 99000008, "type": "story", "by": "fixture_user_h", "time": 1789624800, "title": "Rust 2027 edition planning thread", "url": "https://example.com/rust-2027", "score": 190, "descendants": 150},
+  {"id": 99000009, "type": "job", "by": "fixture_company", "time": 1789700400, "title": "Fixture Co is hiring engineers", "url": "https://example.com/jobs", "score": 1},
+  {"id": 99000010, "type": "story", "dead": true, "by": "fixture_spam", "time": 1789700400, "title": "Dead story that must be ignored", "url": "https://example.com/dead", "score": 1},
+  {"id": 99000011, "type": "story", "by": "fixture_user_i", "time": 1789700400, "title": "Unsafe link that must be dropped", "url": "javascript:alert(1)", "score": 5}
+]

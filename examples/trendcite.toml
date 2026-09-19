@@ -1,0 +1,28 @@
+# Example TrendCite configuration. Copy it and run:
+#   python -m trendcite live --config examples/trendcite.toml
+# This file names public, read-only sources only. Never put credentials here.
+
+# Phrases describing your niche. They drive the "relevance" score component.
+niche = ["ai agents", "developer tools", "pricing", "saas"]
+
+# Which adapters to run: hackernews, github, rss, reddit, x (x is interface-only).
+sources = ["hackernews", "github", "rss", "reddit"]
+
+# RSS 2.0 / Atom feeds (http/https only; internal hosts are refused).
+feeds = [
+  "https://github.blog/feed/",
+  "https://simonwillison.net/atom/everything/",
+  "https://blog.pragmaticengineer.com/rss/",
+]
+
+# Public subreddits, read through Reddit's public Atom feeds.
+subreddits = ["startups", "SaaS", "programming"]
+
+# GitHub repository searches (unauthenticated; recently created repos, sorted by stars).
+github_queries = ["ai agent", "developer tools"]
+
+# Number of Hacker News top stories to inspect (1-100).
+hn_limit = 30
+
+# Number of briefs to produce (clamped to 3-5).
+top = 5

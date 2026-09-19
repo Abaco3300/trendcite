@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local configuration and secrets (never commit)
+.env
+.env.*
+!.env.example
+trendcite.toml
+!examples/trendcite.toml
+
+# Generated reports
+briefs.json
+briefs.md
+.live_check.json
+reports/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json
+.preflight_tmp/
+
+# Internal governance handoffs and local QA artefacts (never part of the public tree)
+EXECUTION_HANDOFF*.md
+*_HANDOFF_*.md
+.local/
+.orchestrator_*.json
