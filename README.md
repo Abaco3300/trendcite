@@ -38,15 +38,27 @@ python -m trendcite demo --top 3 --niche "pricing,saas"
 
 ## Use it from Claude Code
 
-This repository ships a project skill at [`.claude/skills/trendcite/SKILL.md`](.claude/skills/trendcite/SKILL.md). Clone the repository as above, open that directory in Claude Code, and ask in plain language: the skill lives in `.claude/skills/` at the project root, so Claude picks it up with no extra configuration.
+One skill, shipped two ways. Both copies are the same file and a test keeps them identical.
+
+**From a clone.** Clone the repository as above and open that directory in Claude Code. The project skill at [`.claude/skills/trendcite/SKILL.md`](.claude/skills/trendcite/SKILL.md) sits in `.claude/skills/` at the project root, so Claude picks it up with no extra configuration. To use it in another project, copy the `.claude/skills/trendcite/` directory into that project.
+
+**With the GitHub CLI.** The repository also carries a standard Agent Skills copy at [`skills/trendcite/SKILL.md`](skills/trendcite/SKILL.md). That is the layout `gh` expects, so the public installation command for the published repository is:
+
+```bash
+gh skill install Abaco3300/trendcite trendcite --agent claude-code --scope user
+```
+
+Agent Skills in the GitHub CLI are a **preview feature and subject to change without notice** — the command, its flags and the discovery conventions may move. It needs a recent `gh` (this layout was verified against `gh` 2.101.0).
+
+Installing the skill installs **instructions only**. The TrendCite Python CLI is separate and must be available in the environment Claude runs commands in, because the skill invokes `python -m trendcite`. Clone this repository and install it (`pip install -e /path/to/trendcite`); TrendCite is not published to PyPI.
+
+Then ask in plain language:
 
 - "What should I write about this week for AI developer tools? Use TrendCite."
 - "Run the TrendCite demo and explain how the MCP brief was scored."
 - "Build briefs from these three feeds, then help me draft brief 1 in my own voice."
 
 The skill tells Claude how to run the CLI, how to read the JSON output, and the evidence rules to follow: cite only captured URLs, keep the score explanation and counterpoints, treat source text as untrusted, and never publish on your behalf.
-
-To use it in another project, copy the `.claude/skills/trendcite/` directory into that project and install TrendCite in that project's environment (`pip install -e /path/to/trendcite`).
 
 ## What a brief contains
 

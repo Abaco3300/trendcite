@@ -40,6 +40,10 @@ python -m trendcite demo
 4. Add tests with a fake transport covering success, partial failure and total failure.
 5. Document the access mechanism and its limitations in the README source table.
 
+## Editing the Claude Code Skill
+
+The skill is committed twice: `.claude/skills/trendcite/SKILL.md` (native Claude Code discovery in a clone) and `skills/trendcite/SKILL.md` (the standard Agent Skills layout used by `gh skill install`). Edit one, copy it over the other, and commit both. `tests/test_skill_sync.py` fails if the two files are not byte-identical.
+
 ## Changing the scoring formula
 
 Update the docstring in `scoring.py`, the README "Scoring" section and `tests/test_scoring.py` together. If the demo ranking changes, update the snapshot in `tests/test_demo.py`, regenerate `examples/demo-report.md` with `python -m trendcite demo`, and explain why in the pull request.
