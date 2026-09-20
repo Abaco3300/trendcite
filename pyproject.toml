@@ -25,6 +25,11 @@ classifiers = [
 # The core has zero runtime dependencies (standard library only).
 dependencies = []
 
+[project.urls]
+Homepage = "https://github.com/Abaco3300/trendcite"
+Repository = "https://github.com/Abaco3300/trendcite"
+Issues = "https://github.com/Abaco3300/trendcite/issues"
+
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.60"]
 openai = ["openai>=1.40"]

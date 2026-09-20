@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use TrendCite in your work, please cite it as below."
+title: TrendCite
+abstract: >-
+  Evidence-first trend intelligence for founders: a local, read-only CLI that
+  turns public Hacker News, GitHub, RSS/Atom and Reddit signals into 3 to 5
+  content opportunity briefs, each traceable to source URLs, captured metrics
+  and a deterministic score breakdown.
+type: software
+version: 0.1.0
+date-released: "2026-09-19"
+license: MIT
+repository-code: "https://github.com/Abaco3300/trendcite"
+url: "https://github.com/Abaco3300/trendcite"
+keywords:
+  - trends
+  - evidence
+  - content-strategy
+  - hacker-news
+  - rss
+  - github
+  - cli
+authors:
+  - given-names: Josh
+    family-names: Gomez

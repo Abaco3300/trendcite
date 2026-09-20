@@ -42,7 +42,7 @@ python -m trendcite demo
 
 ## Changing the scoring formula
 
-Update the docstring in `scoring.py`, the README "Scoring" section and `tests/test_scoring.py` together. If the demo ranking changes, update the snapshot in `tests/test_demo.py` and explain why in the pull request.
+Update the docstring in `scoring.py`, the README "Scoring" section and `tests/test_scoring.py` together. If the demo ranking changes, update the snapshot in `tests/test_demo.py`, regenerate `examples/demo-report.md` with `python -m trendcite demo`, and explain why in the pull request.
 
 ## Pull requests
 

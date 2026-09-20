@@ -6,7 +6,7 @@ TrendCite is pre-1.0. Security fixes are made on the latest `main` only.
 
 ## Reporting a vulnerability
 
-Please report suspected vulnerabilities privately. Once this repository is published on GitHub, use **GitHub private vulnerability reporting** ("Report a vulnerability" under the Security tab). Please do not open a public issue for security problems.
+Please report suspected vulnerabilities privately through **GitHub private vulnerability reporting**: [Security tab of the repository](https://github.com/Abaco3300/trendcite/security/advisories/new). Please do not open a public issue for security problems.
 
 Include what you found, how to reproduce it, and the impact you expect. There is no bug bounty. This is a volunteer-maintained project, so response times are best-effort.
 

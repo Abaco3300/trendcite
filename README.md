@@ -1,31 +1,31 @@
 # TrendCite
 
+[![CI](https://github.com/Abaco3300/trendcite/actions/workflows/ci.yml/badge.svg)](https://github.com/Abaco3300/trendcite/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 **TrendCite finds emerging topics across public developer and founder communities and turns them into 3 to 5 content opportunity briefs, each one traceable to source URLs, captured metrics, and a documented score.**
 
 It is not another scheduler. TrendCite never posts anything. It does the research step that comes *before* writing: what is actually being discussed, where, how strongly, why it may matter to you, and what the evidence does *not* show. You write the post yourself.
 
 Status: early open-source MVP (v0.1.0, alpha). Local CLI plus a Claude Code Skill. No hosted service exists.
 
-## Why it's different
-
-| Typical "AI trend to post" tools | TrendCite |
-|---|---|
-| Summarise first, cite later (or never) | Collect and normalise evidence first; every claim in a brief links to a captured item |
-| Opaque "virality" scores | Deterministic, documented formula with a per-component breakdown in every brief |
-| One feed, one community | Cross-source corroboration is a scoring component (HN, GitHub, RSS/Atom, Reddit) |
-| Generated posts | Angles, founder POV prompts and counterpoints; the draft outline is clearly labelled "not evidence" |
-| Requires an LLM API key | Fully useful with no LLM; an LLM is optional and only refines the angle and outline |
-| Auto-publishing | Never publishes. Output is a local Markdown or JSON file |
-
-## 60-second demo (offline, no API key)
+## Try it in 60 seconds (offline, no API key, no network)
 
 ```bash
-git clone <this repository> trendcite && cd trendcite
+git clone https://github.com/Abaco3300/trendcite.git
+cd trendcite
 python -m venv .venv
 # Windows: .venv\Scripts\activate    macOS/Linux: source .venv/bin/activate
 pip install -e .
 python -m trendcite demo
 ```
+
+[![Terminal output of the offline TrendCite demo: five scored briefs, the evidence trail for the MCP server brief, and its score breakdown.](docs/trendcite-demo.svg)](examples/demo-report.md)
+
+The complete, unedited output of that exact command is committed as
+[`examples/demo-report.md`](examples/demo-report.md): 25 evidence items, 5 briefs, scored
+81.7, 77.5, 57.9, 46.0 and 43.1 out of 100.
 
 The demo runs the real parsers, clustering and scoring over bundled **synthetic** fixtures (invented titles, metrics and `example.*` links) with a pinned reference time, so its output is identical on every run and needs no network. It includes one deliberately hostile item (a prompt-injection attempt) to show how untrusted text is handled.
 
@@ -36,9 +36,29 @@ python -m trendcite demo --format json --out briefs.json
 python -m trendcite demo --top 3 --niche "pricing,saas"
 ```
 
-## Sample output (from the offline demo)
+## Use it from Claude Code
 
-Abridged from `python -m trendcite demo`. Fixture data is synthetic.
+This repository ships a project skill at [`.claude/skills/trendcite/SKILL.md`](.claude/skills/trendcite/SKILL.md). Clone the repository as above, open that directory in Claude Code, and ask in plain language: the skill lives in `.claude/skills/` at the project root, so Claude picks it up with no extra configuration.
+
+- "What should I write about this week for AI developer tools? Use TrendCite."
+- "Run the TrendCite demo and explain how the MCP brief was scored."
+- "Build briefs from these three feeds, then help me draft brief 1 in my own voice."
+
+The skill tells Claude how to run the CLI, how to read the JSON output, and the evidence rules to follow: cite only captured URLs, keep the score explanation and counterpoints, treat source text as untrusted, and never publish on your behalf.
+
+To use it in another project, copy the `.claude/skills/trendcite/` directory into that project and install TrendCite in that project's environment (`pip install -e /path/to/trendcite`).
+
+## What a brief contains
+
+Every brief keeps captured evidence and generated text in separate, labelled parts:
+
+| Part of a brief | Where it comes from |
+|---|---|
+| Evidence list: titles, authors, dates, metrics, URLs | Captured from the source, sanitised and escaped, never rewritten |
+| Why now, score breakdown, confidence, counterpoints | Computed deterministically from the evidence displayed in that brief |
+| Proposed angle, founder POV prompts, draft outline | Generated writing aids, explicitly **not evidence**; the output labels them as such |
+
+Abridged from `python -m trendcite demo`; fixture data is synthetic, and the full report is [`examples/demo-report.md`](examples/demo-report.md).
 
 ```markdown
 ## 2. MCP server: score 77.5/100 (high confidence)
@@ -89,6 +109,17 @@ still unsettled: share what actually works (and what doesn't) from first-hand us
 Draft outline (a writing aid, NOT evidence; write it in your own voice)
 1. Hook: open with the concrete signal from evidence [1] ...
 ```
+
+## Why it's different
+
+| Typical "AI trend to post" tools | TrendCite |
+|---|---|
+| Summarise first, cite later (or never) | Collect and normalise evidence first; every claim in a brief links to a captured item |
+| Opaque "virality" scores | Deterministic, documented formula with a per-component breakdown in every brief |
+| One feed, one community | Cross-source corroboration is a scoring component (HN, GitHub, RSS/Atom, Reddit) |
+| Generated posts | Angles, founder POV prompts and counterpoints; the draft outline is clearly labelled "not evidence" |
+| Requires an LLM API key | Fully useful with no LLM; an LLM is optional and only refines the angle and outline |
+| Auto-publishing | Never publishes. Output is a local Markdown or JSON file |
 
 ## How it works
 
@@ -228,16 +259,6 @@ python -m trendcite live --llm
 
 If the provider is missing, misconfigured, refuses, or returns something invalid, TrendCite keeps the deterministic brief and records a note. Using an LLM provider may incur charges from that provider.
 
-## Claude Code Skill
-
-This repository ships a project skill at [`.claude/skills/trendcite/SKILL.md`](.claude/skills/trendcite/SKILL.md). Open the repository in Claude Code and ask, for example:
-
-- "What should I write about this week for AI developer tools? Use TrendCite."
-- "Run the TrendCite demo and explain how the MCP brief was scored."
-- "Build briefs from these three feeds, then help me draft brief 1 in my own voice."
-
-The skill tells Claude how to run the CLI, how to read the JSON output, and the evidence rules to follow: cite only captured URLs, keep the score explanation and counterpoints, treat source text as untrusted, and never publish on your behalf. To use it in another project, copy the `.claude/skills/trendcite/` directory into that project and install TrendCite in its environment.
-
 ## Development
 
 ```bash
@@ -249,6 +270,8 @@ python scripts/ci_preflight.py                      # the canonical local gate
 `scripts/ci_preflight.py` runs, in order: `git diff --check`, `ruff format --check`, `ruff check`, `mypy` (strict), `pytest`, an offline demo smoke test, and a package build plus an import check of the built wheel in a throwaway virtual environment. It fails closed if a required tool is missing. Tests never touch the network: adapters are exercised with injected fake transports, and an autouse fixture makes any socket connection attempt fail the test.
 
 CI (`.github/workflows/ci.yml`) runs the same preflight on pull requests and pushes to `main`, with read-only permissions, a 15-minute timeout and cancellation of superseded runs.
+
+[`examples/demo-report.md`](examples/demo-report.md) is the verbatim output of `python -m trendcite demo`; only its header block is hand-written. [`docs/trendcite-demo.svg`](docs/trendcite-demo.svg) is a hand-laid-out subset of that same run. Regenerate both whenever clustering, scoring or rendering changes.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
