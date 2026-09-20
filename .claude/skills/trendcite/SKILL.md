@@ -1,6 +1,7 @@
 ---
 name: trendcite
 description: Evidence-first trend research for founders. Use when the user wants to know what to write or post about, what is trending in their niche (developer tools, AI, SaaS, startups), or wants content angles backed by sources. Runs the TrendCite CLI to collect public Hacker News, GitHub, RSS/Atom and Reddit signals, then works from its scored, URL-traceable briefs. Never publishes anything.
+license: MIT
 ---
 
 # TrendCite
@@ -11,9 +12,9 @@ TrendCite turns public community signals into 3 to 5 **Content Opportunity Brief
 
 Use TrendCite when the user asks things like:
 
-- "What should I write about this week?" / "What's trending in <niche>?"
+- "What should I write about this week?" / "What's trending in {niche}?"
 - "Give me content ideas I can back up with sources."
-- "Is <topic> actually getting attention, and where?"
+- "Is {topic} actually getting attention, and where?"
 - "Help me draft a post about one of these trends in my own voice."
 
 Do **not** use it to schedule, publish, or send anything. It has no posting capability, and you must not add one or post on the user's behalf.
