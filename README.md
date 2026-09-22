@@ -145,10 +145,14 @@ flowchart LR
         X["X (interface only)"]
     end
     Sources -->|safe HTTP GET: timeout, size cap, retries| N[Normalise + sanitise<br/>EvidenceItem]
-    N --> D[Dedupe]
+    N --> O[Canonical observations<br/>native id / URL / fingerprint]
+    O --> D[Dedupe]
     D --> C[Deterministic clustering<br/>shared key terms + coherence gate]
     C --> S[Deterministic scoring<br/>recency, engagement, corroboration,<br/>relevance, diversity]
-    S --> B[Brief builder<br/>angle, why now, evidence,<br/>counterpoints, POV prompts]
+    S --> SIG[Signal evaluation<br/>versioned, INSUFFICIENT_DATA explicit]
+    H[(Local history<br/>append-only, optional)] -.-> SIG
+    SIG -.-> H
+    SIG --> B[Brief builder<br/>angle, why now, evidence,<br/>counterpoints, POV prompts]
     B -. optional --llm .-> L[LLM refines angle + outline only<br/>evidence delimited as untrusted]
     L -.-> R
     B --> R[Markdown / JSON report<br/>escaped + redacted]
@@ -161,9 +165,15 @@ Module map (`src/trendcite/`):
 | `sources/` | One adapter per source; each returns normalised items or fails gracefully |
 | `http.py` | Stdlib HTTP GET with scheme allowlist, private-host refusal, timeout, 2 MB cap, bounded backoff |
 | `normalize.py` | Converts raw records to `EvidenceItem`; drops anything without a safe URL, title and date |
+| `identity.py` | The single identity and de-duplication hierarchy: native external id, then canonical URL, then content fingerprint |
+| `observation.py` | Canonical `Observation` records with explicit event / observed / ingested times, and their point-in-time snapshots |
 | `security.py` | Redaction, untrusted-text cleaning, injection flagging, Markdown escaping, URL canonicalisation |
 | `text.py`, `lexicon.py`, `cluster.py` | Boilerplate-free feature view, tokenisation, light stemming, common-word lexicon, greedy deterministic clustering with a coherence gate |
-| `scoring.py` | The documented scoring formula (below) |
+| `scoring.py` | The documented Content Opportunity scoring formula (below) |
+| `signal.py` | `CandidateSignal`, `Signal`, `EvidenceSetVersion`, `SignalEvaluation`, `SignalSnapshot`, `SignalBrief` |
+| `signal_scoring.py` | The versioned signal evaluation: seven components, explicit counterevidence, explicit `INSUFFICIENT_DATA` |
+| `history.py` | Append-only local snapshot storage (memory or a JSON-lines file); off by default |
+| `versions.py` | Version identifier for every deterministic algorithm, emitted with every report |
 | `briefs.py`, `render.py` | Brief templates and Markdown/JSON output |
 | `llm.py` | Optional Anthropic/OpenAI synthesis with strict input/output handling |
 | `pipeline.py`, `cli.py` | Orchestration and command-line interface |
@@ -184,7 +194,9 @@ Clustering is deterministic and keyword-based. It deliberately prefers returning
 
 Tradeoffs: this favours precision over recall. Related items that share only a common word plus one other word are not clustered. For example, the demo item "Your AI agent needs evals, not vibes" is left out of the "Agent eval" topic because it has no contiguous "agent eval" phrase. A specific word with two meanings can still merge unrelated items when they also share a second specific term, so always look at the evidence.
 
-### Scoring
+### Scoring (the Content Opportunity score)
+
+This is the score shown in the report and in the Markdown output. It is frozen: `engine.score_formula` in the JSON names its version, and the numbers below are what every brief has always reported.
 
 Scores are computed over a brief's **displayed evidence** (at most 6 items), so every number in a brief can be checked against the links it shows. Evidence is chosen source-first: every source that counts towards corroboration contributes its best item, then items that add a new URL and a new publisher, then the rest by engagement and recency.
 
@@ -203,6 +215,34 @@ score = 100 * (0.25*recency + 0.25*engagement + 0.25*corroboration + 0.15*releva
 | diversity | distinct publishers (feed, subreddit, repo owner, HN): `min(1, (publishers - 1) / 3)` |
 
 Confidence is **high** only when all of the following hold: at least 3 independent sources, at least 4 unique URLs, at least 3 publishers, at least one niche phrase matched (when a niche is configured), and cohesive evidence (a phrase topic, or every URL sharing a second specific term with at least half of the others). It is **medium** with 2 or more independent sources or at least 3 unique URLs, and **low** otherwise. A single-source topic is never high confidence. The formula lives in `src/trendcite/scoring.py` and is covered by `tests/test_scoring.py` and `tests/test_quality_regression.py`.
+
+### The signal layer
+
+Underneath the briefs, TrendCite keeps a canonical record of what it actually knows. A **signal** is a topic with an identity that survives across runs; a Content Opportunity Brief is one *projection* of a signal, not the root record. The chain is `Source -> Observation -> Cluster -> CandidateSignal -> Signal -> SignalEvaluation -> SignalSnapshot -> SignalBrief -> ContentOpportunityBrief`.
+
+Every published brief carries its signal in the JSON under `signal` (Markdown output is unchanged). The signal evaluation answers a different question from the public score, with seven components in [0, 1] weighted to 0-100:
+
+| Component | Weight | Definition |
+|---|---|---|
+| recency | 0.20 | mean of `0.5 ** (age_hours / 48)` over the evidence, by event time |
+| velocity | 0.15 | with stored history, new distinct stories per day since the previous snapshot (reference: 1/day); without it, how far the evidence bunches into the recent half of its own time window |
+| novelty | 0.10 | how much of the run's whole corpus already mentions the topic term (saturation at 25% scores 0), halved again for each previous run that already reported the signal |
+| corroboration | 0.20 | independent sources, as above: 1 = 0.0, 2 = 0.5, 3 or more = 1.0 |
+| source_diversity | 0.10 | distinct publishers: `min(1, (publishers - 1) / 3)` |
+| engagement_strength | 0.15 | mean of the top-3 within-source engagement percentiles |
+| persistence | 0.10 | distinct days the evidence spans, raised by the number of previous runs that reported the signal |
+
+Three rules keep it honest:
+
+- **A component with no data says so.** If nothing in the evidence set carries engagement metrics, `engagement_strength` is `INSUFFICIENT_DATA` and its weight leaves the denominator. It is not scored 0 (which would read as "measured, and bad") and not scored 0.5 (which would invent a fact). A feed with no vote counts means *unknown* reach, not *low* reach. `insufficient_data` lists every excluded component and `measured_weight` says how much of the score was actually measurable.
+- **Score, confidence and relevance are separate fields.** Strength, evidential support and niche fit are three different questions, so they are three different numbers.
+- **Counterevidence is explicit.** `single_source`, `syndicated_echo`, `contradicted`, `no_engagement_metrics`, `stale_evidence`, `small_sample`, `incohesive_evidence` and `prompt_injection_attempt` each name the observations that caused them.
+
+Each signal also carries a `state`: `emerging`, `sustained`, `dormant`, `reactivated`, or `insufficient_data`.
+
+**History is optional and local.** Velocity, novelty decay, persistence and reactivation need to know what the previous run saw. `trendcite.history` provides an append-only store (in memory, or a JSON-lines file) that `run_demo` and `run_live` accept as a `history=` argument. It is **off by default**: the CLI writes nothing, touches no disk beyond `--out`, and stays offline and deterministic. There is no hosted service. Records are appended, never edited, and a corrupt file degrades a run to "no history" rather than failing it.
+
+`src/trendcite/signal_scoring.py` holds the definitions; `tests/test_signal_engine.py` pins every number against `tests/golden/signal_scenarios.json` for nine scenarios (strong multi-source, single-source viral spike, syndicated echo, contradicted, new-but-not-novel, novel-but-weak, dormant, reactivated, sustained-with-history).
 
 ## Installation
 
@@ -292,7 +332,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Possible next steps, not commitments:
 
 - Embedding-based or LLM-assisted clustering as an optional layer on top of the deterministic baseline, with the baseline kept for comparison.
-- Snapshot storage so trends can be compared across runs (velocity instead of a single-run view).
+- A CLI flag for the local history store, so cross-run velocity and reactivation are available from the command line and not only from the Python API.
+- Surfacing signal state and counterevidence in the Markdown report (today the signal layer is JSON-only, so the Markdown contract is untouched).
 - More adapters with lawful, documented access: Lobsters, Product Hunt, dev.to, Mastodon, Bluesky, and the official X API behind the existing interface.
 - Optional fetching of linked article text (bounded, sanitised) to improve clustering.
 - Configurable scoring weights with a validation report.

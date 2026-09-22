@@ -6,16 +6,13 @@ and computed scores. The outline is a writing aid and is labelled as such.
 
 from __future__ import annotations
 
-import re
 from datetime import datetime
 
 from .models import Brief, EvidenceItem, TopicCluster
 from .scoring import HALF_LIFE_HOURS, WEIGHTS, age_hours, select_evidence
+from .signal import SignalBrief
+from .text import CRITICAL_RE
 
-_CRITICAL_RE = re.compile(
-    r"(?i)\b(risk|risks|worried|concern|problem|broken|breaking|nitpick|nitpicks|churn|fail"
-    r"|fails|failure|overhyped|backlash|vulnerab\w*|drowning|harder)\b"
-)
 SOURCE_NAMES = {
     "hackernews": "Hacker News",
     "github": "GitHub",
@@ -171,7 +168,7 @@ def _counterpoints(cluster: TopicCluster, evidence: list[EvidenceItem], now: dat
     stale = [i for i in evidence if age_hours(i, now) > 7 * 24]
     if stale:
         notes.append(f"{len(stale)} item(s) are over a week old; part of this signal is not new.")
-    critical = [i for i in evidence if _CRITICAL_RE.search(i.title)]
+    critical = [i for i in evidence if CRITICAL_RE.search(i.title)]
     if critical:
         notes.append(
             f'Part of the evidence is critical or cautionary (e.g. "{critical[0].title}"); '
@@ -205,8 +202,13 @@ def _outline(cluster: TopicCluster, evidence: list[EvidenceItem]) -> list[str]:
 
 
 def build_brief(
-    cluster: TopicCluster, rank: int, now: datetime, percentiles: dict[str, float]
+    cluster: TopicCluster,
+    rank: int,
+    now: datetime,
+    percentiles: dict[str, float],
+    signal: SignalBrief | None = None,
 ) -> Brief:
+    """Project one scored cluster (and, when available, its signal) into a public brief."""
     assert cluster.score is not None
     evidence = cluster.evidence or select_evidence(cluster.items, percentiles, now)
     flags: list[str] = []
@@ -228,4 +230,5 @@ def build_brief(
         founder_questions=_questions(cluster.label),
         outline=_outline(cluster, evidence),
         flags=flags,
+        signal=signal,
     )

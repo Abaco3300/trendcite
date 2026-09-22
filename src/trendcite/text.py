@@ -136,6 +136,14 @@ BOILERPLATE = _stemmed_set(
 COMMON = frozenset(COMMON_WORDS) | frozenset(stem(w) for w in COMMON_WORDS)
 
 
+#: Words that mark a piece of evidence as critical or cautionary about its own topic.
+#: Shared so a brief's counterpoints and a signal's counterevidence never disagree.
+CRITICAL_RE = re.compile(
+    r"(?i)\b(risk|risks|worried|concern|problem|broken|breaking|nitpick|nitpicks|churn|fail"
+    r"|fails|failure|overhyped|backlash|vulnerab\w*|drowning|harder)\b"
+)
+
+
 def tokenize(text: str) -> list[str]:
     lowered = _APOSTROPHE_RE.sub("", text.lower())
     return [stem(t) for t in _TOKEN_RE.findall(lowered)]
@@ -148,18 +156,25 @@ def strip_boilerplate(text: str) -> str:
     return text
 
 
-def item_text(item: EvidenceItem) -> str:
+def feature_text(source: str, title: str, excerpt: str) -> str:
     """Feature view used for topic terms, labels and niche matching.
 
     Title plus the head of the excerpt, with boilerplate removed *before* the head is
     taken so feed footers cannot use up the budget. GitHub owner names are excluded to
-    avoid owner clusters. The item itself is not modified.
+    avoid owner clusters. The captured text itself is never modified.
+
+    Takes plain fields rather than a record, so the observation layer and the display
+    layer derive the same feature view from the same function.
     """
-    title = item.title
-    if item.source == "github" and "/" in title:
+    if source == "github" and "/" in title:
         title = title.split("/", 1)[1]
-    excerpt = " ".join(strip_boilerplate(item.excerpt).split())
-    return strip_boilerplate(f"{title} {excerpt[:EXCERPT_CHARS_FOR_TERMS]}")
+    body = " ".join(strip_boilerplate(excerpt).split())
+    return strip_boilerplate(f"{title} {body[:EXCERPT_CHARS_FOR_TERMS]}")
+
+
+def item_text(item: EvidenceItem) -> str:
+    """Feature view of one evidence item. See :func:`feature_text`."""
+    return feature_text(item.source, item.title, item.excerpt)
 
 
 def extract_terms(text: str) -> set[str]:
