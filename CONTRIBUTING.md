@@ -53,3 +53,16 @@ Update the docstring in `scoring.py`, the README "Scoring" section and `tests/te
 - Keep changes focused and grouped logically; run the preflight before pushing.
 - Describe what changed and how you verified it.
 - By contributing, you agree that your contribution is licensed under the MIT License.
+
+## Release packaging
+
+PyPI packaging has a separate, non-publishing preflight. Install the release tooling and run it before proposing a Python package release:
+
+```bash
+pip install -e ".[release]"
+python scripts/package_preflight.py
+```
+
+For a release candidate, also pass the expected version, for example `--expected-version 0.2.0`. The script builds wheel + sdist, runs `twine check`, verifies bundled package data, and smoke-tests the wheel in a fresh virtual environment. It never uploads anything.
+
+The publication workflow is manual and uses PyPI Trusted Publishing; see [`docs/PYPI_PUBLISHING.md`](docs/PYPI_PUBLISHING.md). Do not add long-lived PyPI credentials to the repository or GitHub Secrets.

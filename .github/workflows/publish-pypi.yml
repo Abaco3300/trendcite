@@ -1,0 +1,146 @@
+name: Publish to PyPI
+
+# Publication is deliberately manual. A separate human authorization is required
+# before dispatching this workflow. It never runs on push, pull_request, or release.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing published GitHub Release tag to publish (for example v0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pypi-publish-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and validate tagged distributions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the requested tag
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Validate tag, package version, and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$RELEASE_TAG" in
+            v*) ;;
+            *) echo "Release tag must start with v" >&2; exit 1 ;;
+          esac
+
+          git fetch --force --tags origin
+          tag_sha="$(git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}")"
+          head_sha="$(git rev-parse HEAD)"
+          test -n "$tag_sha"
+          test "$tag_sha" = "$head_sha"
+
+          package_version="$(python - <<'PY'
+          import tomllib
+          with open('pyproject.toml', 'rb') as handle:
+              print(tomllib.load(handle)['project']['version'])
+          PY
+          )"
+          tag_version="${RELEASE_TAG#v}"
+          if [ "$package_version" != "$tag_version" ]; then
+            echo "Package version $package_version does not match tag $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          release_tag="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          release_draft="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)"
+          test "$release_tag" = "$RELEASE_TAG"
+          if [ "$release_draft" != "false" ]; then
+            echo "GitHub Release must be published, not draft" >&2
+            exit 1
+          fi
+
+          echo "Validated $RELEASE_TAG at $head_sha with package version $package_version"
+
+      - name: Install release tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "build>=1.2" "twine>=6"
+
+      - name: Build wheel and sdist
+        run: python -m build
+
+      - name: Validate PyPI metadata
+        run: python -m twine check dist/*
+
+      - name: Smoke-test wheel in an isolated environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv .package-smoke
+          .package-smoke/bin/python -m pip install --quiet --no-deps dist/*.whl
+          .package-smoke/bin/python - <<'PY'
+          import trendcite
+          from trendcite.pipeline import run_demo
+          report = run_demo()
+          assert 3 <= len(report.briefs) <= 5
+          print("isolated wheel OK:", trendcite.__version__, len(report.briefs), "briefs")
+          PY
+
+      - name: Store distributions for privileged publish job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: python-package-distributions
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish distributions with PyPI Trusted Publishing
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/trendcite
+    permissions:
+      id-token: write
+    steps:
+      - name: Require explicit PyPI environment readiness flag
+        env:
+          PYPI_TRUSTED_PUBLISHING_READY: ${{ vars.PYPI_TRUSTED_PUBLISHING_READY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$PYPI_TRUSTED_PUBLISHING_READY" != "true" ]; then
+            echo "PyPI environment is not armed: set PYPI_TRUSTED_PUBLISHING_READY=true only after Trusted Publishing is configured." >&2
+            exit 1
+          fi
+
+      - name: Download validated distributions
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish to PyPI with OIDC and attestations
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          packages-dir: dist/
+          attestations: true
+          print-hash: true
