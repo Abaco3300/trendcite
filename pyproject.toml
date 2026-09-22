@@ -42,7 +42,7 @@ trendcite = "trendcite.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-trendcite = ["fixtures/*.json", "fixtures/*.xml", "py.typed"]
+trendcite = ["fixtures/*.json", "fixtures/*.xml", "cloud/db/sql/*.sql", "py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
