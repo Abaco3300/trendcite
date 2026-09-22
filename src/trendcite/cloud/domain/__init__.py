@@ -1,0 +1,127 @@
+"""The Cloud domain: plain frozen dataclasses that know nothing about storage.
+
+Nothing in this package imports a database driver, and no object here has an
+``id`` assigned by a sequence. That is deliberate: the domain has to be testable
+without a database, and identity has to be a function of meaning (see
+:mod:`trendcite.cloud.ids`) rather than of insertion order.
+"""
+
+from __future__ import annotations
+
+from ._base import iso, normalize_terms, parse_iso, require_aware, require_text
+from .matches import (
+    DECISION_EXCLUDED,
+    DECISION_MATCHED,
+    DECISION_NO_MATCH,
+    DECISIONS,
+    MATCH_ACTIVE,
+    MATCH_DROPPED,
+    MATCH_STATUSES,
+    Match,
+    MatchEvaluation,
+)
+from .radar import (
+    COVERAGE_DEGRADED,
+    COVERAGE_FAILED,
+    COVERAGE_OK,
+    COVERAGE_SKIPPED,
+    COVERAGE_STATES,
+    RUN_COVERAGE_COMPLETE,
+    RUN_COVERAGE_DEGRADED,
+    RUN_COVERAGE_STATES,
+    RUN_COVERAGE_UNAVAILABLE,
+    RUN_COVERAGE_UNKNOWN,
+    RUN_FAILED,
+    RUN_PENDING,
+    RUN_RUNNING,
+    RUN_STATUSES,
+    RUN_SUCCEEDED,
+    TERMINAL_STATUSES,
+    Coverage,
+    Radar,
+    RadarRun,
+    RadarVersion,
+    summarize_coverage,
+)
+from .signals import RunSignal, StoredSignal, StoredSignalEvaluation
+from .usage import (
+    USAGE_KINDS,
+    USAGE_MATCH_RECORDED,
+    USAGE_RADAR_RUN,
+    USAGE_SIGNAL_EVALUATED,
+    UsageEvent,
+    run_dedupe_key,
+)
+from .watchlist import MODE_ALL, MODE_ANY, MODES, Watchlist, WatchlistVersion
+from .workspace import (
+    ROLE_ADMIN,
+    ROLE_MEMBER,
+    ROLE_OWNER,
+    ROLE_VIEWER,
+    ROLES,
+    WRITE_ROLES,
+    Membership,
+    Workspace,
+    normalize_slug,
+)
+
+__all__ = [
+    "COVERAGE_DEGRADED",
+    "COVERAGE_FAILED",
+    "COVERAGE_OK",
+    "COVERAGE_SKIPPED",
+    "COVERAGE_STATES",
+    "DECISIONS",
+    "DECISION_EXCLUDED",
+    "DECISION_MATCHED",
+    "DECISION_NO_MATCH",
+    "MATCH_ACTIVE",
+    "MATCH_DROPPED",
+    "MATCH_STATUSES",
+    "MODES",
+    "MODE_ALL",
+    "MODE_ANY",
+    "ROLES",
+    "ROLE_ADMIN",
+    "ROLE_MEMBER",
+    "ROLE_OWNER",
+    "ROLE_VIEWER",
+    "RUN_COVERAGE_COMPLETE",
+    "RUN_COVERAGE_DEGRADED",
+    "RUN_COVERAGE_STATES",
+    "RUN_COVERAGE_UNAVAILABLE",
+    "RUN_COVERAGE_UNKNOWN",
+    "RUN_FAILED",
+    "RUN_PENDING",
+    "RUN_RUNNING",
+    "RUN_STATUSES",
+    "RUN_SUCCEEDED",
+    "TERMINAL_STATUSES",
+    "USAGE_KINDS",
+    "USAGE_MATCH_RECORDED",
+    "USAGE_RADAR_RUN",
+    "USAGE_SIGNAL_EVALUATED",
+    "WRITE_ROLES",
+    "Coverage",
+    "Match",
+    "MatchEvaluation",
+    "Membership",
+    "Radar",
+    "RadarRun",
+    "RadarVersion",
+    "RunSignal",
+    "StoredSignal",
+    "StoredSignalEvaluation",
+    "UsageEvent",
+    "Watchlist",
+    "WatchlistVersion",
+    "Workspace",
+    "iso",
+    "normalize_slug",
+    "normalize_terms",
+    "parse_iso",
+    "require_aware",
+    "require_text",
+    "run_dedupe_key",
+    "summarize_coverage",
+]
