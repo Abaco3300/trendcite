@@ -18,15 +18,19 @@ from ..domain import (
     Coverage,
     Match,
     MatchEvaluation,
+    MatchReason,
     Membership,
     Radar,
     RadarRun,
     RadarVersion,
+    RelevanceComponent,
+    RelevanceEvaluation,
     RunSignal,
     StoredSignal,
     StoredSignalEvaluation,
     UsageEvent,
     Watchlist,
+    WatchlistSignalMatch,
     WatchlistVersion,
     Workspace,
     parse_iso,
@@ -189,7 +193,8 @@ class _WatchlistRepo:
             self.conn.execute(
                 "INSERT INTO cloud_watchlist_version"
                 "(version_id,watchlist_id,workspace_id,version_number,include_terms,"
-                "exclude_terms,match_mode,matcher_version,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                "exclude_terms,match_mode,matcher_version,created_at,entities,domains) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     value.version_id,
                     value.watchlist_id,
@@ -200,6 +205,8 @@ class _WatchlistRepo:
                     value.match_mode,
                     value.matcher_version,
                     value.created_at.isoformat(),
+                    _dump(value.entities),
+                    _dump(value.domains),
                 ),
             )
         except sqlite3.IntegrityError as exc:
@@ -675,6 +682,7 @@ class SQLiteUnitOfWork:
         self.coverage = _CoverageRepo(self.conn)
         self.signals = _SignalRepo(self.conn)
         self.matches = _MatchRepo(self.conn)
+        self.relevance = _RelevanceRepo(self.conn)
         self.usage = _UsageRepo(self.conn)
         return self
 
@@ -759,6 +767,8 @@ def _watchlist_version(r: sqlite3.Row) -> WatchlistVersion:
         str(r["match_mode"]),
         str(r["matcher_version"]),
         parse_iso(r["created_at"]),
+        tuple(_load(r["entities"])),
+        tuple(_load(r["domains"])),
     )
 
 
@@ -922,4 +932,188 @@ def _usage(r: sqlite3.Row) -> UsageEvent:
         parse_iso(r["occurred_at"]),
         str(r["run_id"]),
         str(r["dedupe_key"]),
+    )
+
+
+class _RelevanceRepo:
+    """Persistence for canonical Watchlist-level relevance."""
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self.conn = conn
+
+    def record_evaluation(self, value: RelevanceEvaluation) -> bool:
+        cur = self.conn.execute(
+            "INSERT OR IGNORE INTO cloud_relevance_evaluation"
+            "(evaluation_id,workspace_id,watchlist_id,watchlist_version_id,signal_id,"
+            "signal_snapshot_id,radar_id,radar_run_id,decision,relevance_score,"
+            "relevance_band,relevance_confidence,reasons_json,components_json,"
+            "matcher_version,evaluated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                value.evaluation_id,
+                value.workspace_id,
+                value.watchlist_id,
+                value.watchlist_version_id,
+                value.signal_id,
+                value.snapshot_id,
+                value.radar_id,
+                value.radar_run_id,
+                value.decision,
+                value.score,
+                value.band,
+                value.confidence,
+                _dump([reason.to_dict() for reason in value.reasons]),
+                _dump([component.to_dict() for component in value.components]),
+                value.matcher_version,
+                value.evaluated_at.isoformat(),
+            ),
+        )
+        return cur.rowcount == 1
+
+    def link_run(self, evaluation_id: str, radar_run_id: str) -> None:
+        if not radar_run_id:
+            return
+        self.conn.execute(
+            "INSERT OR IGNORE INTO cloud_relevance_evaluation_run"
+            "(evaluation_id,radar_run_id) VALUES (?,?)",
+            (evaluation_id, radar_run_id),
+        )
+
+    def get_evaluation(
+        self,
+        workspace_id: str,
+        evaluation_id: str,
+    ) -> RelevanceEvaluation | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_relevance_evaluation WHERE workspace_id=? AND evaluation_id=?",
+            (workspace_id, evaluation_id),
+        ).fetchone()
+        return None if row is None else _relevance_evaluation(row)
+
+    def evaluations_for_run(
+        self,
+        workspace_id: str,
+        radar_run_id: str,
+    ) -> list[RelevanceEvaluation]:
+        return [
+            _relevance_evaluation(row)
+            for row in self.conn.execute(
+                "SELECT e.* FROM cloud_relevance_evaluation e "
+                "JOIN cloud_relevance_evaluation_run l "
+                "ON l.evaluation_id=e.evaluation_id "
+                "WHERE e.workspace_id=? AND l.radar_run_id=? "
+                "ORDER BY e.watchlist_id,e.signal_id",
+                (workspace_id, radar_run_id),
+            )
+        ]
+
+    def evaluations_for_watchlist_signal(
+        self,
+        workspace_id: str,
+        watchlist_id: str,
+        signal_id: str,
+    ) -> list[RelevanceEvaluation]:
+        rows = self.conn.execute(
+            "SELECT * FROM cloud_relevance_evaluation "
+            "WHERE workspace_id=? AND watchlist_id=? AND signal_id=?",
+            (workspace_id, watchlist_id, signal_id),
+        )
+        return [_relevance_evaluation(row) for row in rows]
+
+    def upsert_current(self, value: WatchlistSignalMatch) -> None:
+        sql = (
+            "INSERT INTO cloud_watchlist_signal_match"
+            "(match_id,workspace_id,watchlist_id,signal_id,status,"
+            "current_relevance_score,current_band,current_confidence,"
+            "current_evaluation_id,first_matched_at,last_matched_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?) "
+        )
+        update = (
+            "ON CONFLICT(workspace_id,watchlist_id,signal_id) DO UPDATE SET "
+            "status=excluded.status,"
+            "current_relevance_score=excluded.current_relevance_score,"
+            "current_band=excluded.current_band,"
+            "current_confidence=excluded.current_confidence,"
+            "current_evaluation_id=excluded.current_evaluation_id,"
+            "last_matched_at=excluded.last_matched_at"
+        )
+        self.conn.execute(
+            sql + update,
+            (
+                value.match_id,
+                value.workspace_id,
+                value.watchlist_id,
+                value.signal_id,
+                value.status,
+                value.current_relevance_score,
+                value.current_band,
+                value.current_confidence,
+                value.current_evaluation_id,
+                value.first_matched_at.isoformat(),
+                value.last_matched_at.isoformat(),
+            ),
+        )
+
+    def get_current(
+        self,
+        workspace_id: str,
+        watchlist_id: str,
+        signal_id: str,
+    ) -> WatchlistSignalMatch | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_watchlist_signal_match "
+            "WHERE workspace_id=? AND watchlist_id=? AND signal_id=?",
+            (workspace_id, watchlist_id, signal_id),
+        ).fetchone()
+        return None if row is None else _watchlist_signal_match(row)
+
+    def list_for_watchlist(
+        self,
+        workspace_id: str,
+        watchlist_id: str,
+    ) -> list[WatchlistSignalMatch]:
+        rows = self.conn.execute(
+            "SELECT * FROM cloud_watchlist_signal_match "
+            "WHERE workspace_id=? AND watchlist_id=? "
+            "ORDER BY current_relevance_score DESC,signal_id",
+            (workspace_id, watchlist_id),
+        )
+        return [_watchlist_signal_match(row) for row in rows]
+
+
+def _relevance_evaluation(row: sqlite3.Row) -> RelevanceEvaluation:
+    reasons = tuple(MatchReason.from_dict(item) for item in _load(row["reasons_json"]))
+    components = tuple(RelevanceComponent.from_dict(item) for item in _load(row["components_json"]))
+    return RelevanceEvaluation(
+        str(row["evaluation_id"]),
+        str(row["workspace_id"]),
+        str(row["watchlist_id"]),
+        str(row["watchlist_version_id"]),
+        str(row["signal_id"]),
+        str(row["signal_snapshot_id"]),
+        str(row["radar_id"]),
+        str(row["radar_run_id"]),
+        float(row["relevance_score"]),
+        str(row["relevance_band"]),
+        str(row["relevance_confidence"]),
+        str(row["decision"]),
+        reasons,
+        components,
+        str(row["matcher_version"]),
+        parse_iso(row["evaluated_at"]),
+    )
+
+
+def _watchlist_signal_match(row: sqlite3.Row) -> WatchlistSignalMatch:
+    return WatchlistSignalMatch(
+        str(row["match_id"]),
+        str(row["workspace_id"]),
+        str(row["watchlist_id"]),
+        str(row["signal_id"]),
+        str(row["status"]),
+        float(row["current_relevance_score"]),
+        str(row["current_band"]),
+        str(row["current_confidence"]),
+        str(row["current_evaluation_id"]),
+        parse_iso(row["first_matched_at"]),
+        parse_iso(row["last_matched_at"]),
     )

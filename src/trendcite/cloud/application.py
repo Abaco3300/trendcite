@@ -14,6 +14,7 @@ from .domain import (
     COVERAGE_OK,
     COVERAGE_SKIPPED,
     DECISION_MATCHED,
+    DEFAULT_RELEVANCE_SERVICE,
     ROLE_OWNER,
     Coverage,
     Match,
@@ -22,18 +23,22 @@ from .domain import (
     Radar,
     RadarRun,
     RadarVersion,
+    RelevanceEvaluation,
+    RelevanceService,
+    RelevanceTarget,
     RunSignal,
     StoredSignal,
     StoredSignalEvaluation,
     UsageEvent,
     Watchlist,
+    WatchlistSignalMatch,
     WatchlistVersion,
     Workspace,
     summarize_coverage,
 )
 from .domain.usage import USAGE_MATCH_RECORDED, USAGE_RADAR_RUN, USAGE_SIGNAL_EVALUATED
 from .errors import NotFoundError, TenantIsolationError, safe_error
-from .matcher import DEFAULT_MATCHER, MatchTarget, WatchlistMatcher
+from .matcher import DEFAULT_MATCHER, WatchlistMatcher
 from .repositories import UnitOfWork, UnitOfWorkFactory
 
 
@@ -67,11 +72,13 @@ class CloudApplication:
         *,
         executor: SignalExecutionService,
         matcher: WatchlistMatcher = DEFAULT_MATCHER,
+        relevance: RelevanceService = DEFAULT_RELEVANCE_SERVICE,
         clock: Clock = utc_now,
     ) -> None:
         self.uow_factory = uow_factory
         self.executor = executor
         self.matcher = matcher
+        self.relevance = relevance
         self.clock = clock
 
     # ---------------------------------------------------------------- workspace
@@ -115,6 +122,8 @@ class CloudApplication:
         include_terms: Sequence[str],
         exclude_terms: Sequence[str] = (),
         match_mode: str = "any",
+        entities: Sequence[str] = (),
+        domains: Sequence[str] = (),
     ) -> tuple[Watchlist, WatchlistVersion]:
         now = self.clock()
         watchlist = Watchlist.create(workspace_id=workspace_id, name=name, created_at=now)
@@ -126,6 +135,8 @@ class CloudApplication:
             exclude_terms=exclude_terms,
             match_mode=match_mode,
             created_at=now,
+            entities=entities,
+            domains=domains,
         )
         with self.uow_factory() as uow:
             if uow.workspaces.get(workspace_id) is None:
@@ -143,6 +154,8 @@ class CloudApplication:
         include_terms: Sequence[str],
         exclude_terms: Sequence[str] = (),
         match_mode: str = "any",
+        entities: Sequence[str] = (),
+        domains: Sequence[str] = (),
     ) -> WatchlistVersion:
         with self.uow_factory() as uow:
             watchlist = uow.watchlists.get(workspace_id, watchlist_id)
@@ -156,6 +169,8 @@ class CloudApplication:
                 exclude_terms=exclude_terms,
                 match_mode=match_mode,
                 created_at=self.clock(),
+                entities=entities,
+                domains=domains,
             )
             uow.watchlists.add_version(version)
             uow.commit()
@@ -323,8 +338,28 @@ class CloudApplication:
                 uow.signals.record_evaluation(evaluation)
 
                 strongest = 0.0
+                target = RelevanceTarget.of(brief)
                 for watchlist in watchlists:
-                    outcome = self.matcher.evaluate(watchlist, MatchTarget.of(brief))
+                    outcome = self.relevance.evaluate_one(watchlist, target)
+                    relevance_evaluation = RelevanceEvaluation.create(
+                        workspace_id=run.workspace_id,
+                        watchlist=watchlist,
+                        target=target,
+                        outcome=outcome,
+                        evaluated_at=self.clock(),
+                        radar_id=run.radar_id,
+                        radar_run_id=run.run_id,
+                    )
+                    uow.relevance.record_evaluation(relevance_evaluation)
+                    uow.relevance.link_run(relevance_evaluation.evaluation_id, run.run_id)
+
+                    positive = tuple(
+                        reason.value for reason in outcome.reasons if reason.polarity == "positive"
+                    )
+                    negative = tuple(
+                        reason.value for reason in outcome.reasons if reason.polarity == "negative"
+                    )
+                    fields = tuple(dict.fromkeys(reason.field for reason in outcome.reasons))
                     decision = MatchEvaluation.create(
                         workspace_id=run.workspace_id,
                         radar_id=run.radar_id,
@@ -332,33 +367,73 @@ class CloudApplication:
                         watchlist_version_id=watchlist.version_id,
                         signal_id=signal.signal_id,
                         decision=outcome.decision,
-                        strength=outcome.strength,
-                        matched_terms=outcome.matched_terms,
-                        excluded_terms=outcome.excluded_terms,
-                        matched_fields=outcome.matched_fields,
-                        explanation=outcome.explanation,
+                        strength=round(outcome.score / 100.0, 4),
+                        matched_terms=positive,
+                        excluded_terms=negative,
+                        matched_fields=fields,
+                        explanation=(
+                            f"relevance={outcome.score:.1f}/100 "
+                            f"band={outcome.band} confidence={outcome.confidence}"
+                        ),
                         matcher_version=outcome.matcher_version,
-                        evaluated_at=self.clock(),
+                        evaluated_at=relevance_evaluation.evaluated_at,
                     )
                     uow.matches.record_evaluation(decision)
+
+                    current_watchlist_match = uow.relevance.get_current(
+                        run.workspace_id,
+                        watchlist.watchlist_id,
+                        signal.signal_id,
+                    )
                     if decision.decision != DECISION_MATCHED:
+                        if (
+                            current_watchlist_match is not None
+                            and current_watchlist_match.status == "active"
+                        ):
+                            stale = WatchlistSignalMatch(
+                                current_watchlist_match.match_id,
+                                current_watchlist_match.workspace_id,
+                                current_watchlist_match.watchlist_id,
+                                current_watchlist_match.signal_id,
+                                "stale",
+                                outcome.score,
+                                outcome.band,
+                                outcome.confidence,
+                                relevance_evaluation.evaluation_id,
+                                current_watchlist_match.first_matched_at,
+                                self.clock(),
+                            )
+                            uow.relevance.upsert_current(stale)
                         continue
-                    strongest = max(strongest, decision.strength)
-                    current = uow.matches.get(run.workspace_id, run.radar_id, signal.signal_id)
+
+                    watchlist_match = WatchlistSignalMatch.from_evaluation(
+                        relevance_evaluation,
+                        matched_at=self.clock(),
+                        existing=current_watchlist_match,
+                    )
+                    uow.relevance.upsert_current(watchlist_match)
+                    strength = round(outcome.score / 100.0, 4)
+                    strongest = max(strongest, strength)
+
+                    current = uow.matches.get(
+                        run.workspace_id,
+                        run.radar_id,
+                        signal.signal_id,
+                    )
                     if current is None:
                         current = Match.create(
                             workspace_id=run.workspace_id,
                             radar_id=run.radar_id,
                             signal_id=signal.signal_id,
-                            strength=decision.strength,
+                            strength=strength,
                             watchlist_version_id=watchlist.version_id,
                             matched_at=self.clock(),
                             run_id=run.run_id,
-                            matcher_version=decision.matcher_version,
+                            matcher_version=outcome.matcher_version,
                         )
                     else:
                         current = current.reaffirmed(
-                            strength=max(current.strength, decision.strength),
+                            strength=max(current.strength, strength),
                             watchlist_version_id=watchlist.version_id,
                             matched_at=self.clock(),
                             run_id=run.run_id,

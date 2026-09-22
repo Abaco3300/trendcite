@@ -23,6 +23,7 @@ from typing import Protocol, runtime_checkable
 
 from .domain.matches import Match, MatchEvaluation
 from .domain.radar import Coverage, Radar, RadarRun, RadarVersion
+from .domain.relevance import RelevanceEvaluation, WatchlistSignalMatch
 from .domain.signals import RunSignal, StoredSignal, StoredSignalEvaluation
 from .domain.usage import UsageEvent
 from .domain.watchlist import Watchlist, WatchlistVersion
@@ -161,6 +162,34 @@ class MatchRepository(Protocol):
         """The full audit trail for one signal on one radar, oldest first."""
 
 
+class RelevanceRepository(Protocol):
+    def record_evaluation(self, evaluation: RelevanceEvaluation) -> bool: ...
+
+    def link_run(self, evaluation_id: str, radar_run_id: str) -> None: ...
+
+    def get_evaluation(
+        self, workspace_id: str, evaluation_id: str
+    ) -> RelevanceEvaluation | None: ...
+
+    def evaluations_for_run(
+        self, workspace_id: str, radar_run_id: str
+    ) -> list[RelevanceEvaluation]: ...
+
+    def evaluations_for_watchlist_signal(
+        self, workspace_id: str, watchlist_id: str, signal_id: str
+    ) -> list[RelevanceEvaluation]: ...
+
+    def upsert_current(self, match: WatchlistSignalMatch) -> None: ...
+
+    def get_current(
+        self, workspace_id: str, watchlist_id: str, signal_id: str
+    ) -> WatchlistSignalMatch | None: ...
+
+    def list_for_watchlist(
+        self, workspace_id: str, watchlist_id: str
+    ) -> list[WatchlistSignalMatch]: ...
+
+
 class UsageRepository(Protocol):
     def record(self, event: UsageEvent) -> bool:
         """Record an event, returning ``False`` when it was already metered."""
@@ -192,6 +221,7 @@ class UnitOfWork(Protocol):
     coverage: CoverageRepository
     signals: SignalRepository
     matches: MatchRepository
+    relevance: RelevanceRepository
     usage: UsageRepository
 
     def commit(self) -> None: ...

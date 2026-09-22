@@ -1,0 +1,44 @@
+{
+  "scenarios": [
+    {
+      "name": "exact_mcp",
+      "include": ["mcp server"],
+      "exclude": [],
+      "label": "MCP server adoption accelerating",
+      "key": "mcp server",
+      "related": ["agent tooling"],
+      "context": ["Teams are deploying MCP server infrastructure"],
+      "decision": "matched"
+    },
+    {
+      "name": "generic_agents",
+      "include": ["agents"],
+      "exclude": [],
+      "label": "Travel agents face new commission rules",
+      "key": "travel agents",
+      "related": [],
+      "context": [],
+      "decision": "no_match"
+    },
+    {
+      "name": "hard_exclusion",
+      "include": ["agents"],
+      "exclude": ["gaming"],
+      "label": "Gaming NPC agents",
+      "key": "gaming agents",
+      "related": [],
+      "context": [],
+      "decision": "excluded"
+    },
+    {
+      "name": "unrelated",
+      "include": ["mcp server"],
+      "exclude": [],
+      "label": "Usage based pricing adoption",
+      "key": "usage based pricing",
+      "related": ["saas pricing"],
+      "context": [],
+      "decision": "no_match"
+    }
+  ]
+}

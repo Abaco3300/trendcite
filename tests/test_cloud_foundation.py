@@ -84,7 +84,10 @@ def test_migrations_bootstrap_and_repeat(db: Path) -> None:
     factory = SQLiteUnitOfWorkFactory(db)
     first = factory.bootstrap()
     second = factory.bootstrap()
-    assert first == ["0001_cloud_foundation.sql"]
+    assert first == [
+        "0001_cloud_foundation.sql",
+        "0002_signal_matching_relevance.sql",
+    ]
     assert second == first
     conn = connect(db)
     try:
@@ -161,9 +164,12 @@ def test_successful_run_is_idempotent_and_metered_once(db: Path) -> None:
     with SQLiteUnitOfWorkFactory(db)() as uow:
         runs = uow.runs.list_for_radar(workspace_id, radar_id)
         evaluations = uow.matches.evaluations_for_run(workspace_id, first.run_id)
+        relevance = uow.relevance.evaluations_for_run(workspace_id, first.run_id)
         matches = uow.matches.list_for_radar(workspace_id, radar_id)
         assert len(runs) == 1
         assert evaluations
+        assert relevance
+        assert all(item.snapshot_id for item in relevance)
         assert matches
         assert uow.usage.total(workspace_id, USAGE_RADAR_RUN) == 1
         assert uow.usage.total(workspace_id, USAGE_SIGNAL_EVALUATED) == first.signal_count
