@@ -1,4 +1,15 @@
-"""Pipeline: collect -> normalise -> cluster -> score -> brief -> (optional LLM) -> report."""
+"""Pipeline: the one place the whole chain is assembled.
+
+    Source -> Observation -> Cluster -> CandidateSignal -> Signal
+           -> SignalEvaluation -> SignalSnapshot -> SignalBrief
+           -> ContentOpportunityBrief -> Report
+
+The public Content Opportunity behaviour is unchanged: the same clusters are ranked by
+the same public score, the same 3-5 briefs are published, and the same Markdown comes
+out. The signal layer runs alongside it and is attached to each brief, so the report
+now carries both the projection people read and the canonical intelligence record it
+was projected from.
+"""
 
 from __future__ import annotations
 
@@ -11,10 +22,19 @@ from typing import Any
 from .briefs import build_brief
 from .cluster import cluster_items
 from .config import Config
+from .history import HistoryStore, NullHistoryStore
 from .http import Transport
-from .models import EvidenceItem, Report, SourceStatus
+from .models import EvidenceItem, Report, SourceStatus, TopicCluster
 from .normalize import dedupe, parse_datetime
-from .scoring import engagement_percentiles, rank_clusters
+from .observation import Observation, observe
+from .scoring import (
+    engagement_percentiles,
+    rank_clusters,
+    relevance_score,
+    select_evidence,
+)
+from .signal import CandidateSignal, SignalBrief
+from .signal_scoring import build_signal_brief
 from .sources import (
     GitHubAdapter,
     HackerNewsAdapter,
@@ -34,6 +54,23 @@ MIN_BRIEFS = 3
 MAX_BRIEFS = 5
 
 
+def candidate_from_cluster(
+    cluster: TopicCluster, *, now: datetime, evidence: list[EvidenceItem]
+) -> CandidateSignal:
+    """Promote a scored cluster to a candidate signal over its displayed evidence.
+
+    The candidate is built from exactly the evidence the brief shows, so the signal
+    evaluation is checkable against the same links the reader sees.
+    """
+    return CandidateSignal(
+        key=cluster.key,
+        label=cluster.label,
+        observations=tuple(observe(evidence, ingested_at=now)),
+        related_terms=tuple(cluster.related_terms),
+        cohesive=cluster.score.cohesive if cluster.score is not None else True,
+    )
+
+
 def build_report(
     items: list[EvidenceItem],
     *,
@@ -42,7 +79,9 @@ def build_report(
     top: int,
     mode: str,
     source_status: list[SourceStatus],
+    history: HistoryStore | None = None,
 ) -> Report:
+    store: HistoryStore = history or NullHistoryStore()
     items = dedupe(items)
     top = max(MIN_BRIEFS, min(MAX_BRIEFS, top))
     ranked = rank_clusters(cluster_items(items), now=now, niche=niche, corpus=items)
@@ -51,7 +90,31 @@ def build_report(
     clusters = [c for c in ranked if c.score is not None and c.score.cohesive]
     suppressed = [c for c in ranked if c.score is not None and not c.score.cohesive]
     percentiles = engagement_percentiles(items)
-    briefs = [build_brief(c, rank, now, percentiles) for rank, c in enumerate(clusters[:top], 1)]
+    corpus: list[Observation] = observe(items, ingested_at=now)
+    published = list(enumerate(clusters[:top], 1))
+    signals: list[SignalBrief] = []
+    for _, cluster in published:
+        evidence = cluster.evidence or select_evidence(cluster.items, percentiles, now)
+        candidate = candidate_from_cluster(cluster, now=now, evidence=evidence)
+        signals.append(
+            build_signal_brief(
+                candidate,
+                now=now,
+                corpus=corpus,
+                percentiles=percentiles,
+                relevance=relevance_score(cluster.niche_matches, niche),
+                history=store.signal_history(candidate.signal_id),
+            )
+        )
+    briefs = [
+        build_brief(cluster, rank, now, percentiles, signal)
+        for (rank, cluster), signal in zip(published, signals, strict=True)
+    ]
+    # Append-only: this run's evaluations become the previous run's history.
+    store.append_signal_snapshots([s.snapshot for s in signals])
+    store.append_observation_snapshots(
+        [snap for s in signals for snap in s.observation_snapshots()]
+    )
     notes: list[str] = []
     if suppressed:
         shown = ", ".join(
@@ -148,16 +211,28 @@ def collect(
 
 
 def run_live(
-    cfg: Config, transport: Transport | None = None, now: datetime | None = None
+    cfg: Config,
+    transport: Transport | None = None,
+    now: datetime | None = None,
+    history: HistoryStore | None = None,
 ) -> Report:
     now = now or datetime.now(UTC).replace(microsecond=0)
     items, status = collect(make_adapters(cfg, transport), now)
     return build_report(
-        items, now=now, niche=cfg.niche, top=cfg.top, mode="live", source_status=status
+        items,
+        now=now,
+        niche=cfg.niche,
+        top=cfg.top,
+        mode="live",
+        source_status=status,
+        history=history,
     )
 
 
-def run_demo(top: int = 5, niche: list[str] | None = None) -> Report:
+def run_demo(
+    top: int = 5, niche: list[str] | None = None, history: HistoryStore | None = None
+) -> Report:
+    """Offline demo. With no history store the run writes nothing and touches no disk."""
     items, now, demo_niche, status = load_demo_items()
     return build_report(
         items,
@@ -166,4 +241,5 @@ def run_demo(top: int = 5, niche: list[str] | None = None) -> Report:
         top=top,
         mode="demo",
         source_status=status,
+        history=history,
     )

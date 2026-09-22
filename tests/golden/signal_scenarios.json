@@ -1,0 +1,1793 @@
+{
+  "contradicted_signal": {
+    "evaluation": {
+      "components": [
+        {
+          "basis": "48 h half-life over 4 item(s); newest 10 h, oldest 60 h",
+          "name": "recency",
+          "status": "measured",
+          "value": 0.634,
+          "weight": 0.2
+        },
+        {
+          "basis": "no stored history; 2/4 item(s) fall in the recent half of a 50 h window (a flat 50% arrival rate scores 0)",
+          "name": "velocity",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.15
+        },
+        {
+          "basis": "the topic term appears in 4/28 collected item(s) (14%); saturation at or above 25% scores 0",
+          "name": "novelty",
+          "status": "measured",
+          "value": 0.429,
+          "weight": 0.1
+        },
+        {
+          "basis": "4 independent source(s), i.e. source adapters that each link a different underlying story",
+          "name": "corroboration",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "4 distinct publisher(s) (feed, subreddit, repo owner or site)",
+          "name": "source_diversity",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.1
+        },
+        {
+          "basis": "mean of the top 2 within-source engagement percentile(s) over 2 measurable item(s) this run",
+          "name": "engagement_strength",
+          "status": "measured",
+          "value": 0.5,
+          "weight": 0.15
+        },
+        {
+          "basis": "evidence spans 3 distinct day(s)",
+          "name": "persistence",
+          "status": "measured",
+          "value": 0.667,
+          "weight": 0.1
+        }
+      ],
+      "confidence": "high",
+      "counterevidence": [
+        {
+          "code": "contradicted",
+          "detail": "2 item(s) are critical or cautionary about this topic (e.g. \"Vector databases are overhyped and we are moving back to Postgres\"). The signal includes pushback, not only uptake.",
+          "observation_ids": [
+            "b08478520a13ddfe",
+            "eb1f3ddc93dd0afe"
+          ]
+        }
+      ],
+      "evaluated_at": "2026-09-18T12:00:00+00:00",
+      "evaluation_version": "signal-eval-v1",
+      "insufficient_data": [],
+      "measured_weight": 1.0,
+      "notes": [],
+      "relevance": 0.5,
+      "score": 61.1,
+      "state": "sustained"
+    },
+    "evidence_set": {
+      "algorithm": "evidence-set-v1",
+      "created_at": "2026-09-18T12:00:00+00:00",
+      "observation_count": 4,
+      "observation_ids": [
+        "b08478520a13ddfe",
+        "eb1f3ddc93dd0afe",
+        "a35734d67ab8fffe",
+        "a64efbd4d1dda677"
+      ],
+      "story_count": 4,
+      "story_keys": [
+        "example.com/github/640ddb24b9",
+        "example.com/hackernews/693bfca42f",
+        "example.com/reddit/d2d668d23b",
+        "example.com/rss/458ebf3085"
+      ],
+      "version_id": "5d2130a60ca2d970"
+    },
+    "observations": [
+      {
+        "event_time": "2026-09-18T02:00:00+00:00",
+        "evidence_item_id": "6a0686d99430",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/693bfca42f",
+          "observation_id": "b08478520a13ddfe",
+          "story_key": "example.com/hackernews/693bfca42f",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "b08478520a13ddfe",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/693bfca42f",
+        "url": "https://example.com/hackernews/693bfca42f"
+      },
+      {
+        "event_time": "2026-09-17T10:00:00+00:00",
+        "evidence_item_id": "2b58edd4e64e",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/458ebf3085",
+          "observation_id": "eb1f3ddc93dd0afe",
+          "story_key": "example.com/rss/458ebf3085",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "eb1f3ddc93dd0afe",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:data-weekly",
+        "source": "rss",
+        "source_label": "data-weekly",
+        "story_key": "example.com/rss/458ebf3085",
+        "url": "https://example.com/rss/458ebf3085"
+      },
+      {
+        "event_time": "2026-09-16T20:00:00+00:00",
+        "evidence_item_id": "f22e4258e416",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/reddit/d2d668d23b",
+          "observation_id": "a35734d67ab8fffe",
+          "story_key": "example.com/reddit/d2d668d23b",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "a35734d67ab8fffe",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "reddit:r/startups",
+        "source": "reddit",
+        "source_label": "r/startups",
+        "story_key": "example.com/reddit/d2d668d23b",
+        "url": "https://example.com/reddit/d2d668d23b"
+      },
+      {
+        "event_time": "2026-09-16T00:00:00+00:00",
+        "evidence_item_id": "6022310c321f",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/github/640ddb24b9",
+          "observation_id": "a64efbd4d1dda677",
+          "story_key": "example.com/github/640ddb24b9",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "a64efbd4d1dda677",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "github:GitHub/fixture-labs",
+        "source": "github",
+        "source_label": "GitHub/fixture-labs",
+        "story_key": "example.com/github/640ddb24b9",
+        "url": "https://example.com/github/640ddb24b9"
+      }
+    ],
+    "signal": {
+      "first_seen_at": "2026-09-18T12:00:00+00:00",
+      "key": "vector database",
+      "label": "Vector database",
+      "last_seen_at": "2026-09-18T12:00:00+00:00",
+      "related_terms": [],
+      "signal_id": "3726c9a91f38f73c"
+    },
+    "snapshot": {
+      "captured_at": "2026-09-18T12:00:00+00:00",
+      "component_values": {
+        "corroboration": 1.0,
+        "engagement_strength": 0.5,
+        "novelty": 0.429,
+        "persistence": 0.667,
+        "recency": 0.634,
+        "source_diversity": 1.0,
+        "velocity": 0.0
+      },
+      "confidence": "high",
+      "evaluation_version": "signal-eval-v1",
+      "evidence_set_version": "5d2130a60ca2d970",
+      "observation_count": 4,
+      "score": 61.1,
+      "signal_id": "3726c9a91f38f73c",
+      "snapshot_id": "5980520268f5d9de",
+      "source_count": 4,
+      "state": "sustained",
+      "story_count": 4
+    }
+  },
+  "dormant_signal": {
+    "evaluation": {
+      "components": [
+        {
+          "basis": "48 h half-life over 3 item(s); newest 720 h, oldest 912 h",
+          "name": "recency",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "no stored history; 2/3 item(s) fall in the recent half of a 192 h window (a flat 50% arrival rate scores 0)",
+          "name": "velocity",
+          "status": "measured",
+          "value": 0.333,
+          "weight": 0.15
+        },
+        {
+          "basis": "the topic term appears in 3/23 collected item(s) (13%); saturation at or above 25% scores 0",
+          "name": "novelty",
+          "status": "measured",
+          "value": 0.478,
+          "weight": 0.1
+        },
+        {
+          "basis": "3 independent source(s), i.e. source adapters that each link a different underlying story",
+          "name": "corroboration",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "3 distinct publisher(s) (feed, subreddit, repo owner or site)",
+          "name": "source_diversity",
+          "status": "measured",
+          "value": 0.667,
+          "weight": 0.1
+        },
+        {
+          "basis": "mean of the top 1 within-source engagement percentile(s) over 1 measurable item(s) this run",
+          "name": "engagement_strength",
+          "status": "measured",
+          "value": 0.5,
+          "weight": 0.15
+        },
+        {
+          "basis": "evidence spans 3 distinct day(s)",
+          "name": "persistence",
+          "status": "measured",
+          "value": 0.667,
+          "weight": 0.1
+        }
+      ],
+      "confidence": "medium",
+      "counterevidence": [
+        {
+          "code": "stale_evidence",
+          "detail": "3 item(s) are over a week old; part of this signal is not new.",
+          "observation_ids": [
+            "3f2a41482606526e",
+            "e2d7a0373d7bab49",
+            "ec7a86d367d67ff8"
+          ]
+        }
+      ],
+      "evaluated_at": "2026-09-18T12:00:00+00:00",
+      "evaluation_version": "signal-eval-v1",
+      "insufficient_data": [],
+      "measured_weight": 1.0,
+      "notes": [],
+      "relevance": 0.5,
+      "score": 50.6,
+      "state": "dormant"
+    },
+    "evidence_set": {
+      "algorithm": "evidence-set-v1",
+      "created_at": "2026-09-18T12:00:00+00:00",
+      "observation_count": 3,
+      "observation_ids": [
+        "3f2a41482606526e",
+        "e2d7a0373d7bab49",
+        "ec7a86d367d67ff8"
+      ],
+      "story_count": 3,
+      "story_keys": [
+        "example.com/hackernews/0a51a17af7",
+        "example.com/reddit/33268775ea",
+        "example.com/rss/e598aa2dbc"
+      ],
+      "version_id": "add546230a4be53c"
+    },
+    "observations": [
+      {
+        "event_time": "2026-08-19T12:00:00+00:00",
+        "evidence_item_id": "e3ace58182c1",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/0a51a17af7",
+          "observation_id": "3f2a41482606526e",
+          "story_key": "example.com/hackernews/0a51a17af7",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "3f2a41482606526e",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/0a51a17af7",
+        "url": "https://example.com/hackernews/0a51a17af7"
+      },
+      {
+        "event_time": "2026-08-15T12:00:00+00:00",
+        "evidence_item_id": "43b5a95f1937",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/e598aa2dbc",
+          "observation_id": "e2d7a0373d7bab49",
+          "story_key": "example.com/rss/e598aa2dbc",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "e2d7a0373d7bab49",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:cloud-weekly",
+        "source": "rss",
+        "source_label": "cloud-weekly",
+        "story_key": "example.com/rss/e598aa2dbc",
+        "url": "https://example.com/rss/e598aa2dbc"
+      },
+      {
+        "event_time": "2026-08-11T12:00:00+00:00",
+        "evidence_item_id": "f312dec611fa",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/reddit/33268775ea",
+          "observation_id": "ec7a86d367d67ff8",
+          "story_key": "example.com/reddit/33268775ea",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "ec7a86d367d67ff8",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "reddit:r/devops",
+        "source": "reddit",
+        "source_label": "r/devops",
+        "story_key": "example.com/reddit/33268775ea",
+        "url": "https://example.com/reddit/33268775ea"
+      }
+    ],
+    "signal": {
+      "first_seen_at": "2026-09-18T12:00:00+00:00",
+      "key": "serverless migration",
+      "label": "Serverless migration",
+      "last_seen_at": "2026-09-18T12:00:00+00:00",
+      "related_terms": [],
+      "signal_id": "ae74c2723d37f320"
+    },
+    "snapshot": {
+      "captured_at": "2026-09-18T12:00:00+00:00",
+      "component_values": {
+        "corroboration": 1.0,
+        "engagement_strength": 0.5,
+        "novelty": 0.478,
+        "persistence": 0.667,
+        "recency": 0.0,
+        "source_diversity": 0.667,
+        "velocity": 0.333
+      },
+      "confidence": "medium",
+      "evaluation_version": "signal-eval-v1",
+      "evidence_set_version": "add546230a4be53c",
+      "observation_count": 3,
+      "score": 50.6,
+      "signal_id": "ae74c2723d37f320",
+      "snapshot_id": "7dc6fa27d64882e0",
+      "source_count": 3,
+      "state": "dormant",
+      "story_count": 3
+    }
+  },
+  "new_but_not_novel": {
+    "evaluation": {
+      "components": [
+        {
+          "basis": "48 h half-life over 3 item(s); newest 9 h, oldest 57 h",
+          "name": "recency",
+          "status": "measured",
+          "value": 0.646,
+          "weight": 0.2
+        },
+        {
+          "basis": "no stored history; 2/3 item(s) fall in the recent half of a 48 h window (a flat 50% arrival rate scores 0)",
+          "name": "velocity",
+          "status": "measured",
+          "value": 0.333,
+          "weight": 0.15
+        },
+        {
+          "basis": "the topic term appears in 15/23 collected item(s) (65%); saturation at or above 25% scores 0",
+          "name": "novelty",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.1
+        },
+        {
+          "basis": "3 independent source(s), i.e. source adapters that each link a different underlying story",
+          "name": "corroboration",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "3 distinct publisher(s) (feed, subreddit, repo owner or site)",
+          "name": "source_diversity",
+          "status": "measured",
+          "value": 0.667,
+          "weight": 0.1
+        },
+        {
+          "basis": "mean of the top 1 within-source engagement percentile(s) over 1 measurable item(s) this run",
+          "name": "engagement_strength",
+          "status": "measured",
+          "value": 0.5,
+          "weight": 0.15
+        },
+        {
+          "basis": "evidence spans 3 distinct day(s)",
+          "name": "persistence",
+          "status": "measured",
+          "value": 0.667,
+          "weight": 0.1
+        }
+      ],
+      "confidence": "medium",
+      "counterevidence": [],
+      "evaluated_at": "2026-09-18T12:00:00+00:00",
+      "evaluation_version": "signal-eval-v1",
+      "insufficient_data": [],
+      "measured_weight": 1.0,
+      "notes": [],
+      "relevance": 0.5,
+      "score": 58.8,
+      "state": "sustained"
+    },
+    "evidence_set": {
+      "algorithm": "evidence-set-v1",
+      "created_at": "2026-09-18T12:00:00+00:00",
+      "observation_count": 3,
+      "observation_ids": [
+        "27b09c56ddbbe7fe",
+        "f5c69671d1700458",
+        "2fafb6b7ddeb1f08"
+      ],
+      "story_count": 3,
+      "story_keys": [
+        "example.com/hackernews/5fa04a636b",
+        "example.com/reddit/bc7557ecad",
+        "example.com/rss/86e89e27f9"
+      ],
+      "version_id": "82062d3b7ddcbe1e"
+    },
+    "observations": [
+      {
+        "event_time": "2026-09-18T03:00:00+00:00",
+        "evidence_item_id": "bdf58377d5a4",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/5fa04a636b",
+          "observation_id": "27b09c56ddbbe7fe",
+          "story_key": "example.com/hackernews/5fa04a636b",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "27b09c56ddbbe7fe",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/5fa04a636b",
+        "url": "https://example.com/hackernews/5fa04a636b"
+      },
+      {
+        "event_time": "2026-09-17T03:00:00+00:00",
+        "evidence_item_id": "03e4cc41d2f7",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/86e89e27f9",
+          "observation_id": "f5c69671d1700458",
+          "story_key": "example.com/rss/86e89e27f9",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "f5c69671d1700458",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:builder-digest",
+        "source": "rss",
+        "source_label": "builder-digest",
+        "story_key": "example.com/rss/86e89e27f9",
+        "url": "https://example.com/rss/86e89e27f9"
+      },
+      {
+        "event_time": "2026-09-16T03:00:00+00:00",
+        "evidence_item_id": "3f365a4c1d99",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/reddit/bc7557ecad",
+          "observation_id": "2fafb6b7ddeb1f08",
+          "story_key": "example.com/reddit/bc7557ecad",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "2fafb6b7ddeb1f08",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "reddit:r/SaaS",
+        "source": "reddit",
+        "source_label": "r/SaaS",
+        "story_key": "example.com/reddit/bc7557ecad",
+        "url": "https://example.com/reddit/bc7557ecad"
+      }
+    ],
+    "signal": {
+      "first_seen_at": "2026-09-18T12:00:00+00:00",
+      "key": "ai agent",
+      "label": "AI agent",
+      "last_seen_at": "2026-09-18T12:00:00+00:00",
+      "related_terms": [],
+      "signal_id": "41fe014724fef2fc"
+    },
+    "snapshot": {
+      "captured_at": "2026-09-18T12:00:00+00:00",
+      "component_values": {
+        "corroboration": 1.0,
+        "engagement_strength": 0.5,
+        "novelty": 0.0,
+        "persistence": 0.667,
+        "recency": 0.646,
+        "source_diversity": 0.667,
+        "velocity": 0.333
+      },
+      "confidence": "medium",
+      "evaluation_version": "signal-eval-v1",
+      "evidence_set_version": "82062d3b7ddcbe1e",
+      "observation_count": 3,
+      "score": 58.8,
+      "signal_id": "41fe014724fef2fc",
+      "snapshot_id": "c819e10912b09be7",
+      "source_count": 3,
+      "state": "sustained",
+      "story_count": 3
+    }
+  },
+  "novel_but_weak": {
+    "evaluation": {
+      "components": [
+        {
+          "basis": "48 h half-life over 2 item(s); newest 4 h, oldest 12 h",
+          "name": "recency",
+          "status": "measured",
+          "value": 0.892,
+          "weight": 0.2
+        },
+        {
+          "basis": "no stored history, and 2 story/stories over a 8 h window is below the 3-story / 6 h floor for an in-run arrival estimate",
+          "name": "velocity",
+          "status": "insufficient_data",
+          "value": null,
+          "weight": 0.15
+        },
+        {
+          "basis": "the topic term appears in 2/42 collected item(s) (5%); saturation at or above 25% scores 0",
+          "name": "novelty",
+          "status": "measured",
+          "value": 0.81,
+          "weight": 0.1
+        },
+        {
+          "basis": "1 independent source(s), i.e. source adapters that each link a different underlying story",
+          "name": "corroboration",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "1 distinct publisher(s) (feed, subreddit, repo owner or site)",
+          "name": "source_diversity",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.1
+        },
+        {
+          "basis": "no observation in this evidence set carries engagement metrics (source(s): rss); reach is unknown, not low",
+          "name": "engagement_strength",
+          "status": "insufficient_data",
+          "value": null,
+          "weight": 0.15
+        },
+        {
+          "basis": "evidence spans 1 distinct day(s)",
+          "name": "persistence",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.1
+        }
+      ],
+      "confidence": "low",
+      "counterevidence": [
+        {
+          "code": "single_source",
+          "detail": "Only 1 independent source (rss). Attention inside one community is not the same as a trend.",
+          "observation_ids": [
+            "d1ea2cc3ab85c439",
+            "d8d38f89b0efc621"
+          ]
+        },
+        {
+          "code": "small_sample",
+          "detail": "Small sample: 2 distinct story/stories. Early signal, not a trend.",
+          "observation_ids": [
+            "d1ea2cc3ab85c439",
+            "d8d38f89b0efc621"
+          ]
+        },
+        {
+          "code": "no_engagement_metrics",
+          "detail": "No source in this evidence set publishes engagement metrics, so reach is unknown. The score was computed without an engagement component.",
+          "observation_ids": [
+            "d1ea2cc3ab85c439",
+            "d8d38f89b0efc621"
+          ]
+        }
+      ],
+      "evaluated_at": "2026-09-18T12:00:00+00:00",
+      "evaluation_version": "signal-eval-v1",
+      "insufficient_data": [
+        "velocity",
+        "engagement_strength"
+      ],
+      "measured_weight": 0.7,
+      "notes": [
+        "Score computed over 70% of the component weight; velocity, engagement_strength had no data and were excluded rather than assumed."
+      ],
+      "relevance": 0.5,
+      "score": 37.1,
+      "state": "emerging"
+    },
+    "evidence_set": {
+      "algorithm": "evidence-set-v1",
+      "created_at": "2026-09-18T12:00:00+00:00",
+      "observation_count": 2,
+      "observation_ids": [
+        "d1ea2cc3ab85c439",
+        "d8d38f89b0efc621"
+      ],
+      "story_count": 2,
+      "story_keys": [
+        "example.com/rss/39de50113a",
+        "example.com/rss/d31e5b44a6"
+      ],
+      "version_id": "6e4fd6917f0c6d70"
+    },
+    "observations": [
+      {
+        "event_time": "2026-09-18T08:00:00+00:00",
+        "evidence_item_id": "39af0891ab46",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/d31e5b44a6",
+          "observation_id": "d1ea2cc3ab85c439",
+          "story_key": "example.com/rss/d31e5b44a6",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "d1ea2cc3ab85c439",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:obscure-lab-notes",
+        "source": "rss",
+        "source_label": "obscure-lab-notes",
+        "story_key": "example.com/rss/d31e5b44a6",
+        "url": "https://example.com/rss/d31e5b44a6"
+      },
+      {
+        "event_time": "2026-09-18T00:00:00+00:00",
+        "evidence_item_id": "28ffa42b38a5",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/39de50113a",
+          "observation_id": "d8d38f89b0efc621",
+          "story_key": "example.com/rss/39de50113a",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "d8d38f89b0efc621",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:obscure-lab-notes",
+        "source": "rss",
+        "source_label": "obscure-lab-notes",
+        "story_key": "example.com/rss/39de50113a",
+        "url": "https://example.com/rss/39de50113a"
+      }
+    ],
+    "signal": {
+      "first_seen_at": "2026-09-18T12:00:00+00:00",
+      "key": "quorumlattice",
+      "label": "Quorumlattice",
+      "last_seen_at": "2026-09-18T12:00:00+00:00",
+      "related_terms": [],
+      "signal_id": "003dd487fc9d26f2"
+    },
+    "snapshot": {
+      "captured_at": "2026-09-18T12:00:00+00:00",
+      "component_values": {
+        "corroboration": 0.0,
+        "engagement_strength": null,
+        "novelty": 0.81,
+        "persistence": 0.0,
+        "recency": 0.892,
+        "source_diversity": 0.0,
+        "velocity": null
+      },
+      "confidence": "low",
+      "evaluation_version": "signal-eval-v1",
+      "evidence_set_version": "6e4fd6917f0c6d70",
+      "observation_count": 2,
+      "score": 37.1,
+      "signal_id": "003dd487fc9d26f2",
+      "snapshot_id": "18af3c9123724170",
+      "source_count": 1,
+      "state": "emerging",
+      "story_count": 2
+    }
+  },
+  "reactivated_signal": {
+    "evaluation": {
+      "components": [
+        {
+          "basis": "48 h half-life over 3 item(s); newest 5 h, oldest 30 h",
+          "name": "recency",
+          "status": "measured",
+          "value": 0.799,
+          "weight": 0.2
+        },
+        {
+          "basis": "+0 distinct story/stories in 768 h since the previous snapshot (+0.00/day against a reference of 1/day)",
+          "name": "velocity",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.15
+        },
+        {
+          "basis": "the topic term appears in 3/23 collected item(s) (13%); saturation at or above 25% scores 0; halved 1 time(s) for previous run(s) that already reported it",
+          "name": "novelty",
+          "status": "measured",
+          "value": 0.478,
+          "weight": 0.1
+        },
+        {
+          "basis": "3 independent source(s), i.e. source adapters that each link a different underlying story",
+          "name": "corroboration",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "3 distinct publisher(s) (feed, subreddit, repo owner or site)",
+          "name": "source_diversity",
+          "status": "measured",
+          "value": 0.667,
+          "weight": 0.1
+        },
+        {
+          "basis": "mean of the top 1 within-source engagement percentile(s) over 1 measurable item(s) this run",
+          "name": "engagement_strength",
+          "status": "measured",
+          "value": 0.5,
+          "weight": 0.15
+        },
+        {
+          "basis": "evidence spans 2 distinct day(s); reported in 1 previous run(s)",
+          "name": "persistence",
+          "status": "measured",
+          "value": 0.333,
+          "weight": 0.1
+        }
+      ],
+      "confidence": "medium",
+      "counterevidence": [],
+      "evaluated_at": "2026-09-18T12:00:00+00:00",
+      "evaluation_version": "signal-eval-v1",
+      "insufficient_data": [],
+      "measured_weight": 1.0,
+      "notes": [],
+      "relevance": 0.5,
+      "score": 58.3,
+      "state": "reactivated"
+    },
+    "evidence_set": {
+      "algorithm": "evidence-set-v1",
+      "created_at": "2026-09-18T12:00:00+00:00",
+      "observation_count": 3,
+      "observation_ids": [
+        "611d3f2e1d7c8734",
+        "657e58da9c0a895e",
+        "07236f5d09627aaa"
+      ],
+      "story_count": 3,
+      "story_keys": [
+        "example.com/hackernews/46685c2e8c",
+        "example.com/reddit/af6fe2596f",
+        "example.com/rss/93678b859f"
+      ],
+      "version_id": "50b86ee4d570a1a1"
+    },
+    "observations": [
+      {
+        "event_time": "2026-09-18T07:00:00+00:00",
+        "evidence_item_id": "156314d02b78",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/46685c2e8c",
+          "observation_id": "611d3f2e1d7c8734",
+          "story_key": "example.com/hackernews/46685c2e8c",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "611d3f2e1d7c8734",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/46685c2e8c",
+        "url": "https://example.com/hackernews/46685c2e8c"
+      },
+      {
+        "event_time": "2026-09-17T22:00:00+00:00",
+        "evidence_item_id": "15926dac4b32",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/93678b859f",
+          "observation_id": "657e58da9c0a895e",
+          "story_key": "example.com/rss/93678b859f",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "657e58da9c0a895e",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:cloud-weekly",
+        "source": "rss",
+        "source_label": "cloud-weekly",
+        "story_key": "example.com/rss/93678b859f",
+        "url": "https://example.com/rss/93678b859f"
+      },
+      {
+        "event_time": "2026-09-17T06:00:00+00:00",
+        "evidence_item_id": "8cf3f6df4d65",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/reddit/af6fe2596f",
+          "observation_id": "07236f5d09627aaa",
+          "story_key": "example.com/reddit/af6fe2596f",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "07236f5d09627aaa",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "reddit:r/devops",
+        "source": "reddit",
+        "source_label": "r/devops",
+        "story_key": "example.com/reddit/af6fe2596f",
+        "url": "https://example.com/reddit/af6fe2596f"
+      }
+    ],
+    "signal": {
+      "first_seen_at": "2026-08-17T12:00:00+00:00",
+      "key": "serverless migration",
+      "label": "Serverless migration",
+      "last_seen_at": "2026-09-18T12:00:00+00:00",
+      "related_terms": [],
+      "signal_id": "ae74c2723d37f320"
+    },
+    "snapshot": {
+      "captured_at": "2026-09-18T12:00:00+00:00",
+      "component_values": {
+        "corroboration": 1.0,
+        "engagement_strength": 0.5,
+        "novelty": 0.478,
+        "persistence": 0.333,
+        "recency": 0.799,
+        "source_diversity": 0.667,
+        "velocity": 0.0
+      },
+      "confidence": "medium",
+      "evaluation_version": "signal-eval-v1",
+      "evidence_set_version": "50b86ee4d570a1a1",
+      "observation_count": 3,
+      "score": 58.3,
+      "signal_id": "ae74c2723d37f320",
+      "snapshot_id": "cf25933e711de23c",
+      "source_count": 3,
+      "state": "reactivated",
+      "story_count": 3
+    }
+  },
+  "single_source_viral_spike": {
+    "evaluation": {
+      "components": [
+        {
+          "basis": "48 h half-life over 3 item(s); newest 1 h, oldest 5 h",
+          "name": "recency",
+          "status": "measured",
+          "value": 0.958,
+          "weight": 0.2
+        },
+        {
+          "basis": "no stored history, and 3 story/stories over a 4 h window is below the 3-story / 6 h floor for an in-run arrival estimate",
+          "name": "velocity",
+          "status": "insufficient_data",
+          "value": null,
+          "weight": 0.15
+        },
+        {
+          "basis": "the topic term appears in 2/36 collected item(s) (6%); saturation at or above 25% scores 0",
+          "name": "novelty",
+          "status": "measured",
+          "value": 0.778,
+          "weight": 0.1
+        },
+        {
+          "basis": "1 independent source(s), i.e. source adapters that each link a different underlying story",
+          "name": "corroboration",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "1 distinct publisher(s) (feed, subreddit, repo owner or site)",
+          "name": "source_diversity",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.1
+        },
+        {
+          "basis": "mean of the top 3 within-source engagement percentile(s) over 3 measurable item(s) this run",
+          "name": "engagement_strength",
+          "status": "measured",
+          "value": 0.864,
+          "weight": 0.15
+        },
+        {
+          "basis": "evidence spans 1 distinct day(s)",
+          "name": "persistence",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.1
+        }
+      ],
+      "confidence": "medium",
+      "counterevidence": [
+        {
+          "code": "single_source",
+          "detail": "Only 1 independent source (hackernews). Attention inside one community is not the same as a trend.",
+          "observation_ids": [
+            "947394bff53d69bb",
+            "71e3f02c4454476d",
+            "3967112aa304fddf"
+          ]
+        }
+      ],
+      "evaluated_at": "2026-09-18T12:00:00+00:00",
+      "evaluation_version": "signal-eval-v1",
+      "insufficient_data": [
+        "velocity"
+      ],
+      "measured_weight": 0.85,
+      "notes": [
+        "Score computed over 85% of the component weight; velocity had no data and were excluded rather than assumed."
+      ],
+      "relevance": 0.5,
+      "score": 46.9,
+      "state": "emerging"
+    },
+    "evidence_set": {
+      "algorithm": "evidence-set-v1",
+      "created_at": "2026-09-18T12:00:00+00:00",
+      "observation_count": 3,
+      "observation_ids": [
+        "947394bff53d69bb",
+        "71e3f02c4454476d",
+        "3967112aa304fddf"
+      ],
+      "story_count": 3,
+      "story_keys": [
+        "example.com/hackernews/cf64afeb29",
+        "example.com/hackernews/da32aad9fe",
+        "example.com/hackernews/f24c623eb5"
+      ],
+      "version_id": "6462d13f387aeec5"
+    },
+    "observations": [
+      {
+        "event_time": "2026-09-18T11:00:00+00:00",
+        "evidence_item_id": "76c35726682b",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/f24c623eb5",
+          "observation_id": "947394bff53d69bb",
+          "story_key": "example.com/hackernews/f24c623eb5",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "947394bff53d69bb",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/f24c623eb5",
+        "url": "https://example.com/hackernews/f24c623eb5"
+      },
+      {
+        "event_time": "2026-09-18T09:00:00+00:00",
+        "evidence_item_id": "464de411944f",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/da32aad9fe",
+          "observation_id": "71e3f02c4454476d",
+          "story_key": "example.com/hackernews/da32aad9fe",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "71e3f02c4454476d",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/da32aad9fe",
+        "url": "https://example.com/hackernews/da32aad9fe"
+      },
+      {
+        "event_time": "2026-09-18T07:00:00+00:00",
+        "evidence_item_id": "cf058a81c884",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/cf64afeb29",
+          "observation_id": "3967112aa304fddf",
+          "story_key": "example.com/hackernews/cf64afeb29",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "3967112aa304fddf",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/cf64afeb29",
+        "url": "https://example.com/hackernews/cf64afeb29"
+      }
+    ],
+    "signal": {
+      "first_seen_at": "2026-09-18T12:00:00+00:00",
+      "key": "parser rewrite",
+      "label": "Parser rewrite",
+      "last_seen_at": "2026-09-18T12:00:00+00:00",
+      "related_terms": [],
+      "signal_id": "baa6bb347ae56a40"
+    },
+    "snapshot": {
+      "captured_at": "2026-09-18T12:00:00+00:00",
+      "component_values": {
+        "corroboration": 0.0,
+        "engagement_strength": 0.864,
+        "novelty": 0.778,
+        "persistence": 0.0,
+        "recency": 0.958,
+        "source_diversity": 0.0,
+        "velocity": null
+      },
+      "confidence": "medium",
+      "evaluation_version": "signal-eval-v1",
+      "evidence_set_version": "6462d13f387aeec5",
+      "observation_count": 3,
+      "score": 46.9,
+      "signal_id": "baa6bb347ae56a40",
+      "snapshot_id": "77f5cf11a2ad5d38",
+      "source_count": 1,
+      "state": "emerging",
+      "story_count": 3
+    }
+  },
+  "strong_multi_source": {
+    "evaluation": {
+      "components": [
+        {
+          "basis": "48 h half-life over 6 item(s); newest 6 h, oldest 96 h",
+          "name": "recency",
+          "status": "measured",
+          "value": 0.563,
+          "weight": 0.2
+        },
+        {
+          "basis": "no stored history; 3/6 item(s) fall in the recent half of a 90 h window (a flat 50% arrival rate scores 0)",
+          "name": "velocity",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.15
+        },
+        {
+          "basis": "the topic term appears in 6/36 collected item(s) (17%); saturation at or above 25% scores 0",
+          "name": "novelty",
+          "status": "measured",
+          "value": 0.333,
+          "weight": 0.1
+        },
+        {
+          "basis": "4 independent source(s), i.e. source adapters that each link a different underlying story",
+          "name": "corroboration",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "5 distinct publisher(s) (feed, subreddit, repo owner or site)",
+          "name": "source_diversity",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.1
+        },
+        {
+          "basis": "mean of the top 3 within-source engagement percentile(s) over 3 measurable item(s) this run",
+          "name": "engagement_strength",
+          "status": "measured",
+          "value": 0.5,
+          "weight": 0.15
+        },
+        {
+          "basis": "evidence spans 5 distinct day(s)",
+          "name": "persistence",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.1
+        }
+      ],
+      "confidence": "high",
+      "counterevidence": [],
+      "evaluated_at": "2026-09-18T12:00:00+00:00",
+      "evaluation_version": "signal-eval-v1",
+      "insufficient_data": [],
+      "measured_weight": 1.0,
+      "notes": [],
+      "relevance": 0.5,
+      "score": 62.1,
+      "state": "sustained"
+    },
+    "evidence_set": {
+      "algorithm": "evidence-set-v1",
+      "created_at": "2026-09-18T12:00:00+00:00",
+      "observation_count": 6,
+      "observation_ids": [
+        "d5a79a84f6787643",
+        "0b7b647c551b0217",
+        "2f845ce42b09ffb0",
+        "bdcd82b02c97f597",
+        "1d009b199f922af4",
+        "5a540d622921eb3a"
+      ],
+      "story_count": 6,
+      "story_keys": [
+        "example.com/github/882ee7a8c2",
+        "example.com/hackernews/219686842f",
+        "example.com/hackernews/56385b18e8",
+        "example.com/reddit/5eaed32887",
+        "example.com/rss/26b28b6014",
+        "example.com/rss/65023b8fc2"
+      ],
+      "version_id": "610aff96eed9f0cb"
+    },
+    "observations": [
+      {
+        "event_time": "2026-09-18T06:00:00+00:00",
+        "evidence_item_id": "3cb2aa487ce0",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/56385b18e8",
+          "observation_id": "d5a79a84f6787643",
+          "story_key": "example.com/hackernews/56385b18e8",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "d5a79a84f6787643",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/56385b18e8",
+        "url": "https://example.com/hackernews/56385b18e8"
+      },
+      {
+        "event_time": "2026-09-17T06:00:00+00:00",
+        "evidence_item_id": "1b209e3d6050",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/github/882ee7a8c2",
+          "observation_id": "0b7b647c551b0217",
+          "story_key": "example.com/github/882ee7a8c2",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "0b7b647c551b0217",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "github:GitHub/fixture-labs",
+        "source": "github",
+        "source_label": "GitHub/fixture-labs",
+        "story_key": "example.com/github/882ee7a8c2",
+        "url": "https://example.com/github/882ee7a8c2"
+      },
+      {
+        "event_time": "2026-09-16T08:00:00+00:00",
+        "evidence_item_id": "0b5164d30093",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/reddit/5eaed32887",
+          "observation_id": "2f845ce42b09ffb0",
+          "story_key": "example.com/reddit/5eaed32887",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "2f845ce42b09ffb0",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "reddit:r/devops",
+        "source": "reddit",
+        "source_label": "r/devops",
+        "story_key": "example.com/reddit/5eaed32887",
+        "url": "https://example.com/reddit/5eaed32887"
+      },
+      {
+        "event_time": "2026-09-15T10:00:00+00:00",
+        "evidence_item_id": "f643fdeec949",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/26b28b6014",
+          "observation_id": "bdcd82b02c97f597",
+          "story_key": "example.com/rss/26b28b6014",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "bdcd82b02c97f597",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:platform-weekly",
+        "source": "rss",
+        "source_label": "platform-weekly",
+        "story_key": "example.com/rss/26b28b6014",
+        "url": "https://example.com/rss/26b28b6014"
+      },
+      {
+        "event_time": "2026-09-14T12:00:00+00:00",
+        "evidence_item_id": "ed5d791df12e",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/65023b8fc2",
+          "observation_id": "1d009b199f922af4",
+          "story_key": "example.com/rss/65023b8fc2",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "1d009b199f922af4",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:sre-notes",
+        "source": "rss",
+        "source_label": "sre-notes",
+        "story_key": "example.com/rss/65023b8fc2",
+        "url": "https://example.com/rss/65023b8fc2"
+      },
+      {
+        "event_time": "2026-09-17T16:00:00+00:00",
+        "evidence_item_id": "2cdac62c032e",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/219686842f",
+          "observation_id": "5a540d622921eb3a",
+          "story_key": "example.com/hackernews/219686842f",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "5a540d622921eb3a",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/219686842f",
+        "url": "https://example.com/hackernews/219686842f"
+      }
+    ],
+    "signal": {
+      "first_seen_at": "2026-09-18T12:00:00+00:00",
+      "key": "kubernetes operators",
+      "label": "Kubernetes operators",
+      "last_seen_at": "2026-09-18T12:00:00+00:00",
+      "related_terms": [],
+      "signal_id": "884b1d3f8ddee821"
+    },
+    "snapshot": {
+      "captured_at": "2026-09-18T12:00:00+00:00",
+      "component_values": {
+        "corroboration": 1.0,
+        "engagement_strength": 0.5,
+        "novelty": 0.333,
+        "persistence": 1.0,
+        "recency": 0.563,
+        "source_diversity": 1.0,
+        "velocity": 0.0
+      },
+      "confidence": "high",
+      "evaluation_version": "signal-eval-v1",
+      "evidence_set_version": "610aff96eed9f0cb",
+      "observation_count": 6,
+      "score": 62.1,
+      "signal_id": "884b1d3f8ddee821",
+      "snapshot_id": "efbb1f54f0bfceba",
+      "source_count": 4,
+      "state": "sustained",
+      "story_count": 6
+    }
+  },
+  "sustained_with_history": {
+    "evaluation": {
+      "components": [
+        {
+          "basis": "48 h half-life over 6 item(s); newest 6 h, oldest 96 h",
+          "name": "recency",
+          "status": "measured",
+          "value": 0.563,
+          "weight": 0.2
+        },
+        {
+          "basis": "+2 distinct story/stories in 48 h since the previous snapshot (+1.00/day against a reference of 1/day)",
+          "name": "velocity",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.15
+        },
+        {
+          "basis": "the topic term appears in 6/36 collected item(s) (17%); saturation at or above 25% scores 0; halved 2 time(s) for previous run(s) that already reported it",
+          "name": "novelty",
+          "status": "measured",
+          "value": 0.25,
+          "weight": 0.1
+        },
+        {
+          "basis": "4 independent source(s), i.e. source adapters that each link a different underlying story",
+          "name": "corroboration",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "5 distinct publisher(s) (feed, subreddit, repo owner or site)",
+          "name": "source_diversity",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.1
+        },
+        {
+          "basis": "mean of the top 3 within-source engagement percentile(s) over 3 measurable item(s) this run",
+          "name": "engagement_strength",
+          "status": "measured",
+          "value": 0.5,
+          "weight": 0.15
+        },
+        {
+          "basis": "evidence spans 5 distinct day(s); reported in 2 previous run(s)",
+          "name": "persistence",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.1
+        }
+      ],
+      "confidence": "high",
+      "counterevidence": [],
+      "evaluated_at": "2026-09-18T12:00:00+00:00",
+      "evaluation_version": "signal-eval-v1",
+      "insufficient_data": [],
+      "measured_weight": 1.0,
+      "notes": [],
+      "relevance": 0.5,
+      "score": 76.3,
+      "state": "sustained"
+    },
+    "evidence_set": {
+      "algorithm": "evidence-set-v1",
+      "created_at": "2026-09-18T12:00:00+00:00",
+      "observation_count": 6,
+      "observation_ids": [
+        "d5a79a84f6787643",
+        "0b7b647c551b0217",
+        "2f845ce42b09ffb0",
+        "bdcd82b02c97f597",
+        "1d009b199f922af4",
+        "5a540d622921eb3a"
+      ],
+      "story_count": 6,
+      "story_keys": [
+        "example.com/github/882ee7a8c2",
+        "example.com/hackernews/219686842f",
+        "example.com/hackernews/56385b18e8",
+        "example.com/reddit/5eaed32887",
+        "example.com/rss/26b28b6014",
+        "example.com/rss/65023b8fc2"
+      ],
+      "version_id": "610aff96eed9f0cb"
+    },
+    "observations": [
+      {
+        "event_time": "2026-09-18T06:00:00+00:00",
+        "evidence_item_id": "3cb2aa487ce0",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/56385b18e8",
+          "observation_id": "d5a79a84f6787643",
+          "story_key": "example.com/hackernews/56385b18e8",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "d5a79a84f6787643",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/56385b18e8",
+        "url": "https://example.com/hackernews/56385b18e8"
+      },
+      {
+        "event_time": "2026-09-17T06:00:00+00:00",
+        "evidence_item_id": "1b209e3d6050",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/github/882ee7a8c2",
+          "observation_id": "0b7b647c551b0217",
+          "story_key": "example.com/github/882ee7a8c2",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "0b7b647c551b0217",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "github:GitHub/fixture-labs",
+        "source": "github",
+        "source_label": "GitHub/fixture-labs",
+        "story_key": "example.com/github/882ee7a8c2",
+        "url": "https://example.com/github/882ee7a8c2"
+      },
+      {
+        "event_time": "2026-09-16T08:00:00+00:00",
+        "evidence_item_id": "0b5164d30093",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/reddit/5eaed32887",
+          "observation_id": "2f845ce42b09ffb0",
+          "story_key": "example.com/reddit/5eaed32887",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "2f845ce42b09ffb0",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "reddit:r/devops",
+        "source": "reddit",
+        "source_label": "r/devops",
+        "story_key": "example.com/reddit/5eaed32887",
+        "url": "https://example.com/reddit/5eaed32887"
+      },
+      {
+        "event_time": "2026-09-15T10:00:00+00:00",
+        "evidence_item_id": "f643fdeec949",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/26b28b6014",
+          "observation_id": "bdcd82b02c97f597",
+          "story_key": "example.com/rss/26b28b6014",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "bdcd82b02c97f597",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:platform-weekly",
+        "source": "rss",
+        "source_label": "platform-weekly",
+        "story_key": "example.com/rss/26b28b6014",
+        "url": "https://example.com/rss/26b28b6014"
+      },
+      {
+        "event_time": "2026-09-14T12:00:00+00:00",
+        "evidence_item_id": "ed5d791df12e",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/rss/65023b8fc2",
+          "observation_id": "1d009b199f922af4",
+          "story_key": "example.com/rss/65023b8fc2",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "1d009b199f922af4",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:sre-notes",
+        "source": "rss",
+        "source_label": "sre-notes",
+        "story_key": "example.com/rss/65023b8fc2",
+        "url": "https://example.com/rss/65023b8fc2"
+      },
+      {
+        "event_time": "2026-09-17T16:00:00+00:00",
+        "evidence_item_id": "2cdac62c032e",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/hackernews/219686842f",
+          "observation_id": "5a540d622921eb3a",
+          "story_key": "example.com/hackernews/219686842f",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "5a540d622921eb3a",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/hackernews/219686842f",
+        "url": "https://example.com/hackernews/219686842f"
+      }
+    ],
+    "signal": {
+      "first_seen_at": "2026-09-14T12:00:00+00:00",
+      "key": "kubernetes operators",
+      "label": "Kubernetes operators",
+      "last_seen_at": "2026-09-18T12:00:00+00:00",
+      "related_terms": [],
+      "signal_id": "884b1d3f8ddee821"
+    },
+    "snapshot": {
+      "captured_at": "2026-09-18T12:00:00+00:00",
+      "component_values": {
+        "corroboration": 1.0,
+        "engagement_strength": 0.5,
+        "novelty": 0.25,
+        "persistence": 1.0,
+        "recency": 0.563,
+        "source_diversity": 1.0,
+        "velocity": 1.0
+      },
+      "confidence": "high",
+      "evaluation_version": "signal-eval-v1",
+      "evidence_set_version": "610aff96eed9f0cb",
+      "observation_count": 6,
+      "score": 76.3,
+      "signal_id": "884b1d3f8ddee821",
+      "snapshot_id": "efbb1f54f0bfceba",
+      "source_count": 4,
+      "state": "sustained",
+      "story_count": 6
+    }
+  },
+  "syndicated_echo": {
+    "evaluation": {
+      "components": [
+        {
+          "basis": "48 h half-life over 3 item(s); newest 7 h, oldest 8 h",
+          "name": "recency",
+          "status": "measured",
+          "value": 0.895,
+          "weight": 0.2
+        },
+        {
+          "basis": "no stored history, and 1 story/stories over a 1 h window is below the 3-story / 6 h floor for an in-run arrival estimate",
+          "name": "velocity",
+          "status": "insufficient_data",
+          "value": null,
+          "weight": 0.15
+        },
+        {
+          "basis": "the topic term appears in 0/23 collected item(s) (0%); saturation at or above 25% scores 0",
+          "name": "novelty",
+          "status": "measured",
+          "value": 1.0,
+          "weight": 0.1
+        },
+        {
+          "basis": "1 independent source(s), i.e. source adapters that each link a different underlying story",
+          "name": "corroboration",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.2
+        },
+        {
+          "basis": "3 distinct publisher(s) (feed, subreddit, repo owner or site)",
+          "name": "source_diversity",
+          "status": "measured",
+          "value": 0.667,
+          "weight": 0.1
+        },
+        {
+          "basis": "mean of the top 1 within-source engagement percentile(s) over 1 measurable item(s) this run",
+          "name": "engagement_strength",
+          "status": "measured",
+          "value": 0.5,
+          "weight": 0.15
+        },
+        {
+          "basis": "evidence spans 1 distinct day(s)",
+          "name": "persistence",
+          "status": "measured",
+          "value": 0.0,
+          "weight": 0.1
+        }
+      ],
+      "confidence": "low",
+      "counterevidence": [
+        {
+          "code": "single_source",
+          "detail": "Only 1 independent source (hackernews, reddit, rss). Attention inside one community is not the same as a trend.",
+          "observation_ids": [
+            "533982e5821fcb93",
+            "5325700a599d9837",
+            "b5a48569d44979be"
+          ]
+        },
+        {
+          "code": "syndicated_echo",
+          "detail": "2 observation(s) repeat a story already carried by another channel. Repeats are counted once, but they inflate how busy the topic looks.",
+          "observation_ids": [
+            "533982e5821fcb93",
+            "5325700a599d9837",
+            "b5a48569d44979be"
+          ]
+        },
+        {
+          "code": "small_sample",
+          "detail": "Small sample: 1 distinct story/stories. Early signal, not a trend.",
+          "observation_ids": [
+            "533982e5821fcb93",
+            "5325700a599d9837",
+            "b5a48569d44979be"
+          ]
+        }
+      ],
+      "evaluated_at": "2026-09-18T12:00:00+00:00",
+      "evaluation_version": "signal-eval-v1",
+      "insufficient_data": [
+        "velocity"
+      ],
+      "measured_weight": 0.85,
+      "notes": [
+        "Score computed over 85% of the component weight; velocity had no data and were excluded rather than assumed."
+      ],
+      "relevance": 0.5,
+      "score": 49.5,
+      "state": "emerging"
+    },
+    "evidence_set": {
+      "algorithm": "evidence-set-v1",
+      "created_at": "2026-09-18T12:00:00+00:00",
+      "observation_count": 3,
+      "observation_ids": [
+        "533982e5821fcb93",
+        "5325700a599d9837",
+        "b5a48569d44979be"
+      ],
+      "story_count": 1,
+      "story_keys": [
+        "example.com/blog/the-one-article"
+      ],
+      "version_id": "c80f9a0ad8001635"
+    },
+    "observations": [
+      {
+        "event_time": "2026-09-18T04:00:00+00:00",
+        "evidence_item_id": "c0c6c1bf3b66",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/blog/the-one-article",
+          "observation_id": "533982e5821fcb93",
+          "story_key": "example.com/blog/the-one-article",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "533982e5821fcb93",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "hackernews:Hacker News",
+        "source": "hackernews",
+        "source_label": "Hacker News",
+        "story_key": "example.com/blog/the-one-article",
+        "url": "https://example.com/blog/the-one-article"
+      },
+      {
+        "event_time": "2026-09-18T04:00:00+00:00",
+        "evidence_item_id": "197b4138f8d4",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/blog/the-one-article",
+          "observation_id": "5325700a599d9837",
+          "story_key": "example.com/blog/the-one-article",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "5325700a599d9837",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "rss:Hacker News: Newest",
+        "source": "rss",
+        "source_label": "Hacker News: Newest",
+        "story_key": "example.com/blog/the-one-article",
+        "url": "https://example.com/blog/the-one-article"
+      },
+      {
+        "event_time": "2026-09-18T05:00:00+00:00",
+        "evidence_item_id": "331162b817ac",
+        "flags": [],
+        "identity": {
+          "basis": "example.com/blog/the-one-article",
+          "observation_id": "b5a48569d44979be",
+          "story_key": "example.com/blog/the-one-article",
+          "strategy": "canonical_url",
+          "version": "observation-identity-v1"
+        },
+        "ingested_at": "2026-09-18T12:00:00+00:00",
+        "observation_id": "b5a48569d44979be",
+        "observed_at": "2026-09-18T12:00:00+00:00",
+        "publisher": "reddit:r/programming",
+        "source": "reddit",
+        "source_label": "r/programming",
+        "story_key": "example.com/blog/the-one-article",
+        "url": "https://example.com/blog/the-one-article"
+      }
+    ],
+    "signal": {
+      "first_seen_at": "2026-09-18T12:00:00+00:00",
+      "key": "syndicated article",
+      "label": "Syndicated article",
+      "last_seen_at": "2026-09-18T12:00:00+00:00",
+      "related_terms": [],
+      "signal_id": "f75bfe83bec3db1c"
+    },
+    "snapshot": {
+      "captured_at": "2026-09-18T12:00:00+00:00",
+      "component_values": {
+        "corroboration": 0.0,
+        "engagement_strength": 0.5,
+        "novelty": 1.0,
+        "persistence": 0.0,
+        "recency": 0.895,
+        "source_diversity": 0.667,
+        "velocity": null
+      },
+      "confidence": "low",
+      "evaluation_version": "signal-eval-v1",
+      "evidence_set_version": "c80f9a0ad8001635",
+      "observation_count": 3,
+      "score": 49.5,
+      "signal_id": "f75bfe83bec3db1c",
+      "snapshot_id": "19a2a41982ce92c7",
+      "source_count": 3,
+      "state": "emerging",
+      "story_count": 1
+    }
+  }
+}

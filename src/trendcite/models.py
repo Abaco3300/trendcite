@@ -1,12 +1,29 @@
-"""Core data model: normalised evidence items, topic clusters and briefs."""
+"""Core data model: normalised evidence items, topic clusters and briefs.
+
+Layering note. :class:`EvidenceItem` is the *presentation* record: the sanitised,
+displayable form of one thing a source showed us. Its canonical intelligence
+counterpart is :class:`trendcite.observation.Observation`, which carries the same
+facts plus explicit identity and time semantics. Identity itself is decided in one
+place only, :mod:`trendcite.identity`; the properties below delegate there rather
+than re-deriving keys.
+
+:class:`Brief` is the Content Opportunity projection of a
+:class:`trendcite.signal.SignalBrief`. It is a view of a signal, not the root
+intelligence entity, and it stays the frozen public contract.
+"""
 
 from __future__ import annotations
 
 import hashlib
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any
-from urllib.parse import urlsplit
+from typing import TYPE_CHECKING, Any
+
+from .identity import ObservationIdentity, resolve_identity, story_key_for_url
+from .versions import CONTENT_OPPORTUNITY_SCORE_VERSION, engine_versions
+
+if TYPE_CHECKING:  # pragma: no cover - typing only, avoids an import cycle
+    from .signal import SignalBrief
 
 
 @dataclass(frozen=True)
@@ -40,13 +57,25 @@ class EvidenceItem:
         """Identity of the underlying content, independent of the channel it came through.
 
         The same article seen via Hacker News and via an HN RSS mirror shares one key,
-        so it counts as one story, not two. Scheme, ``www.`` and a trailing slash are
-        ignored; the stored ``url`` is unchanged.
+        so it counts as one story, not two. See :mod:`trendcite.identity`.
         """
-        parts = urlsplit(self.url)
-        host = (parts.hostname or "").removeprefix("www.")
-        path = parts.path.rstrip("/")
-        return f"{host}{path}?{parts.query}" if parts.query else f"{host}{path}"
+        return story_key_for_url(self.url)
+
+    @property
+    def observation_identity(self) -> ObservationIdentity:
+        """Canonical identity of this record: native id -> canonical URL -> fingerprint."""
+        return resolve_identity(
+            source=self.source,
+            url=self.url,
+            title=self.title,
+            excerpt=self.excerpt,
+            raw=self.raw,
+        )
+
+    @property
+    def observation_id(self) -> str:
+        """Stable id for this observation, used for dedup and cross-run history."""
+        return self.observation_identity.observation_id
 
     @property
     def publisher(self) -> str:
@@ -68,6 +97,10 @@ class EvidenceItem:
         data["published_at"] = self.published_at.isoformat()
         data["fetched_at"] = self.fetched_at.isoformat()
         data["flags"] = list(self.flags)
+        # Additive join keys: they let a consumer line this evidence row up with the
+        # canonical observation records carried under a brief's "signal".
+        data["observation_id"] = self.observation_id
+        data["story_key"] = self.story_key
         return data
 
 
@@ -112,6 +145,14 @@ class TopicCluster:
 
 @dataclass
 class Brief:
+    """A Content Opportunity Brief: the public projection of one evaluated signal.
+
+    Every field below is part of the published contract and may only be added to.
+    ``signal`` is the canonical intelligence record this brief projects; it is
+    optional so that a brief can still be constructed (and rendered) without the
+    signal layer.
+    """
+
     rank: int
     topic: str
     angle: str
@@ -124,6 +165,7 @@ class Brief:
     outline: list[str]  # DRAFT, not evidence
     flags: list[str] = field(default_factory=list)
     synthesis_note: str | None = None  # set when an LLM refined angle/outline
+    signal: SignalBrief | None = None  # canonical signal this brief projects
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -139,7 +181,15 @@ class Brief:
             "draft_outline_not_evidence": self.outline,
             "flags": self.flags,
             "synthesis_note": self.synthesis_note,
+            # Additive: the canonical signal behind this projection, or null when the
+            # brief was built without the signal layer.
+            "signal": self.signal.to_dict() if self.signal is not None else None,
         }
+
+
+#: The domain name for what :class:`Brief` is. ``Brief`` stays the exported symbol so
+#: existing imports keep working; this alias documents the projection relationship.
+ContentOpportunityBrief = Brief
 
 
 @dataclass
@@ -170,4 +220,9 @@ class Report:
             "source_status": [asdict(s) for s in self.source_status],
             "notes": self.notes,
             "briefs": [b.to_dict() for b in self.briefs],
+            # Additive: which deterministic algorithm versions produced this report.
+            "engine": {
+                "score_formula": CONTENT_OPPORTUNITY_SCORE_VERSION,
+                "versions": engine_versions(),
+            },
         }

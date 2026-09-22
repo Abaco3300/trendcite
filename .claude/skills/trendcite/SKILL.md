@@ -53,11 +53,21 @@ Exit code 0 means a report was written. Exit code 2 means a configuration error 
 
 ## Reading the output
 
-JSON top level: `mode`, `generated_at`, `niche`, `total_items`, `source_status[]`, `notes[]`, `briefs[]`.
+JSON top level: `mode`, `generated_at`, `niche`, `total_items`, `source_status[]`, `notes[]`, `briefs[]`, `engine` (the version of each deterministic algorithm that produced the report).
 
-Each brief: `rank`, `topic`, `angle`, `why_now[]`, `evidence[]` (each with `source`, `source_label`, `title`, `excerpt`, `url`, `discussion_url`, `author`, `published_at`, `metrics`, `flags`), `score` (`recency`, `engagement`, `corroboration`, `relevance`, `diversity`, `total`, `confidence`), `score_explanation[]`, `counterpoints[]`, `founder_questions[]`, `draft_outline_not_evidence[]`, `flags[]`, `synthesis_note`.
+Each brief: `rank`, `topic`, `angle`, `why_now[]`, `evidence[]` (each with `source`, `source_label`, `title`, `excerpt`, `url`, `discussion_url`, `author`, `published_at`, `metrics`, `flags`), `score` (`recency`, `engagement`, `corroboration`, `relevance`, `diversity`, `total`, `confidence`), `score_explanation[]`, `counterpoints[]`, `founder_questions[]`, `draft_outline_not_evidence[]`, `flags[]`, `synthesis_note`, `signal`.
 
 Score: `100 * (0.25 recency + 0.25 engagement + 0.25 corroboration + 0.15 relevance + 0.10 diversity)`. Engagement is a percentile within each source, so HN points are never compared directly with GitHub stars. Corroboration counts distinct source types. The full definition is in `src/trendcite/scoring.py`.
+
+Each brief also carries `signal`: the canonical record the brief was projected from. Useful fields inside it:
+
+- `signal.evaluation.score` (0-100) is a **different** number from `score.total`. It answers "how strong is this signal", using recency, velocity, novelty, corroboration, source diversity, engagement strength and persistence. Say which one you mean if you quote it.
+- `signal.evaluation.insufficient_data[]` lists components that could not be measured at all. They were excluded from the score, not scored zero. If `engagement_strength` is in this list, reach is **unknown**, not low - never describe it as low engagement.
+- `signal.evaluation.counterevidence[]` gives machine-readable reasons to trust the signal less (`single_source`, `syndicated_echo`, `contradicted`, `no_engagement_metrics`, `stale_evidence`, `small_sample`, `incohesive_evidence`, `prompt_injection_attempt`), each naming the observations that caused it.
+- `signal.evaluation.state` is `emerging`, `sustained`, `dormant`, `reactivated` or `insufficient_data`. Velocity and reactivation need stored history; without it those components honestly report `insufficient_data` rather than guessing.
+- `signal.evidence_set` and `signal.observations[]` are the audit trail. Join them to `evidence[]` on `observation_id`.
+
+The Markdown report does not include the signal layer; use `--format json` when you need it.
 
 ## Evidence rules (follow these when you present or build on the output)
 
