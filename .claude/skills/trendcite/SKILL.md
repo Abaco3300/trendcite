@@ -37,7 +37,7 @@ python -m trendcite live --sources hackernews,rss --feeds https://example.com/fe
 python -m trendcite sources
 ```
 
-If `python -m trendcite` fails with "No module named trendcite", install it first: `pip install -e .` in the repository (use the project's virtual environment if there is one).
+If `python -m trendcite` fails with "No module named trendcite", install the public package first with `pip install trendcite` (use the project's virtual environment if there is one). When developing TrendCite itself from a repository clone, an editable `pip install -e .` is still appropriate.
 
 Inputs:
 

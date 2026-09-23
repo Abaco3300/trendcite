@@ -13,12 +13,10 @@ Status: early open-source MVP (v0.1.0, alpha). Local CLI plus a Claude Code Skil
 ## Try it in 60 seconds (offline, no API key, no network)
 
 ```bash
-git clone https://github.com/Abaco3300/trendcite.git
-cd trendcite
 python -m venv .venv
 # Windows: .venv\Scripts\activate    macOS/Linux: source .venv/bin/activate
-pip install -e .
-python -m trendcite demo
+pip install trendcite
+trendcite demo
 ```
 
 [![Terminal output of the offline TrendCite demo: five scored briefs, the evidence trail for the MCP server brief, and its score breakdown.](docs/trendcite-demo.svg)](examples/demo-report.md)
@@ -40,7 +38,7 @@ python -m trendcite demo --top 3 --niche "pricing,saas"
 
 One skill, shipped two ways. Both copies are the same file and a test keeps them identical.
 
-**From a clone.** Clone the repository as above and open that directory in Claude Code. The project skill at [`.claude/skills/trendcite/SKILL.md`](.claude/skills/trendcite/SKILL.md) sits in `.claude/skills/` at the project root, so Claude picks it up with no extra configuration. To use it in another project, copy the `.claude/skills/trendcite/` directory into that project.
+**From a clone.** For native project-scope discovery, clone the repository and open that directory in Claude Code. The project skill at [`.claude/skills/trendcite/SKILL.md`](.claude/skills/trendcite/SKILL.md) sits in `.claude/skills/` at the project root, so Claude picks it up with no extra configuration. To use it in another project, copy the `.claude/skills/trendcite/` directory into that project.
 
 **With the GitHub CLI.** The repository also carries a standard Agent Skills copy at [`skills/trendcite/SKILL.md`](skills/trendcite/SKILL.md). That is the layout `gh` expects, so the public installation command for the published repository is:
 
@@ -50,7 +48,7 @@ gh skill install Abaco3300/trendcite trendcite --agent claude-code --scope user
 
 Agent Skills in the GitHub CLI are a **preview feature and subject to change without notice** — the command, its flags and the discovery conventions may move. It needs a recent `gh` (this layout was verified against `gh` 2.101.0).
 
-Installing the skill installs **instructions only**. The TrendCite Python CLI is separate and must be available in the environment Claude runs commands in, because the skill invokes `python -m trendcite`. Clone this repository and install it (`pip install -e /path/to/trendcite`); TrendCite is not published to PyPI.
+Installing the skill installs **instructions only**. The TrendCite Python CLI is separate and must be available in the environment Claude runs commands in, because the skill invokes `python -m trendcite`. Install the public CLI from PyPI with `pip install trendcite`. If you are developing TrendCite itself from a clone, use the editable development install described below instead.
 
 Then ask in plain language:
 
@@ -248,12 +246,15 @@ Each signal also carries a `state`: `emerging`, `sustained`, `dormant`, `reactiv
 
 Requirements: Python 3.11 or newer. The core has **no runtime dependencies** (standard library only).
 
+For normal use, install the published package from [PyPI](https://pypi.org/project/trendcite/):
+
 ```bash
-pip install -e .                  # core CLI
-pip install -e ".[anthropic]"     # optional: Anthropic SDK for --llm
-pip install -e ".[openai]"        # optional: OpenAI SDK for --llm
-pip install -e ".[dev]"           # tests, lint, type checks, build
+pip install trendcite
+pip install "trendcite[anthropic]"   # optional: Anthropic SDK for --llm
+pip install "trendcite[openai]"      # optional: OpenAI SDK for --llm
 ```
+
+For development from a repository clone, use the editable install in the [Development](#development) section.
 
 ## Live mode
 
