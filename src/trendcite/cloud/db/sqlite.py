@@ -15,10 +15,18 @@ from types import TracebackType
 from typing import Any
 
 from ..domain import (
+    Alert,
+    AlertBaseline,
+    AlertCandidate,
+    AlertPolicy,
     Coverage,
+    DeliveryAttempt,
+    Digest,
+    DigestItem,
     Match,
     MatchEvaluation,
     MatchReason,
+    MaterialityEvaluation,
     Membership,
     Radar,
     RadarRun,
@@ -683,6 +691,8 @@ class SQLiteUnitOfWork:
         self.signals = _SignalRepo(self.conn)
         self.matches = _MatchRepo(self.conn)
         self.relevance = _RelevanceRepo(self.conn)
+        self.alerts = _AlertRepo(self.conn)
+        self.digests = _DigestRepo(self.conn)
         self.usage = _UsageRepo(self.conn)
         return self
 
@@ -1116,4 +1126,503 @@ def _watchlist_signal_match(row: sqlite3.Row) -> WatchlistSignalMatch:
         str(row["current_evaluation_id"]),
         parse_iso(row["first_matched_at"]),
         parse_iso(row["last_matched_at"]),
+    )
+
+
+class _AlertRepo:
+    """Candidates, alerts, baselines and attempts. Four tables, never cross-written."""
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self.conn = conn
+
+    # ------------------------------------------------------------------- policy
+
+    def upsert_policy(self, value: AlertPolicy) -> None:
+        self.conn.execute(
+            "INSERT INTO cloud_alert_policy"
+            "(policy_id,workspace_id,radar_id,enabled,immediate_alerts,daily_digest,"
+            "min_relevance,min_materiality,cooldown_hours,digest_max_items,"
+            "max_delivery_attempts,channel,policy_version,updated_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+            "ON CONFLICT(workspace_id,radar_id) DO UPDATE SET "
+            "enabled=excluded.enabled,immediate_alerts=excluded.immediate_alerts,"
+            "daily_digest=excluded.daily_digest,min_relevance=excluded.min_relevance,"
+            "min_materiality=excluded.min_materiality,cooldown_hours=excluded.cooldown_hours,"
+            "digest_max_items=excluded.digest_max_items,"
+            "max_delivery_attempts=excluded.max_delivery_attempts,channel=excluded.channel,"
+            "policy_version=excluded.policy_version,updated_at=excluded.updated_at",
+            (
+                value.policy_id,
+                value.workspace_id,
+                value.radar_id,
+                int(value.enabled),
+                int(value.immediate_alerts),
+                int(value.daily_digest),
+                value.min_relevance,
+                value.min_materiality,
+                value.cooldown_hours,
+                value.digest_max_items,
+                value.max_delivery_attempts,
+                value.channel,
+                value.policy_version,
+                value.updated_at.isoformat(),
+            ),
+        )
+
+    def get_policy(self, workspace_id: str, radar_id: str) -> AlertPolicy | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_alert_policy WHERE workspace_id=? AND radar_id=?",
+            (workspace_id, radar_id),
+        ).fetchone()
+        return None if row is None else _alert_policy(row)
+
+    # --------------------------------------------------------------- candidates
+
+    def add_candidate(self, value: AlertCandidate) -> bool:
+        cur = self.conn.execute(
+            "INSERT OR IGNORE INTO cloud_alert_candidate"
+            "(candidate_id,workspace_id,radar_id,watchlist_id,signal_id,signal_snapshot_id,"
+            "run_id,subject_key,status,reason,label,relevance_score,signal_score,"
+            "lifecycle_state,velocity,source_count,counterevidence,materiality,"
+            "materiality_version,evaluation_json,observed_at,created_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                value.candidate_id,
+                value.workspace_id,
+                value.radar_id,
+                value.watchlist_id,
+                value.signal_id,
+                value.snapshot_id,
+                value.run_id,
+                value.subject_key,
+                value.status,
+                value.reason,
+                value.label,
+                value.relevance_score,
+                value.signal_score,
+                value.lifecycle_state,
+                value.velocity,
+                value.source_count,
+                _dump(value.counterevidence),
+                value.materiality,
+                value.materiality_version,
+                _dump(value.evaluation.to_dict()),
+                value.observed_at.isoformat(),
+                value.created_at.isoformat(),
+            ),
+        )
+        return cur.rowcount == 1
+
+    def get_candidate(self, workspace_id: str, candidate_id: str) -> AlertCandidate | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_alert_candidate WHERE workspace_id=? AND candidate_id=?",
+            (workspace_id, candidate_id),
+        ).fetchone()
+        return None if row is None else _alert_candidate(row)
+
+    def candidates_for_run(self, workspace_id: str, run_id: str) -> list[AlertCandidate]:
+        return [
+            _alert_candidate(r)
+            for r in self.conn.execute(
+                "SELECT * FROM cloud_alert_candidate WHERE workspace_id=? AND run_id=? "
+                "ORDER BY observed_at,candidate_id",
+                (workspace_id, run_id),
+            )
+        ]
+
+    def candidates_in_window(
+        self, workspace_id: str, radar_id: str, start: str, end: str
+    ) -> list[AlertCandidate]:
+        # Half-open on purpose: an event at exactly midnight belongs to the day that is
+        # starting, so no candidate lands in two digests and none falls between them.
+        return [
+            _alert_candidate(r)
+            for r in self.conn.execute(
+                "SELECT * FROM cloud_alert_candidate WHERE workspace_id=? AND radar_id=? "
+                "AND observed_at>=? AND observed_at<? ORDER BY observed_at,candidate_id",
+                (workspace_id, radar_id, start, end),
+            )
+        ]
+
+    # ------------------------------------------------------------------- alerts
+
+    def add_alert(self, value: Alert) -> bool:
+        cur = self.conn.execute(
+            "INSERT OR IGNORE INTO cloud_alert"
+            "(alert_id,workspace_id,radar_id,watchlist_id,signal_id,signal_snapshot_id,"
+            "candidate_id,subject_key,materiality,relevance_score,signal_score,channel,"
+            "delivery_state,attempt_count,subject,body,renderer_version,created_at,delivered_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            _alert_values(value),
+        )
+        return cur.rowcount == 1
+
+    def update_alert(self, value: Alert) -> None:
+        self.conn.execute(
+            "UPDATE cloud_alert SET delivery_state=?,attempt_count=?,delivered_at=? "
+            "WHERE workspace_id=? AND alert_id=?",
+            (
+                value.delivery_state,
+                value.attempt_count,
+                None if value.delivered_at is None else value.delivered_at.isoformat(),
+                value.workspace_id,
+                value.alert_id,
+            ),
+        )
+
+    def get_alert(self, workspace_id: str, alert_id: str) -> Alert | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_alert WHERE workspace_id=? AND alert_id=?",
+            (workspace_id, alert_id),
+        ).fetchone()
+        return None if row is None else _alert(row)
+
+    def alert_for_candidate(self, workspace_id: str, candidate_id: str) -> Alert | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_alert WHERE workspace_id=? AND candidate_id=?",
+            (workspace_id, candidate_id),
+        ).fetchone()
+        return None if row is None else _alert(row)
+
+    def list_alerts(self, workspace_id: str, radar_id: str) -> list[Alert]:
+        return [
+            _alert(r)
+            for r in self.conn.execute(
+                "SELECT * FROM cloud_alert WHERE workspace_id=? AND radar_id=? "
+                "ORDER BY created_at,alert_id",
+                (workspace_id, radar_id),
+            )
+        ]
+
+    # ---------------------------------------------------------------- baselines
+
+    def upsert_baseline(self, value: AlertBaseline) -> None:
+        self.conn.execute(
+            "INSERT INTO cloud_alert_baseline"
+            "(baseline_id,workspace_id,watchlist_id,signal_id,alert_id,signal_snapshot_id,"
+            "signal_score,relevance_score,lifecycle_state,velocity,source_count,"
+            "counterevidence,delivered_at,materiality_version)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+            "ON CONFLICT(workspace_id,watchlist_id,signal_id) DO UPDATE SET "
+            "alert_id=excluded.alert_id,signal_snapshot_id=excluded.signal_snapshot_id,"
+            "signal_score=excluded.signal_score,relevance_score=excluded.relevance_score,"
+            "lifecycle_state=excluded.lifecycle_state,velocity=excluded.velocity,"
+            "source_count=excluded.source_count,counterevidence=excluded.counterevidence,"
+            "delivered_at=excluded.delivered_at,"
+            "materiality_version=excluded.materiality_version",
+            (
+                value.baseline_id,
+                value.workspace_id,
+                value.watchlist_id,
+                value.signal_id,
+                value.alert_id,
+                value.snapshot_id,
+                value.signal_score,
+                value.relevance_score,
+                value.lifecycle_state,
+                value.velocity,
+                value.source_count,
+                _dump(value.counterevidence),
+                value.delivered_at.isoformat(),
+                value.materiality_version,
+            ),
+        )
+
+    def get_baseline(
+        self, workspace_id: str, watchlist_id: str, signal_id: str
+    ) -> AlertBaseline | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_alert_baseline "
+            "WHERE workspace_id=? AND watchlist_id=? AND signal_id=?",
+            (workspace_id, watchlist_id, signal_id),
+        ).fetchone()
+        return None if row is None else _alert_baseline(row)
+
+    # ----------------------------------------------------------------- attempts
+
+    def record_attempt(self, value: DeliveryAttempt) -> bool:
+        cur = self.conn.execute(
+            "INSERT OR IGNORE INTO cloud_delivery_attempt"
+            "(attempt_id,workspace_id,target_kind,target_id,attempt_number,channel,status,"
+            "provider,provider_reference,detail,attempted_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                value.attempt_id,
+                value.workspace_id,
+                value.target_kind,
+                value.target_id,
+                value.attempt_number,
+                value.channel,
+                value.status,
+                value.provider,
+                value.provider_reference,
+                value.detail,
+                value.attempted_at.isoformat(),
+            ),
+        )
+        return cur.rowcount == 1
+
+    def attempts_for(
+        self, workspace_id: str, target_kind: str, target_id: str
+    ) -> list[DeliveryAttempt]:
+        return [
+            _delivery_attempt(r)
+            for r in self.conn.execute(
+                "SELECT * FROM cloud_delivery_attempt WHERE workspace_id=? AND target_kind=? "
+                "AND target_id=? ORDER BY attempt_number",
+                (workspace_id, target_kind, target_id),
+            )
+        ]
+
+
+class _DigestRepo:
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self.conn = conn
+
+    def upsert(self, value: Digest) -> None:
+        self.conn.execute(
+            "INSERT INTO cloud_digest"
+            "(digest_id,workspace_id,radar_id,digest_date,window_start,window_end,item_count,"
+            "channel,delivery_state,attempt_count,subject,body,renderer_version,created_at,"
+            "delivered_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+            "ON CONFLICT(workspace_id,radar_id,digest_date) DO UPDATE SET "
+            "item_count=excluded.item_count,channel=excluded.channel,"
+            "delivery_state=excluded.delivery_state,attempt_count=excluded.attempt_count,"
+            "subject=excluded.subject,body=excluded.body,"
+            "renderer_version=excluded.renderer_version,delivered_at=excluded.delivered_at",
+            (
+                value.digest_id,
+                value.workspace_id,
+                value.radar_id,
+                value.digest_date,
+                value.window_start.isoformat(),
+                value.window_end.isoformat(),
+                value.item_count,
+                value.channel,
+                value.delivery_state,
+                value.attempt_count,
+                value.subject,
+                value.body,
+                value.renderer_version,
+                value.created_at.isoformat(),
+                None if value.delivered_at is None else value.delivered_at.isoformat(),
+            ),
+        )
+
+    def get(self, workspace_id: str, digest_id: str) -> Digest | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_digest WHERE workspace_id=? AND digest_id=?",
+            (workspace_id, digest_id),
+        ).fetchone()
+        return None if row is None else _digest(row)
+
+    def by_date(self, workspace_id: str, radar_id: str, digest_date: str) -> Digest | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_digest WHERE workspace_id=? AND radar_id=? AND digest_date=?",
+            (workspace_id, radar_id, digest_date),
+        ).fetchone()
+        return None if row is None else _digest(row)
+
+    def replace_items(self, workspace_id: str, digest_id: str, items: Sequence[DigestItem]) -> None:
+        self.conn.execute(
+            "DELETE FROM cloud_digest_item WHERE workspace_id=? AND digest_id=?",
+            (workspace_id, digest_id),
+        )
+        self.conn.executemany(
+            "INSERT INTO cloud_digest_item"
+            "(item_id,digest_id,workspace_id,signal_id,candidate_id,signal_snapshot_id,rank,"
+            "label,materiality,relevance_score,signal_score,observed_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            [
+                (
+                    item.item_id,
+                    item.digest_id,
+                    item.workspace_id,
+                    item.signal_id,
+                    item.candidate_id,
+                    item.snapshot_id,
+                    item.rank,
+                    item.label,
+                    item.materiality,
+                    item.relevance_score,
+                    item.signal_score,
+                    item.observed_at.isoformat(),
+                )
+                for item in items
+            ],
+        )
+
+    def items(self, workspace_id: str, digest_id: str) -> list[DigestItem]:
+        return [
+            _digest_item(r)
+            for r in self.conn.execute(
+                "SELECT * FROM cloud_digest_item WHERE workspace_id=? AND digest_id=? "
+                "ORDER BY rank",
+                (workspace_id, digest_id),
+            )
+        ]
+
+
+def _alert_policy(r: sqlite3.Row) -> AlertPolicy:
+    return AlertPolicy(
+        str(r["policy_id"]),
+        str(r["workspace_id"]),
+        str(r["radar_id"]),
+        bool(r["enabled"]),
+        bool(r["immediate_alerts"]),
+        bool(r["daily_digest"]),
+        float(r["min_relevance"]),
+        str(r["min_materiality"]),
+        float(r["cooldown_hours"]),
+        int(r["digest_max_items"]),
+        int(r["max_delivery_attempts"]),
+        str(r["channel"]),
+        str(r["policy_version"]),
+        parse_iso(r["updated_at"]),
+    )
+
+
+def _alert_candidate(r: sqlite3.Row) -> AlertCandidate:
+    return AlertCandidate(
+        str(r["candidate_id"]),
+        str(r["workspace_id"]),
+        str(r["radar_id"]),
+        str(r["watchlist_id"]),
+        str(r["signal_id"]),
+        str(r["signal_snapshot_id"]),
+        str(r["run_id"]),
+        str(r["subject_key"]),
+        str(r["status"]),
+        str(r["reason"]),
+        str(r["label"]),
+        float(r["relevance_score"]),
+        float(r["signal_score"]),
+        str(r["lifecycle_state"]),
+        None if r["velocity"] is None else float(r["velocity"]),
+        int(r["source_count"]),
+        tuple(_load(r["counterevidence"])),
+        str(r["materiality"]),
+        str(r["materiality_version"]),
+        MaterialityEvaluation.from_dict(_load(r["evaluation_json"])),
+        parse_iso(r["observed_at"]),
+        parse_iso(r["created_at"]),
+    )
+
+
+def _alert_values(v: Alert) -> tuple[Any, ...]:
+    return (
+        v.alert_id,
+        v.workspace_id,
+        v.radar_id,
+        v.watchlist_id,
+        v.signal_id,
+        v.snapshot_id,
+        v.candidate_id,
+        v.subject_key,
+        v.materiality,
+        v.relevance_score,
+        v.signal_score,
+        v.channel,
+        v.delivery_state,
+        v.attempt_count,
+        v.subject,
+        v.body,
+        v.renderer_version,
+        v.created_at.isoformat(),
+        None if v.delivered_at is None else v.delivered_at.isoformat(),
+    )
+
+
+def _alert(r: sqlite3.Row) -> Alert:
+    return Alert(
+        str(r["alert_id"]),
+        str(r["workspace_id"]),
+        str(r["radar_id"]),
+        str(r["watchlist_id"]),
+        str(r["signal_id"]),
+        str(r["signal_snapshot_id"]),
+        str(r["candidate_id"]),
+        str(r["subject_key"]),
+        str(r["materiality"]),
+        float(r["relevance_score"]),
+        float(r["signal_score"]),
+        str(r["channel"]),
+        str(r["delivery_state"]),
+        int(r["attempt_count"]),
+        str(r["subject"]),
+        str(r["body"]),
+        str(r["renderer_version"]),
+        parse_iso(r["created_at"]),
+        None if r["delivered_at"] is None else parse_iso(r["delivered_at"]),
+    )
+
+
+def _alert_baseline(r: sqlite3.Row) -> AlertBaseline:
+    return AlertBaseline(
+        str(r["baseline_id"]),
+        str(r["workspace_id"]),
+        str(r["watchlist_id"]),
+        str(r["signal_id"]),
+        str(r["alert_id"]),
+        str(r["signal_snapshot_id"]),
+        float(r["signal_score"]),
+        float(r["relevance_score"]),
+        str(r["lifecycle_state"]),
+        None if r["velocity"] is None else float(r["velocity"]),
+        int(r["source_count"]),
+        tuple(_load(r["counterevidence"])),
+        parse_iso(r["delivered_at"]),
+        str(r["materiality_version"]),
+    )
+
+
+def _delivery_attempt(r: sqlite3.Row) -> DeliveryAttempt:
+    return DeliveryAttempt(
+        str(r["attempt_id"]),
+        str(r["workspace_id"]),
+        str(r["target_kind"]),
+        str(r["target_id"]),
+        int(r["attempt_number"]),
+        str(r["channel"]),
+        str(r["status"]),
+        str(r["provider"]),
+        str(r["provider_reference"]),
+        str(r["detail"]),
+        parse_iso(r["attempted_at"]),
+    )
+
+
+def _digest(r: sqlite3.Row) -> Digest:
+    return Digest(
+        str(r["digest_id"]),
+        str(r["workspace_id"]),
+        str(r["radar_id"]),
+        str(r["digest_date"]),
+        parse_iso(r["window_start"]),
+        parse_iso(r["window_end"]),
+        int(r["item_count"]),
+        str(r["channel"]),
+        str(r["delivery_state"]),
+        int(r["attempt_count"]),
+        str(r["subject"]),
+        str(r["body"]),
+        str(r["renderer_version"]),
+        parse_iso(r["created_at"]),
+        None if r["delivered_at"] is None else parse_iso(r["delivered_at"]),
+    )
+
+
+def _digest_item(r: sqlite3.Row) -> DigestItem:
+    return DigestItem(
+        str(r["item_id"]),
+        str(r["digest_id"]),
+        str(r["workspace_id"]),
+        str(r["signal_id"]),
+        str(r["candidate_id"]),
+        str(r["signal_snapshot_id"]),
+        int(r["rank"]),
+        str(r["label"]),
+        str(r["materiality"]),
+        float(r["relevance_score"]),
+        float(r["signal_score"]),
+        parse_iso(r["observed_at"]),
     )

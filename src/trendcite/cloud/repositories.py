@@ -21,6 +21,14 @@ from collections.abc import Sequence
 from types import TracebackType
 from typing import Protocol, runtime_checkable
 
+from .domain.alerts import (
+    Alert,
+    AlertBaseline,
+    AlertCandidate,
+    AlertPolicy,
+    DeliveryAttempt,
+)
+from .domain.digests import Digest, DigestItem
 from .domain.matches import Match, MatchEvaluation
 from .domain.radar import Coverage, Radar, RadarRun, RadarVersion
 from .domain.relevance import RelevanceEvaluation, WatchlistSignalMatch
@@ -190,6 +198,83 @@ class RelevanceRepository(Protocol):
     ) -> list[WatchlistSignalMatch]: ...
 
 
+class AlertRepository(Protocol):
+    """Alerting state. Four concerns, deliberately four sets of methods.
+
+    Candidates, alerts, baselines and attempts are never updated through one another:
+    there is no ``mark_delivered`` that also moves a baseline, because a method that
+    does both is a method that will one day move a baseline on a failed send.
+    """
+
+    def upsert_policy(self, policy: AlertPolicy) -> None: ...
+
+    def get_policy(self, workspace_id: str, radar_id: str) -> AlertPolicy | None:
+        """The stored policy, or ``None`` when the radar has never been configured."""
+
+    def add_candidate(self, candidate: AlertCandidate) -> bool:
+        """Persist a judged candidate, returning ``False`` when it already existed.
+
+        ``False`` *is* the duplicate verdict: the same event reconsidered writes
+        nothing and keeps the reason it was first decided with.
+        """
+
+    def get_candidate(self, workspace_id: str, candidate_id: str) -> AlertCandidate | None: ...
+
+    def candidates_for_run(self, workspace_id: str, run_id: str) -> list[AlertCandidate]: ...
+
+    def candidates_in_window(
+        self, workspace_id: str, radar_id: str, start: str, end: str
+    ) -> list[AlertCandidate]:
+        """Candidates observed in ``[start, end)`` for one radar, oldest first."""
+
+    def add_alert(self, alert: Alert) -> bool:
+        """Insert an alert, returning ``False`` when its candidate already has one."""
+
+    def update_alert(self, alert: Alert) -> None:
+        """Persist a delivery-state transition. Never changes what the alert says."""
+
+    def get_alert(self, workspace_id: str, alert_id: str) -> Alert | None: ...
+
+    def alert_for_candidate(self, workspace_id: str, candidate_id: str) -> Alert | None: ...
+
+    def list_alerts(self, workspace_id: str, radar_id: str) -> list[Alert]: ...
+
+    def upsert_baseline(self, baseline: AlertBaseline) -> None:
+        """Move the last-delivered state. Only a *successful* delivery may call this."""
+
+    def get_baseline(
+        self, workspace_id: str, watchlist_id: str, signal_id: str
+    ) -> AlertBaseline | None: ...
+
+    def record_attempt(self, attempt: DeliveryAttempt) -> bool:
+        """Append one attempt, returning ``False`` when that attempt number exists."""
+
+    def attempts_for(
+        self, workspace_id: str, target_kind: str, target_id: str
+    ) -> list[DeliveryAttempt]:
+        """Every attempt against one target, in attempt order."""
+
+
+class DigestRepository(Protocol):
+    def upsert(self, digest: Digest) -> None:
+        """Write or rebuild one day's digest. Rebuilding is not appending."""
+
+    def get(self, workspace_id: str, digest_id: str) -> Digest | None: ...
+
+    def by_date(self, workspace_id: str, radar_id: str, digest_date: str) -> Digest | None: ...
+
+    def replace_items(self, workspace_id: str, digest_id: str, items: Sequence[DigestItem]) -> None:
+        """Set this digest's items.
+
+        Replacement rather than append, for the same reason coverage is replaced: a
+        rebuilt day is a restatement of that day, and two contradictory rankings for
+        one digest would be a worse record than the latest one.
+        """
+
+    def items(self, workspace_id: str, digest_id: str) -> list[DigestItem]:
+        """This digest's items, best-ranked first."""
+
+
 class UsageRepository(Protocol):
     def record(self, event: UsageEvent) -> bool:
         """Record an event, returning ``False`` when it was already metered."""
@@ -222,6 +307,8 @@ class UnitOfWork(Protocol):
     signals: SignalRepository
     matches: MatchRepository
     relevance: RelevanceRepository
+    alerts: AlertRepository
+    digests: DigestRepository
     usage: UsageRepository
 
     def commit(self) -> None: ...
