@@ -55,8 +55,17 @@ DIGEST_RENDERER_VERSION: Final = "digest-renderer-v1"
 #: How a delivery attempt's identity is derived (target, attempt number).
 DELIVERY_VERSION: Final = "delivery-v1"
 
+#: The deterministic cadence grid: how a schedule's canonical boundaries are derived
+#: from its cadence, its fixed UTC offset and its local time-of-day. Versioned because
+#: changing the grid would move every future cutoff, and a stored tick has to keep
+#: saying which grid produced it.
+SCHEDULE_CADENCE_VERSION: Final = "schedule-cadence-v1"
+
+#: How a scheduled execution's idempotency key is derived (schedule, boundary).
+TICK_IDEMPOTENCY_VERSION: Final = "schedule-tick-idempotency-v1"
+
 #: The relational schema the migration ledger applies.
-CLOUD_SCHEMA_VERSION: Final = "cloud-schema-v3"
+CLOUD_SCHEMA_VERSION: Final = "cloud-schema-v4"
 
 
 def cloud_versions() -> dict[str, str]:
@@ -71,5 +80,7 @@ def cloud_versions() -> dict[str, str]:
         "alert_renderer": ALERT_RENDERER_VERSION,
         "digest_renderer": DIGEST_RENDERER_VERSION,
         "delivery": DELIVERY_VERSION,
+        "schedule_cadence": SCHEDULE_CADENCE_VERSION,
+        "tick_idempotency": TICK_IDEMPOTENCY_VERSION,
         "cloud_schema": CLOUD_SCHEMA_VERSION,
     }

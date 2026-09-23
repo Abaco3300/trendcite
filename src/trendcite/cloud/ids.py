@@ -18,7 +18,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Iterable
 
-from .versions import CLOUD_ID_VERSION, RUN_IDEMPOTENCY_VERSION
+from .versions import CLOUD_ID_VERSION, RUN_IDEMPOTENCY_VERSION, TICK_IDEMPOTENCY_VERSION
 
 _ID_CHARS = 32
 
@@ -204,3 +204,35 @@ def digest_item_id(digest: str, signal: str) -> str:
     """One row per signal per digest, which is what makes "a signal appears once" a
     database fact rather than a sorting convention."""
     return cloud_id("digest-item", digest, signal)
+
+
+# ------------------------------------------------------------------------- scheduling
+
+
+def radar_schedule_id(workspace: str, radar: str) -> str:
+    """One schedule per (workspace, radar).
+
+    Deliberately not a function of the cadence: changing "daily" to "hourly" is an
+    edit to an existing schedule, not the birth of a second one, and a radar that
+    could be on two schedules at once is a radar nobody can reason about.
+    """
+    return cloud_id("radar-schedule", workspace, radar)
+
+
+def schedule_tick_idempotency_key(schedule: str, evaluation_cutoff: str) -> str:
+    """The logical identity of one scheduled execution: *this* schedule at *this*
+    boundary.
+
+    The planner is allowed to be dumb and re-derive the same boundary as often as it
+    likes -- two planner passes, a restarted worker, an external scheduler that fires
+    twice -- because all of them land on this one key. It is not the same thing as a
+    run's idempotency key: a tick is the decision to execute, the run is the execution,
+    and two schedules pointed at one radar would share a run while keeping their own
+    ticks.
+    """
+    material = "|".join((TICK_IDEMPOTENCY_VERSION, schedule, evaluation_cutoff))
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:_ID_CHARS]
+
+
+def schedule_tick_id(workspace: str, idempotency_key: str) -> str:
+    return cloud_id("schedule-tick", workspace, idempotency_key)

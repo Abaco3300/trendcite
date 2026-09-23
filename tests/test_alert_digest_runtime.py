@@ -581,6 +581,7 @@ def test_migration_0003_bootstrap_repeat_and_schema(tmp_path: Path) -> None:
         "0001_cloud_foundation.sql",
         "0002_signal_matching_relevance.sql",
         "0003_alert_digest_delivery.sql",
+        "0004_scheduled_radar_orchestration.sql",
     ]
     assert second == first
     conn = connect(db)
