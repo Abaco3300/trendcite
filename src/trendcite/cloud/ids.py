@@ -42,18 +42,33 @@ def watchlist_id(workspace: str, name: str) -> str:
 
 
 def watchlist_version_id(
-    watchlist: str, version_number: int, include: Iterable[str], exclude: Iterable[str], mode: str
+    watchlist: str,
+    version_number: int,
+    include: Iterable[str],
+    exclude: Iterable[str],
+    mode: str,
+    related: Iterable[str] = (),
+    entities: Iterable[str] = (),
+    domains: Iterable[str] = (),
 ) -> str:
-    # Content-addressed over the terms themselves: an immutable version's id is a
-    # fingerprint of what it contains, so a "changed" old version is a different row.
-    return cloud_id(
-        "watchlist-version",
+    """Content-addressed over the terms themselves.
+
+    An immutable version's id is a fingerprint of what it contains, so a "changed"
+    old version is a different row. The relevance term sets (related, entities,
+    domains) join the fingerprint *only when a version actually declares one*, so
+    every version written before they existed keeps the id it was written with.
+    """
+    parts = [
         watchlist,
         str(version_number),
         ",".join(include),
         ",".join(exclude),
         mode,
-    )
+    ]
+    relevance = (",".join(related), ",".join(entities), ",".join(domains))
+    if any(relevance):
+        parts.extend(relevance)
+    return cloud_id("watchlist-version", *parts)
 
 
 def radar_id(workspace: str, name: str) -> str:
@@ -100,6 +115,24 @@ def match_id(workspace: str, radar: str, signal: str) -> str:
 
 def match_evaluation_id(run: str, watchlist_version: str, signal: str) -> str:
     return cloud_id("match-evaluation", run, watchlist_version, signal)
+
+
+def relevance_evaluation_id(
+    workspace: str, watchlist_version: str, snapshot: str, matcher_version: str
+) -> str:
+    """The logical identity of one relevance evaluation.
+
+    Deliberately *not* a function of the run that happened to produce it. The same
+    watchlist version judged against the same pinned signal snapshot by the same
+    matcher is one logical evaluation however many runs reach it, which is what makes
+    re-evaluation idempotent instead of merely repetitive.
+    """
+    return cloud_id("relevance-evaluation", workspace, watchlist_version, snapshot, matcher_version)
+
+
+def watchlist_signal_match_id(workspace: str, watchlist: str, signal: str) -> str:
+    """Identity of the current (watchlist, signal) relationship, one row per pair."""
+    return cloud_id("watchlist-signal-match", workspace, watchlist, signal)
 
 
 def usage_event_id(workspace: str, dedupe_key: str) -> str:

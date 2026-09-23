@@ -35,7 +35,7 @@ from typing import Any
 from ..signal import SignalBrief
 from .domain.matches import DECISION_EXCLUDED, DECISION_MATCHED, DECISION_NO_MATCH
 from .domain.watchlist import MODE_ALL, WatchlistVersion
-from .versions import MATCHER_VERSION
+from .versions import LEGACY_MATCHER_VERSION
 
 # --------------------------------------------------------------------------- fields
 
@@ -137,7 +137,7 @@ class MatchOutcome:
     excluded_terms: tuple[str, ...]
     matched_fields: tuple[str, ...]
     explanation: str
-    matcher_version: str = MATCHER_VERSION
+    matcher_version: str = LEGACY_MATCHER_VERSION
 
     @property
     def matched(self) -> bool:
@@ -173,7 +173,7 @@ def _describe(hits: Sequence[TermHit]) -> str:
 class WatchlistMatcher:
     """Evaluates one signal against one watchlist version. Stateless and pure."""
 
-    version = MATCHER_VERSION
+    version = LEGACY_MATCHER_VERSION
 
     def evaluate(self, watchlist: WatchlistVersion, target: MatchTarget) -> MatchOutcome:
         fields = target.fields()

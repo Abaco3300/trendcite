@@ -68,6 +68,8 @@ class WatchlistVersion:
     match_mode: str
     matcher_version: str
     created_at: datetime
+    entities: tuple[str, ...] = ()
+    domains: tuple[str, ...] = ()
 
     @classmethod
     def create(
@@ -81,6 +83,8 @@ class WatchlistVersion:
         match_mode: str = MODE_ANY,
         created_at: datetime,
         matcher_version: str = MATCHER_VERSION,
+        entities: Iterable[str] = (),
+        domains: Iterable[str] = (),
     ) -> WatchlistVersion:
         if version_number < 1:
             raise ValidationError("version_number must be 1 or greater")
@@ -88,6 +92,8 @@ class WatchlistVersion:
             raise ValidationError(f"match_mode must be one of {', '.join(MODES)}")
         include = normalize_terms(include_terms, "include_terms")
         exclude = normalize_terms(exclude_terms, "exclude_terms")
+        normalized_entities = normalize_terms(entities, "entities")
+        normalized_domains = normalize_terms(domains, "domains")
         if not include:
             raise ValidationError("a watchlist version needs at least one include term")
         overlap = sorted(set(include) & set(exclude))
@@ -99,7 +105,13 @@ class WatchlistVersion:
             )
         return cls(
             version_id=ids.watchlist_version_id(
-                watchlist_id, version_number, include, exclude, match_mode
+                watchlist_id,
+                version_number,
+                include,
+                exclude,
+                match_mode,
+                entities=normalized_entities,
+                domains=normalized_domains,
             ),
             watchlist_id=watchlist_id,
             workspace_id=workspace_id,
@@ -109,6 +121,8 @@ class WatchlistVersion:
             match_mode=match_mode,
             matcher_version=matcher_version,
             created_at=require_aware(created_at, "created_at"),
+            entities=normalized_entities,
+            domains=normalized_domains,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -122,4 +136,6 @@ class WatchlistVersion:
             "match_mode": self.match_mode,
             "matcher_version": self.matcher_version,
             "created_at": iso(self.created_at),
+            "entities": list(self.entities),
+            "domains": list(self.domains),
         }
