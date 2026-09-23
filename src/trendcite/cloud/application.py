@@ -16,6 +16,7 @@ from .domain import (
     DECISION_MATCHED,
     DEFAULT_RELEVANCE_SERVICE,
     ROLE_OWNER,
+    RUN_SUCCEEDED,
     Coverage,
     Match,
     MatchEvaluation,
@@ -48,6 +49,18 @@ class SignalExecutionService(Protocol):
     def execute(self, radar: RadarVersion, *, evaluation_cutoff: datetime) -> ExecutionBatch: ...
 
 
+class AlertingHook(Protocol):
+    """The alerting layer, as a run sees it.
+
+    Declared structurally rather than imported so that :mod:`trendcite.cloud.alerting`
+    may depend on this module and not the other way round. A run knows only that
+    something may want to look at it once it has succeeded; it does not know what
+    materiality or delivery are.
+    """
+
+    def process_run(self, *, workspace_id: str, run_id: str) -> object: ...
+
+
 @dataclass(frozen=True)
 class ExecutionBatch:
     """One deterministic Signal Engine result plus explicit source coverage."""
@@ -73,12 +86,17 @@ class CloudApplication:
         executor: SignalExecutionService,
         matcher: WatchlistMatcher = DEFAULT_MATCHER,
         relevance: RelevanceService = DEFAULT_RELEVANCE_SERVICE,
+        alerting: AlertingHook | None = None,
         clock: Clock = utc_now,
     ) -> None:
         self.uow_factory = uow_factory
         self.executor = executor
         self.matcher = matcher
         self.relevance = relevance
+        # Optional on purpose: a deployment that has not configured delivery still
+        # runs radars and records matches. Alerting is a consumer of run output, not
+        # a precondition for producing it.
+        self.alerting = alerting
         self.clock = clock
 
     # ---------------------------------------------------------------- workspace
@@ -304,7 +322,7 @@ class CloudApplication:
                 uow.commit()
 
         try:
-            return self._execute_run(run)
+            finished = self._execute_run(run)
         except Exception as exc:
             code, detail = safe_error(exc)
             with self.uow_factory() as uow:
@@ -315,6 +333,13 @@ class CloudApplication:
                     uow.commit()
                     return failed
             raise
+
+        # Deliberately outside the try: the run itself has already succeeded and been
+        # committed, so a problem raised while alerting is an alerting problem and must
+        # not rewrite a finished run as failed.
+        if self.alerting is not None and finished.status == RUN_SUCCEEDED:
+            self.alerting.process_run(workspace_id=workspace_id, run_id=finished.run_id)
+        return finished
 
     def _execute_run(self, run: RadarRun) -> RadarRun:
         with self.uow_factory() as uow:

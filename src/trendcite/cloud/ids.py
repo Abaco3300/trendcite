@@ -137,3 +137,70 @@ def watchlist_signal_match_id(workspace: str, watchlist: str, signal: str) -> st
 
 def usage_event_id(workspace: str, dedupe_key: str) -> str:
     return cloud_id("usage-event", workspace, dedupe_key)
+
+
+# --------------------------------------------------------------------------- alerting
+
+
+def alert_policy_id(workspace: str, radar: str) -> str:
+    """One delivery policy per (workspace, radar)."""
+    return cloud_id("alert-policy", workspace, radar)
+
+
+def alert_subject_key(workspace: str, watchlist: str, signal: str) -> str:
+    """The thing an alert is *about*, independent of any one event.
+
+    Deduplication and cooldown are different rules over the same subject: dedupe asks
+    "is this the same event again", cooldown asks "have we interrupted this tenant
+    about this subject recently". Both need one agreed name for the subject, and this
+    is it -- workspace + watchlist + signal, never the radar, because moving a
+    watchlist onto a second radar must not reset a tenant's quiet period.
+    """
+    return "|".join((workspace, watchlist, signal))
+
+
+def alert_baseline_id(workspace: str, watchlist: str, signal: str) -> str:
+    """The last *delivered* state of one subject. One row per subject."""
+    return cloud_id("alert-baseline", workspace, watchlist, signal)
+
+
+def alert_candidate_id(
+    workspace: str,
+    watchlist: str,
+    signal: str,
+    snapshot: str,
+    materiality_version: str,
+) -> str:
+    """The logical identity of one alertable event.
+
+    Pinned to the snapshot, so the same evaluation reconsidered -- by a retried run,
+    a re-run, or a second pass over the same evidence -- is one candidate rather than
+    a new one each time. The materiality version joins the identity because a v2
+    engine looking at the same snapshot reached its own, separately auditable verdict.
+    """
+    return cloud_id("alert-candidate", workspace, watchlist, signal, snapshot, materiality_version)
+
+
+def material_event_id(snapshot: str, kind: str) -> str:
+    return cloud_id("material-event", snapshot, kind)
+
+
+def alert_id(candidate: str) -> str:
+    """One Alert per qualified candidate, and the candidate already has identity."""
+    return cloud_id("alert", candidate)
+
+
+def delivery_attempt_id(workspace: str, target_kind: str, target_id: str, attempt: int) -> str:
+    """Identity of one attempt. Attempt 2 is a different row, never an overwrite."""
+    return cloud_id("delivery-attempt", workspace, target_kind, target_id, str(attempt))
+
+
+def digest_id(workspace: str, radar: str, digest_date: str) -> str:
+    """One digest per radar per day: rebuilding a day is idempotent, not additive."""
+    return cloud_id("digest", workspace, radar, digest_date)
+
+
+def digest_item_id(digest: str, signal: str) -> str:
+    """One row per signal per digest, which is what makes "a signal appears once" a
+    database fact rather than a sorting convention."""
+    return cloud_id("digest-item", digest, signal)

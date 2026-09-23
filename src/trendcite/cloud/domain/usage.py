@@ -26,7 +26,32 @@ USAGE_RADAR_RUN = "radar_run"
 USAGE_SIGNAL_EVALUATED = "signal_evaluated"
 #: Signals the run matched onto the radar.
 USAGE_MATCH_RECORDED = "match_recorded"
-USAGE_KINDS = (USAGE_RADAR_RUN, USAGE_SIGNAL_EVALUATED, USAGE_MATCH_RECORDED)
+
+# Alerting and delivery observability. These are metered the same way runs are --
+# keyed by the logical entity rather than by the attempt -- so replaying a run, a
+# delivery retry or a digest rebuild reports the same totals it reported the first
+# time. Suppressions are counted as deliberately as sends: a workspace whose alerts
+# are all being suppressed is a fact worth being able to see.
+USAGE_ALERT_CANDIDATE = "alert_candidate"
+USAGE_ALERT_CREATED = "alert_created"
+USAGE_ALERT_SUPPRESSED = "alert_suppressed"
+USAGE_DIGEST_CREATED = "digest_created"
+USAGE_DELIVERY_ATTEMPT = "delivery_attempt"
+USAGE_DELIVERY_SUCCESS = "delivery_success"
+USAGE_DELIVERY_FAILURE = "delivery_failure"
+
+USAGE_KINDS = (
+    USAGE_RADAR_RUN,
+    USAGE_SIGNAL_EVALUATED,
+    USAGE_MATCH_RECORDED,
+    USAGE_ALERT_CANDIDATE,
+    USAGE_ALERT_CREATED,
+    USAGE_ALERT_SUPPRESSED,
+    USAGE_DIGEST_CREATED,
+    USAGE_DELIVERY_ATTEMPT,
+    USAGE_DELIVERY_SUCCESS,
+    USAGE_DELIVERY_FAILURE,
+)
 
 
 def run_dedupe_key(kind: str, run_id: str) -> str:
@@ -38,6 +63,21 @@ def run_dedupe_key(kind: str, run_id: str) -> str:
     if kind not in USAGE_KINDS:
         raise ValidationError(f"usage kind must be one of {', '.join(USAGE_KINDS)}")
     return f"{kind}:{run_id}"
+
+
+def entity_dedupe_key(kind: str, entity_id: str) -> str:
+    """The logical identity of an entity-scoped usage event.
+
+    Alerting entities already have content-addressed ids, so keying the meter off the
+    entity means a re-decided candidate, a re-sent alert or a rebuilt digest meters
+    once. A delivery *attempt* is keyed by the attempt, because attempt 2 genuinely is
+    a second unit of work.
+    """
+    if kind not in USAGE_KINDS:
+        raise ValidationError(f"usage kind must be one of {', '.join(USAGE_KINDS)}")
+    if not entity_id:
+        raise ValidationError("entity_id must not be blank")
+    return f"{kind}:{entity_id}"
 
 
 @dataclass(frozen=True)
