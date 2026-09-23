@@ -32,6 +32,7 @@ from .domain.digests import Digest, DigestItem
 from .domain.matches import Match, MatchEvaluation
 from .domain.radar import Coverage, Radar, RadarRun, RadarVersion
 from .domain.relevance import RelevanceEvaluation, WatchlistSignalMatch
+from .domain.scheduling import RadarSchedule, ScheduleTick
 from .domain.signals import RunSignal, StoredSignal, StoredSignalEvaluation
 from .domain.usage import UsageEvent
 from .domain.watchlist import Watchlist, WatchlistVersion
@@ -275,6 +276,84 @@ class DigestRepository(Protocol):
         """This digest's items, best-ranked first."""
 
 
+class ScheduleRepository(Protocol):
+    """Schedules and their ticks.
+
+    One method here is unlike every other method in this file: :meth:`claim_tick` is a
+    *conditional* write rather than a read followed by a write. That is deliberate and
+    it is the whole concurrency story. Two workers that read a pending tick would both
+    see it as claimable; only a single statement whose WHERE clause restates the
+    precondition can make exactly one of them win. Implementations must not reduce it
+    to a get-then-update.
+    """
+
+    def upsert_schedule(self, schedule: RadarSchedule) -> None:
+        """Write or edit one radar's schedule. Never touches its ticks."""
+
+    def get_schedule(self, workspace_id: str, schedule_id: str) -> RadarSchedule | None: ...
+
+    def schedule_for_radar(self, workspace_id: str, radar_id: str) -> RadarSchedule | None: ...
+
+    def list_schedules(self, workspace_id: str) -> list[RadarSchedule]:
+        """Every schedule in one workspace, oldest first."""
+
+    def list_enabled_schedules(self) -> list[RadarSchedule]:
+        """Every enabled schedule in every workspace, oldest first.
+
+        The one cross-tenant read in this file, and the same deliberate exception
+        :meth:`WorkspaceRepository.list_all` is: a worker plane has to sweep all
+        tenants to find due work. Callers that only need one tenant's schedules must
+        use :meth:`list_schedules`, which cannot leak.
+        """
+
+    def add_tick(self, tick: ScheduleTick) -> bool:
+        """Insert a planned tick, returning ``False`` when that boundary already has one.
+
+        ``False`` is the idempotency verdict, not an error: re-planning a boundary is
+        expected and must write nothing.
+        """
+
+    def get_tick(self, workspace_id: str, tick_id: str) -> ScheduleTick | None: ...
+
+    def tick_by_idempotency_key(self, workspace_id: str, key: str) -> ScheduleTick | None: ...
+
+    def ticks_for_schedule(self, workspace_id: str, schedule_id: str) -> list[ScheduleTick]:
+        """One schedule's ticks, oldest cutoff first."""
+
+    def claimable_ticks(
+        self, workspace_id: str, *, now: str, limit: int = 100
+    ) -> list[ScheduleTick]:
+        """Ticks a worker could attempt as of ``now``, oldest cutoff first.
+
+        Advisory. A tick listed here may be claimed by another worker before this
+        caller gets to it; :meth:`claim_tick` is what settles that.
+        """
+
+    def claim_tick(
+        self,
+        workspace_id: str,
+        tick_id: str,
+        *,
+        owner: str,
+        now: str,
+        lease_expires_at: str,
+    ) -> bool:
+        """Atomically take a claimable tick, returning whether this caller won it.
+
+        Must be one conditional statement. The conditions are the contract: pending
+        work is claimable, failed work is claimable while attempts remain, running work
+        is claimable only once its lease has expired, and settled work is never
+        claimable.
+        """
+
+    def settle_tick(self, tick: ScheduleTick, *, expected_owner: str) -> bool:
+        """Persist a terminal transition, returning ``False`` if the lease moved on.
+
+        ``expected_owner`` is what stops a worker that was presumed dead from
+        overwriting the verdict of the worker that took over from it.
+        """
+
+
 class UsageRepository(Protocol):
     def record(self, event: UsageEvent) -> bool:
         """Record an event, returning ``False`` when it was already metered."""
@@ -309,6 +388,7 @@ class UnitOfWork(Protocol):
     relevance: RelevanceRepository
     alerts: AlertRepository
     digests: DigestRepository
+    schedules: ScheduleRepository
     usage: UsageRepository
 
     def commit(self) -> None: ...

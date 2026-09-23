@@ -40,6 +40,14 @@ USAGE_DELIVERY_ATTEMPT = "delivery_attempt"
 USAGE_DELIVERY_SUCCESS = "delivery_success"
 USAGE_DELIVERY_FAILURE = "delivery_failure"
 
+#: One scheduled execution, keyed by the tick rather than by the attempt. A tick that
+#: failed and was retried is one piece of scheduled work, not two, so an unreliable
+#: source cannot inflate what a tenant is shown as having consumed. The radar run this
+#: tick drives meters itself separately under ``radar_run``, and deliberately so: "the
+#: scheduler asked for this" and "a run happened" are different claims, and a tick that
+#: never reached a run should still be visible.
+USAGE_SCHEDULED_TICK = "scheduled_tick"
+
 USAGE_KINDS = (
     USAGE_RADAR_RUN,
     USAGE_SIGNAL_EVALUATED,
@@ -51,6 +59,7 @@ USAGE_KINDS = (
     USAGE_DELIVERY_ATTEMPT,
     USAGE_DELIVERY_SUCCESS,
     USAGE_DELIVERY_FAILURE,
+    USAGE_SCHEDULED_TICK,
 )
 
 

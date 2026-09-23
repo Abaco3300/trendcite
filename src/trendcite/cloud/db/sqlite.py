@@ -30,10 +30,12 @@ from ..domain import (
     Membership,
     Radar,
     RadarRun,
+    RadarSchedule,
     RadarVersion,
     RelevanceComponent,
     RelevanceEvaluation,
     RunSignal,
+    ScheduleTick,
     StoredSignal,
     StoredSignalEvaluation,
     UsageEvent,
@@ -693,6 +695,7 @@ class SQLiteUnitOfWork:
         self.relevance = _RelevanceRepo(self.conn)
         self.alerts = _AlertRepo(self.conn)
         self.digests = _DigestRepo(self.conn)
+        self.schedules = _ScheduleRepo(self.conn)
         self.usage = _UsageRepo(self.conn)
         return self
 
@@ -1625,4 +1628,257 @@ def _digest_item(r: sqlite3.Row) -> DigestItem:
         float(r["relevance_score"]),
         float(r["signal_score"]),
         parse_iso(r["observed_at"]),
+    )
+
+
+class _ScheduleRepo:
+    """Schedules and ticks, with claim and settle written as conditional updates.
+
+    Every method that changes who owns a tick is a single UPDATE whose WHERE clause
+    restates the precondition. That is not a micro-optimisation: SQLite's deferred
+    transactions mean two connections can both read a tick as claimable, and only a
+    conditional write can make exactly one of them succeed. ``rowcount`` is therefore
+    the verdict, and it is returned rather than swallowed.
+    """
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self.conn = conn
+
+    # ------------------------------------------------------------------ schedules
+
+    def upsert_schedule(self, value: RadarSchedule) -> None:
+        try:
+            self.conn.execute(
+                "INSERT INTO cloud_radar_schedule"
+                "(schedule_id,workspace_id,radar_id,enabled,cadence,utc_offset_minutes,"
+                "anchor_at,max_catch_up,lease_seconds,max_attempts,cadence_version,"
+                "created_at,updated_at,last_planned_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                "ON CONFLICT(workspace_id,radar_id) DO UPDATE SET "
+                "enabled=excluded.enabled,cadence=excluded.cadence,"
+                "utc_offset_minutes=excluded.utc_offset_minutes,anchor_at=excluded.anchor_at,"
+                "max_catch_up=excluded.max_catch_up,lease_seconds=excluded.lease_seconds,"
+                "max_attempts=excluded.max_attempts,cadence_version=excluded.cadence_version,"
+                "updated_at=excluded.updated_at,last_planned_at=excluded.last_planned_at",
+                (
+                    value.schedule_id,
+                    value.workspace_id,
+                    value.radar_id,
+                    int(value.enabled),
+                    value.cadence,
+                    value.utc_offset_minutes,
+                    value.anchor_at.isoformat(),
+                    value.max_catch_up,
+                    value.lease_seconds,
+                    value.max_attempts,
+                    value.cadence_version,
+                    value.created_at.isoformat(),
+                    value.updated_at.isoformat(),
+                    None if value.last_planned_at is None else value.last_planned_at.isoformat(),
+                ),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ConflictError("schedule conflicts with stored state") from exc
+
+    def get_schedule(self, workspace_id: str, schedule_id: str) -> RadarSchedule | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_radar_schedule WHERE workspace_id=? AND schedule_id=?",
+            (workspace_id, schedule_id),
+        ).fetchone()
+        return None if row is None else _schedule(row)
+
+    def schedule_for_radar(self, workspace_id: str, radar_id: str) -> RadarSchedule | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_radar_schedule WHERE workspace_id=? AND radar_id=?",
+            (workspace_id, radar_id),
+        ).fetchone()
+        return None if row is None else _schedule(row)
+
+    def list_schedules(self, workspace_id: str) -> list[RadarSchedule]:
+        return [
+            _schedule(r)
+            for r in self.conn.execute(
+                "SELECT * FROM cloud_radar_schedule WHERE workspace_id=? "
+                "ORDER BY created_at,schedule_id",
+                (workspace_id,),
+            )
+        ]
+
+    def list_enabled_schedules(self) -> list[RadarSchedule]:
+        return [
+            _schedule(r)
+            for r in self.conn.execute(
+                "SELECT * FROM cloud_radar_schedule WHERE enabled=1 ORDER BY created_at,schedule_id"
+            )
+        ]
+
+    # ---------------------------------------------------------------------- ticks
+
+    def add_tick(self, value: ScheduleTick) -> bool:
+        try:
+            cur = self.conn.execute(
+                "INSERT OR IGNORE INTO cloud_schedule_tick"
+                "(tick_id,schedule_id,workspace_id,radar_id,evaluation_cutoff,idempotency_key,"
+                "status,attempt,max_attempts,lease_owner,lease_expires_at,run_id,skip_reason,"
+                "error_code,error_detail,created_at,updated_at,started_at,finished_at)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                _tick_values(value),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise ConflictError("schedule tick references invalid state") from exc
+        return cur.rowcount == 1
+
+    def get_tick(self, workspace_id: str, tick_id: str) -> ScheduleTick | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_schedule_tick WHERE workspace_id=? AND tick_id=?",
+            (workspace_id, tick_id),
+        ).fetchone()
+        return None if row is None else _tick(row)
+
+    def tick_by_idempotency_key(self, workspace_id: str, key: str) -> ScheduleTick | None:
+        row = self.conn.execute(
+            "SELECT * FROM cloud_schedule_tick WHERE workspace_id=? AND idempotency_key=?",
+            (workspace_id, key),
+        ).fetchone()
+        return None if row is None else _tick(row)
+
+    def ticks_for_schedule(self, workspace_id: str, schedule_id: str) -> list[ScheduleTick]:
+        return [
+            _tick(r)
+            for r in self.conn.execute(
+                "SELECT * FROM cloud_schedule_tick WHERE workspace_id=? AND schedule_id=? "
+                "ORDER BY evaluation_cutoff,tick_id",
+                (workspace_id, schedule_id),
+            )
+        ]
+
+    def claimable_ticks(
+        self, workspace_id: str, *, now: str, limit: int = 100
+    ) -> list[ScheduleTick]:
+        # Oldest cutoff first, so a catch-up burst executes in the order the boundaries
+        # actually occurred rather than in whatever order the rows happen to sit in.
+        return [
+            _tick(r)
+            for r in self.conn.execute(
+                "SELECT * FROM cloud_schedule_tick WHERE workspace_id=? AND ("
+                "status='pending'"
+                " OR (status='failed' AND attempt<max_attempts)"
+                " OR (status='running' AND (lease_expires_at IS NULL OR lease_expires_at<=?))"
+                ") ORDER BY evaluation_cutoff,tick_id LIMIT ?",
+                (workspace_id, now, max(1, int(limit))),
+            )
+        ]
+
+    def claim_tick(
+        self,
+        workspace_id: str,
+        tick_id: str,
+        *,
+        owner: str,
+        now: str,
+        lease_expires_at: str,
+    ) -> bool:
+        cur = self.conn.execute(
+            "UPDATE cloud_schedule_tick SET status='running',attempt=attempt+1,lease_owner=?,"
+            "lease_expires_at=?,error_code='',error_detail='',updated_at=?,started_at=?,"
+            "finished_at=NULL "
+            "WHERE workspace_id=? AND tick_id=? AND ("
+            "status='pending'"
+            " OR (status='failed' AND attempt<max_attempts)"
+            " OR (status='running' AND (lease_expires_at IS NULL OR lease_expires_at<=?))"
+            ")",
+            (owner, lease_expires_at, now, now, workspace_id, tick_id, now),
+        )
+        return cur.rowcount == 1
+
+    def settle_tick(self, value: ScheduleTick, *, expected_owner: str) -> bool:
+        # Guarded by the *stored* owner, not by the settled value's own (released) one:
+        # a worker presumed dead must not overwrite the verdict of whoever took over.
+        cur = self.conn.execute(
+            "UPDATE cloud_schedule_tick SET status=?,attempt=?,lease_owner=?,lease_expires_at=?,"
+            "run_id=?,skip_reason=?,error_code=?,error_detail=?,updated_at=?,started_at=?,"
+            "finished_at=? WHERE workspace_id=? AND tick_id=? AND lease_owner=?",
+            (
+                value.status,
+                value.attempt,
+                value.lease_owner,
+                None if value.lease_expires_at is None else value.lease_expires_at.isoformat(),
+                value.run_id,
+                value.skip_reason,
+                value.error_code,
+                value.error_detail,
+                value.updated_at.isoformat(),
+                None if value.started_at is None else value.started_at.isoformat(),
+                None if value.finished_at is None else value.finished_at.isoformat(),
+                value.workspace_id,
+                value.tick_id,
+                expected_owner,
+            ),
+        )
+        return cur.rowcount == 1
+
+
+def _schedule(r: sqlite3.Row) -> RadarSchedule:
+    return RadarSchedule(
+        str(r["schedule_id"]),
+        str(r["workspace_id"]),
+        str(r["radar_id"]),
+        bool(r["enabled"]),
+        str(r["cadence"]),
+        int(r["utc_offset_minutes"]),
+        parse_iso(r["anchor_at"]),
+        int(r["max_catch_up"]),
+        int(r["lease_seconds"]),
+        int(r["max_attempts"]),
+        str(r["cadence_version"]),
+        parse_iso(r["created_at"]),
+        parse_iso(r["updated_at"]),
+        None if r["last_planned_at"] is None else parse_iso(r["last_planned_at"]),
+    )
+
+
+def _tick_values(v: ScheduleTick) -> tuple[Any, ...]:
+    return (
+        v.tick_id,
+        v.schedule_id,
+        v.workspace_id,
+        v.radar_id,
+        v.evaluation_cutoff.isoformat(),
+        v.idempotency_key,
+        v.status,
+        v.attempt,
+        v.max_attempts,
+        v.lease_owner,
+        None if v.lease_expires_at is None else v.lease_expires_at.isoformat(),
+        v.run_id,
+        v.skip_reason,
+        v.error_code,
+        v.error_detail,
+        v.created_at.isoformat(),
+        v.updated_at.isoformat(),
+        None if v.started_at is None else v.started_at.isoformat(),
+        None if v.finished_at is None else v.finished_at.isoformat(),
+    )
+
+
+def _tick(r: sqlite3.Row) -> ScheduleTick:
+    return ScheduleTick(
+        str(r["tick_id"]),
+        str(r["schedule_id"]),
+        str(r["workspace_id"]),
+        str(r["radar_id"]),
+        parse_iso(r["evaluation_cutoff"]),
+        str(r["idempotency_key"]),
+        str(r["status"]),
+        int(r["attempt"]),
+        int(r["max_attempts"]),
+        str(r["lease_owner"]),
+        None if r["lease_expires_at"] is None else parse_iso(r["lease_expires_at"]),
+        str(r["run_id"]),
+        str(r["skip_reason"]),
+        str(r["error_code"]),
+        str(r["error_detail"]),
+        parse_iso(r["created_at"]),
+        parse_iso(r["updated_at"]),
+        None if r["started_at"] is None else parse_iso(r["started_at"]),
+        None if r["finished_at"] is None else parse_iso(r["finished_at"]),
     )

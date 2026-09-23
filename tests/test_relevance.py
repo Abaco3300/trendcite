@@ -246,6 +246,7 @@ def test_migration_upgrade_from_0001_to_0002(tmp_path: Path) -> None:
             "0001_cloud_foundation.sql",
             "0002_signal_matching_relevance.sql",
             "0003_alert_digest_delivery.sql",
+            "0004_scheduled_radar_orchestration.sql",
         ]
         columns = {row[1] for row in conn.execute("PRAGMA table_info(cloud_watchlist_version)")}
         assert {"entities", "domains"} <= columns
