@@ -299,5 +299,3 @@ def test_matcher_exclusion_wins_over_generic_include(db: Path) -> None:
         mcp = [e for e in evaluations if "mcp server" in e.excluded_terms]
         assert mcp
         assert all(e.decision == "excluded" and e.strength == 0.0 for e in mcp)
-
-[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]

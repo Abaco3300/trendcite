@@ -167,5 +167,3 @@ def test_async_runtime_dispatches_without_transport_coupling() -> None:
     queued = _run(runtime.queue({"logical_id": "abc"}))
     assert scheduled["cron"] == "*/5 * * * *"
     assert queued == {"logical_id": "abc"}
-
-[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]

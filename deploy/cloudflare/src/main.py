@@ -87,5 +87,3 @@ class Default(WorkerEntrypoint):
                 sort_keys=True,
             )
         )
-
-[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]

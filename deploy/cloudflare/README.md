@@ -19,5 +19,3 @@ It deliberately contains placeholders and must not be deployed as-is.
 The scheduled entrypoint currently validates persistence connectivity only. Wiring the
 full async scheduler/application adapter is intentionally left for a later local
 checkpoint; this scaffold does not claim production readiness.
-
-[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]

@@ -16,5 +16,3 @@ CREATE TABLE IF NOT EXISTS cloud_queue_delivery (
 
 CREATE INDEX IF NOT EXISTS ix_queue_delivery_workspace
     ON cloud_queue_delivery (workspace_id, first_seen_at);
-
-[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]

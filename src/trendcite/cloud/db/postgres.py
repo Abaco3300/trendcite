@@ -260,5 +260,3 @@ def postgres_migration_batches(sql_files: list[str]) -> list[str]:
 
     prefix = "CREATE SCHEMA IF NOT EXISTS trendcite;\nSET search_path TO trendcite, pg_catalog;\n"
     return [prefix + sql for sql in sql_files]
-
-[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]

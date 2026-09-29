@@ -258,5 +258,3 @@ def test_migration_upgrade_from_0001_to_0002(tmp_path: Path) -> None:
         assert "cloud_watchlist_signal_match" in tables
     finally:
         conn.close()
-
-[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]

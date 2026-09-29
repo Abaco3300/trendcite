@@ -34,5 +34,3 @@ class AsyncCloudRuntime:
 
     async def queue(self, payload: dict[str, Any]) -> dict[str, Any]:
         return await self.queue_handler.handle(payload)
-
-[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]
