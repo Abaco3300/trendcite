@@ -89,6 +89,7 @@ def test_migrations_bootstrap_and_repeat(db: Path) -> None:
         "0002_signal_matching_relevance.sql",
         "0003_alert_digest_delivery.sql",
         "0004_scheduled_radar_orchestration.sql",
+        "0005_queue_delivery_idempotency.sql",
     ]
     assert second == first
     conn = connect(db)
