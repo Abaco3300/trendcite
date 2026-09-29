@@ -89,6 +89,7 @@ def test_migrations_bootstrap_and_repeat(db: Path) -> None:
         "0002_signal_matching_relevance.sql",
         "0003_alert_digest_delivery.sql",
         "0004_scheduled_radar_orchestration.sql",
+        "0005_queue_delivery_idempotency.sql",
     ]
     assert second == first
     conn = connect(db)
@@ -298,3 +299,5 @@ def test_matcher_exclusion_wins_over_generic_include(db: Path) -> None:
         mcp = [e for e in evaluations if "mcp server" in e.excluded_terms]
         assert mcp
         assert all(e.decision == "excluded" and e.strength == 0.0 for e in mcp)
+
+[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]

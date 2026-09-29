@@ -247,6 +247,7 @@ def test_migration_upgrade_from_0001_to_0002(tmp_path: Path) -> None:
             "0002_signal_matching_relevance.sql",
             "0003_alert_digest_delivery.sql",
             "0004_scheduled_radar_orchestration.sql",
+            "0005_queue_delivery_idempotency.sql",
         ]
         columns = {row[1] for row in conn.execute("PRAGMA table_info(cloud_watchlist_version)")}
         assert {"entities", "domains"} <= columns
@@ -257,3 +258,5 @@ def test_migration_upgrade_from_0001_to_0002(tmp_path: Path) -> None:
         assert "cloud_watchlist_signal_match" in tables
     finally:
         conn.close()
+
+[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]

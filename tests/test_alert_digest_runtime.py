@@ -582,6 +582,7 @@ def test_migration_0003_bootstrap_repeat_and_schema(tmp_path: Path) -> None:
         "0002_signal_matching_relevance.sql",
         "0003_alert_digest_delivery.sql",
         "0004_scheduled_radar_orchestration.sql",
+        "0005_queue_delivery_idempotency.sql",
     ]
     assert second == first
     conn = connect(db)
@@ -625,3 +626,5 @@ def test_policy_can_disable_delivery_and_persists(tmp_path: Path) -> None:
     )
     assert candidate.reason != REASON_QUALIFIED
     assert runtime.alert_for_candidate(ids["workspace"], candidate.candidate_id) is None
+
+[executed on device: LAPTOP-JOSEMILE (056f59c1-dbac-4f47-875e-044865a705aa)]
