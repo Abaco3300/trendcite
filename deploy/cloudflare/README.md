@@ -1,9 +1,10 @@
 # TrendCite Cloudflare runtime scaffold
 
 This directory is a **non-production** deployment scaffold created under
-`HG-TRENDCITE-PRO-V1-CLOUDFLARE-ARCHITECTURE-ADOPTION-001`, extended under
-`HG-TRENDCITE-PRO-V1-ASYNC-APPLICATION-SCHEDULER-BUILD-001`, and complemented by
-`HG-TRENDCITE-PRO-V1-ASYNC-EXECUTION-PIPELINE-BUILD-001`.
+`HG-TRENDCITE-PRO-V1-CLOUDFLARE-ARCHITECTURE-ADOPTION-001`, extended through
+`HG-TRENDCITE-PRO-V1-ASYNC-APPLICATION-SCHEDULER-BUILD-001`,
+`HG-TRENDCITE-PRO-V1-ASYNC-EXECUTION-PIPELINE-BUILD-001`, and
+`HG-TRENDCITE-PRO-V1-ASYNC-SOURCE-COLLECTOR-BUILD-001`.
 
 It deliberately contains placeholder resource identifiers and must not be deployed
 as-is.
@@ -14,15 +15,13 @@ as-is.
 - Hyperdrive binding: `HYPERDRIVE`.
 - Queue binding: `TREND_QUEUE`.
 - PostgreSQL is reached only through asyncpg/Hyperdrive adapters.
+- External sources are reached only through the async Workers Fetch API transport.
 - Runtime SQL is schema-qualified to `trendcite`.
 - Schema migrations are administrative work and never run from the Worker.
-- Generic Queue delivery deduplication may use
-  `trendcite.cloud_queue_delivery UNIQUE(workspace_id, logical_id)`.
-- **Scheduled radar ticks do not use that ledger as a pre-execution gate.**
-  Their authority is `cloud_schedule_tick` atomic claim, lease expiry and
-  owner-guarded settlement.
+- Scheduled radar ticks use `cloud_schedule_tick` atomic claim, lease expiry and
+  owner-guarded settlement; they are not pre-deduped by the generic Queue ledger.
 
-## Scheduled flow built
+## Scheduled execution flow
 
 ```text
 Cron
@@ -32,36 +31,27 @@ Cron
 → Queue tick
 → atomic claim / lease
 → AsyncCloudApplicationRunner
+→ AsyncSourceExecutionServiceImpl
+→ HN / GitHub / RSS / Reddit async collectors
+→ ExecutionBatch
 → AsyncExecutionPipelineImpl
 → PostgreSQL atomic execution bundle
 → tick settlement / retry
 ```
 
-The execution bundle contains:
+Source failures degrade individually into `SourceStatus` and do not automatically
+sink the whole radar run.
 
-- globally canonical signals and signal snapshots;
-- relevance evaluations and current watchlist-match state;
-- match audit rows and current radar-match state;
-- run-signal edges;
-- per-source coverage;
-- usage events;
-- alert candidates, including suppressed candidates;
-- the final succeeded `RadarRun`.
+The source layer reuses the existing parsers and normalizers. It does **not** call
+the synchronous `pipeline.run_live()`, `urllib` transport, `ThreadPoolExecutor`
+or `time.sleep` from the Workers event loop.
 
-`PostgresExecutionStore.persist_execution()` writes that bundle in one transaction and
-settles the `RadarRun` only after the result rows have been written.
+X remains interface-only until a future official authenticated API integration is
+explicitly configured. There is no scraping fallback.
 
-## Intentional fail-closed boundary
+The execution bundle contains signals/snapshots, relevance, match state and audit,
+coverage, usage, alert candidates and the final succeeded `RadarRun`. The bundle is
+written transactionally before the schedule tick is settled.
 
-The Cloudflare Queue entrypoint still calls `retry()` for
-`kind=scheduled_radar_tick` because TrendCite does not yet have a Cloudflare-safe
-**async source collector/executor**.
-
-The current live path in `trendcite.pipeline.run_live()` uses synchronous source
-adapters and may perform network I/O. It must not be inserted directly into the Workers
-event loop merely to make the scaffold look complete.
-
-The next runtime block is therefore source acquisition / async collector adaptation,
-not result persistence.
-
-This scaffold does not claim production readiness.
+This scaffold is locally built only. It does not claim deployment or production
+readiness.
