@@ -47,14 +47,25 @@ The Worker runtime must never create or migrate tables.
 
 Migration `0005_queue_delivery_idempotency.sql` adds
 `cloud_queue_delivery`. Its unique constraint on `(workspace_id, logical_id)` is the
-database-level verdict for at-least-once Queue delivery.
+database-level verdict for generic at-least-once Queue deliveries that can safely be
+suppressed after first receipt.
+
+**Scheduled radar ticks deliberately do not use that ledger as a pre-execution gate.**
+Their authority is `cloud_schedule_tick`: atomic claim + lease + owner-guarded
+settlement. This matters because a worker can crash after receiving a Queue message but
+before executing it; a transport retry must remain eligible to reclaim that tick after
+the lease expires.
 
 ## Async runtime boundary
 
-`PostgresRuntimeStore` currently owns the concurrency-sensitive slice validated in E0:
+`PostgresRuntimeStore` now owns the concurrency-sensitive scheduler slice:
 
 - PostgreSQL health check;
-- Queue delivery deduplication;
+- generic Queue delivery deduplication;
+- list enabled radar schedules;
+- persist due/skipped ticks with database idempotency;
+- advance the schedule planning watermark;
+- load tenant-scoped schedules/ticks;
 - atomic schedule-tick claim;
 - lease-owner-guarded tick settlement.
 
@@ -70,17 +81,54 @@ It prevents Cloudflare transport objects from leaking into the domain layer.
 configuration. It is deliberately not deployable without replacing explicit placeholder
 resource identifiers.
 
-The Queue entrypoint is wired to durable PostgreSQL deduplication. The scheduled
-entrypoint currently verifies persistence connectivity only; full async planning,
-claiming, Signal Engine execution and settlement are the next implementation block.
+The scheduled entrypoint now performs the safe half of the production flow:
+
+```text
+Cron → list enabled schedules → plan canonical boundaries
+     → persist ticks → enqueue newly-created pending ticks
+```
+
+`AsyncScheduledCoordinator` also implements the execution semantics:
+
+```text
+Queue tick → tenant-scoped load → atomic claim
+           → AsyncCloudApplicationRunner
+           → owner-guarded settlement
+           → requeue retryable failures
+```
+
+`AsyncCloudApplicationRunner` now carries the run-level semantics of the synchronous
+`CloudApplication.run_radar()` path into the async plane:
+
+- database-enforced get-or-create of the logical `RadarRun`;
+- same run identity across retries;
+- no re-execution of already-succeeded runs;
+- safe failed-run transition when the execution pipeline raises;
+- rejection if a pipeline attempts to return a different logical run.
+
+`PostgresRuntimeStore` implements the async run repository operations
+`get_or_create_run`, `get_run` and `update_run`, with tenant-scoped SQL and the
+existing `UNIQUE(workspace_id, idempotency_key)` database guarantee.
+
+If a claim is lost while the tick is still unfinished, the coordinator requests a
+transport retry rather than ACKing. If settlement loses the lease, it also requests a
+transport retry. A failed tick is explicitly re-enqueued only while its attempt budget
+remains.
+
+The Cloudflare Queue entrypoint still refuses to consume `scheduled_radar_tick`
+messages and calls `retry()` because the concrete `AsyncExecutionPipeline` is not yet
+configured. This is intentional fail-closed behavior: planning/enqueue, claim/settle
+and run-level retry semantics are built; Signal Engine/result persistence wiring is the
+remaining application boundary.
 
 ## Explicitly incomplete
 
 This checkpoint does **not** yet provide:
 
 - a full async PostgreSQL implementation of every existing repository;
-- the async application service that mirrors all synchronous CloudApplication use cases;
-- full scheduler plan → enqueue → claim → execute → settle orchestration;
+- async implementations of the remaining interactive CloudApplication use cases;
+- a concrete `AsyncExecutionPipeline` that executes the Signal Engine and persists
+  signals, snapshots, relevance, matches, coverage, usage and alert candidates;
 - Supabase Auth integration;
 - React/Vite frontend;
 - Postmark delivery integration;

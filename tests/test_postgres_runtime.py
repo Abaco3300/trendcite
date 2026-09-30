@@ -12,6 +12,8 @@ from trendcite.cloud.db.postgres import (
     PostgresRuntimeStore,
     postgres_migration_batches,
 )
+from trendcite.cloud.domain.radar import RUN_COVERAGE_COMPLETE, RadarRun
+from trendcite.cloud.domain.scheduling import CADENCE_HOURLY, RadarSchedule, plan_due
 
 
 def _run(coro: Any) -> Any:
@@ -45,6 +47,10 @@ class _Conn:
     async def execute(self, query: str, *args: Any) -> str:
         self.calls.append((query, args))
         return "OK"
+
+    async def fetch(self, query: str, *args: Any) -> list[Any]:
+        self.calls.append((query, args))
+        return list(self.rows)
 
     async def fetchval(self, query: str, *args: Any) -> Any:
         self.calls.append((query, args))
@@ -167,3 +173,127 @@ def test_async_runtime_dispatches_without_transport_coupling() -> None:
     queued = _run(runtime.queue({"logical_id": "abc"}))
     assert scheduled["cron"] == "*/5 * * * *"
     assert queued == {"logical_id": "abc"}
+
+
+def test_list_enabled_schedules_maps_postgres_rows() -> None:
+    now = datetime(2026, 9, 29, tzinfo=UTC)
+    row = {
+        "schedule_id": "sched-1",
+        "workspace_id": "w1",
+        "radar_id": "r1",
+        "enabled": 1,
+        "cadence": CADENCE_HOURLY,
+        "utc_offset_minutes": 0,
+        "anchor_at": now.isoformat(),
+        "max_catch_up": 3,
+        "lease_seconds": 300,
+        "max_attempts": 3,
+        "cadence_version": "schedule-v1",
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "last_planned_at": None,
+    }
+    conn = _Conn(rows=[row])
+    store = PostgresRuntimeStore(_Connector(conn))
+
+    schedules = _run(store.list_enabled_schedules())
+
+    assert len(schedules) == 1
+    assert schedules[0].schedule_id == "sched-1"
+    assert schedules[0].workspace_id == "w1"
+    assert conn.closed is True
+
+
+def test_persist_plan_inserts_ticks_and_advances_watermark() -> None:
+    now = datetime(2026, 9, 29, 12, 0, tzinfo=UTC)
+    schedule = RadarSchedule.create(
+        workspace_id="w1",
+        radar_id="r1",
+        cadence=CADENCE_HOURLY,
+        effective_from=now,
+        created_at=now,
+    )
+    plan = plan_due(schedule, now=now)
+    conn = _Conn(rows=[{"tick_id": "created"}])
+    store = PostgresRuntimeStore(_Connector(conn))
+
+    created = _run(store.persist_plan(schedule, plan, now=now))
+
+    assert len(created) == 1
+    queries = "\n".join(query for query, _ in conn.calls)
+    assert "INSERT INTO trendcite.cloud_schedule_tick" in queries
+    assert "ON CONFLICT (workspace_id, idempotency_key) DO NOTHING" in queries
+    assert "UPDATE trendcite.cloud_radar_schedule" in queries
+    assert "SET LOCAL ROLE trendcite_runtime" in queries
+
+
+def _radar_run_row(run: RadarRun) -> dict[str, Any]:
+    return {
+        "run_id": run.run_id,
+        "workspace_id": run.workspace_id,
+        "radar_id": run.radar_id,
+        "radar_version_id": run.radar_version_id,
+        "evaluation_cutoff": run.evaluation_cutoff.isoformat(),
+        "idempotency_key": run.idempotency_key,
+        "status": run.status,
+        "coverage_state": run.coverage_state,
+        "attempt": run.attempt,
+        "signal_count": run.signal_count,
+        "match_count": run.match_count,
+        "error_code": run.error_code,
+        "error_detail": run.error_detail,
+        "started_at": run.started_at.isoformat(),
+        "finished_at": None if run.finished_at is None else run.finished_at.isoformat(),
+    }
+
+
+def test_get_or_create_run_uses_database_idempotency_key() -> None:
+    now = datetime(2026, 9, 29, 12, 0, tzinfo=UTC)
+    expected = RadarRun.create(
+        workspace_id="w1",
+        radar_id="r1",
+        radar_version_id="rv1",
+        evaluation_cutoff=now,
+        started_at=now,
+    )
+    conn = _Conn(rows=[_radar_run_row(expected)], scalar="rv1")
+    store = PostgresRuntimeStore(_Connector(conn))
+
+    run = _run(
+        store.get_or_create_run(
+            workspace_id="w1",
+            radar_id="r1",
+            evaluation_cutoff=now,
+            started_at=now,
+        )
+    )
+
+    assert run.run_id == expected.run_id
+    assert run.idempotency_key == expected.idempotency_key
+    queries = "\n".join(query for query, _ in conn.calls)
+    assert "FROM trendcite.cloud_radar_version" in queries
+    assert "INSERT INTO trendcite.cloud_radar_run" in queries
+    assert "ON CONFLICT (workspace_id, idempotency_key) DO NOTHING" in queries
+
+
+def test_update_run_is_workspace_scoped() -> None:
+    now = datetime(2026, 9, 29, 12, 0, tzinfo=UTC)
+    run = RadarRun.create(
+        workspace_id="w1",
+        radar_id="r1",
+        radar_version_id="rv1",
+        evaluation_cutoff=now,
+        started_at=now,
+    ).succeeded(
+        coverage_state=RUN_COVERAGE_COMPLETE,
+        signal_count=4,
+        match_count=2,
+        finished_at=now,
+    )
+    conn = _Conn()
+    store = PostgresRuntimeStore(_Connector(conn))
+
+    _run(store.update_run(run))
+
+    update = next(query for query, _ in conn.calls if "UPDATE trendcite.cloud_radar_run" in query)
+    assert "WHERE workspace_id=$10 AND run_id=$11" in update
