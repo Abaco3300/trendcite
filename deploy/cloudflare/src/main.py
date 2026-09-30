@@ -11,10 +11,16 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from http_transport import CloudflareFetchTransport
 from workers import Response, WorkerEntrypoint
 
-from trendcite.cloud.async_scheduler import AsyncRunResult, AsyncScheduledCoordinator
+from trendcite.cloud.async_application import AsyncCloudApplicationRunner
+from trendcite.cloud.async_execution import AsyncExecutionPipelineImpl
+from trendcite.cloud.async_scheduler import AsyncScheduledCoordinator
+from trendcite.cloud.async_sources import AsyncSourceExecutionServiceImpl
 from trendcite.cloud.db.postgres import AsyncpgHyperdriveConnector, PostgresRuntimeStore
+from trendcite.cloud.db.postgres_execution import PostgresExecutionStore
+from trendcite.config import Config
 
 
 class _CloudflareQueuePublisher:
@@ -25,21 +31,24 @@ class _CloudflareQueuePublisher:
         await self.binding.send(json.dumps(payload, separators=(",", ":")))
 
 
-class _UnwiredRadarRunner:
-    async def run_radar(
-        self,
-        *,
-        workspace_id: str,
-        radar_id: str,
-        evaluation_cutoff: datetime,
-    ) -> AsyncRunResult:
-        raise RuntimeError("async radar runner is not configured")
+def _connector(env: Any) -> AsyncpgHyperdriveConnector:
+    if not hasattr(env, "HYPERDRIVE"):
+        raise RuntimeError("HYPERDRIVE binding is required")
+    return AsyncpgHyperdriveConnector(env.HYPERDRIVE)
 
 
 def _store(env: Any) -> PostgresRuntimeStore:
-    if not hasattr(env, "HYPERDRIVE"):
-        raise RuntimeError("HYPERDRIVE binding is required")
-    return PostgresRuntimeStore(AsyncpgHyperdriveConnector(env.HYPERDRIVE))
+    return PostgresRuntimeStore(_connector(env))
+
+
+def _runner(env: Any) -> AsyncCloudApplicationRunner:
+    execution_store = PostgresExecutionStore(_connector(env))
+    source_service = AsyncSourceExecutionServiceImpl(
+        CloudflareFetchTransport(),
+        config=Config(),
+    )
+    pipeline = AsyncExecutionPipelineImpl(execution_store, source_service)
+    return AsyncCloudApplicationRunner(execution_store, pipeline)
 
 
 def _coordinator(env: Any) -> AsyncScheduledCoordinator:
@@ -48,7 +57,7 @@ def _coordinator(env: Any) -> AsyncScheduledCoordinator:
     return AsyncScheduledCoordinator(
         _store(env),
         _CloudflareQueuePublisher(env.TREND_QUEUE),
-        _UnwiredRadarRunner(),
+        _runner(env),
         worker_id="cloudflare-scheduler",
     )
 
@@ -72,20 +81,28 @@ class Default(WorkerEntrypoint):
                     raise ValueError("missing queue fields: " + ", ".join(missing))
                 kind = str(payload["kind"])
                 if kind == "scheduled_radar_tick":
-                    # Scheduled ticks are NOT deduped by cloud_queue_delivery. The
-                    # atomic cloud_schedule_tick claim + lease is the authority: a
-                    # transport retry must remain available if a claimant crashes.
+                    outcome = await _coordinator(runtime_env).execute_message(
+                        payload,
+                        now=datetime.now(UTC).replace(microsecond=0),
+                    )
                     print(
                         json.dumps(
                             {
                                 "event": "trendcite.queue.scheduled_tick",
-                                "status": "scheduler_not_wired",
-                                "tick_id": str(payload.get("tick_id") or ""),
+                                "tick_id": outcome.tick_id,
+                                "status": outcome.status,
+                                "claimed": outcome.claimed,
+                                "settled": outcome.settled,
+                                "requeued": outcome.requeued,
+                                "retry_transport": outcome.retry_transport,
                             },
                             sort_keys=True,
                         )
                     )
-                    message.retry()
+                    if outcome.retry_transport:
+                        message.retry()
+                    else:
+                        message.ack()
                     continue
 
                 inserted = await store.record_queue_once(
@@ -132,7 +149,7 @@ class Default(WorkerEntrypoint):
                     "scheduled_time": str(getattr(controller, "scheduledTime", "")),
                     "schedules": len(result.schedules),
                     "enqueued": result.enqueued,
-                    "execution_runner": "not_configured",
+                    "execution_runner": "async_sources_configured",
                 },
                 sort_keys=True,
             )

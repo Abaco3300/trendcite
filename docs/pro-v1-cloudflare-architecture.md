@@ -128,12 +128,33 @@ Scheduler concurrency/leases and Signal Engine result persistence are different
 responsibilities even though both share the same Hyperdrive connector and runtime
 role.
 
-The Cloudflare Queue entrypoint still refuses to consume `scheduled_radar_tick`
-messages and calls `retry()` because there is not yet a Cloudflare-safe async source
-collector/executor. The existing `pipeline.run_live()` and source adapters are
-synchronous and can perform network I/O, so wiring them directly into the Workers event
-loop would violate the async boundary established by E0. This is intentional fail-closed
-behavior, not an unfinished persistence path.
+The Cloudflare execution path now also has a Cloudflare-safe source-acquisition layer:
+
+- `AsyncHTTPTransport` defines the runtime-neutral async HTTP contract;
+- `CloudflareFetchTransport` implements that contract with the Workers Fetch API;
+- async HN, GitHub, RSS and Reddit collectors reuse the canonical parsers/normalizers;
+- X remains an explicit interface-only source until an official authenticated API
+  integration is configured;
+- `collect_async()` records per-source failure as `SourceStatus` instead of failing
+  the whole run;
+- `AsyncSourceExecutionServiceImpl` builds the canonical report/Signal Engine output
+  and returns `ExecutionBatch` to `AsyncExecutionPipelineImpl`.
+
+The Queue consumer is now wired through the complete code path:
+
+```text
+scheduled_radar_tick
+→ atomic claim
+→ AsyncCloudApplicationRunner
+→ async source acquisition
+→ ExecutionBatch
+→ AsyncExecutionPipelineImpl
+→ atomic PostgreSQL result persistence
+→ tick settlement / retry
+```
+
+The old synchronous `pipeline.run_live()` remains the OSS/local live path and is not
+called from the Workers event loop.
 
 ## Explicitly incomplete
 
@@ -141,8 +162,8 @@ This checkpoint does **not** yet provide:
 
 - a full async PostgreSQL implementation of every existing repository;
 - async implementations of the remaining interactive CloudApplication use cases;
-- a Cloudflare-safe async source collector/executor that produces `ExecutionBatch`
-  without running synchronous network I/O inside the Workers event loop;
+- an authenticated official X collector implementation (the interface remains
+  deliberately unavailable rather than scraping or bypassing access controls);
 - Supabase Auth integration;
 - React/Vite frontend;
 - Postmark delivery integration;
