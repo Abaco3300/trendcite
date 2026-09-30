@@ -35,6 +35,16 @@ Thumbs.db
 .claude/settings.local.json
 .preflight_tmp/
 
+# Cloudflare Python Worker generated packaging artifacts
+deploy/cloudflare/wheelhouse/
+deploy/cloudflare/python_modules/
+deploy/cloudflare/.venv/
+deploy/cloudflare/.venv-workers/
+deploy/cloudflare/.wrangler/
+deploy/cloudflare/.packaging-proof/
+deploy/cloudflare/uv.lock
+deploy/cloudflare/pylock.toml
+
 # Internal governance handoffs and local QA artefacts (never part of the public tree)
 EXECUTION_HANDOFF*.md
 *_HANDOFF_*.md

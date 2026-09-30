@@ -156,6 +156,23 @@ scheduled_radar_tick
 The old synchronous `pipeline.run_live()` remains the OSS/local live path and is not
 called from the Workers event loop.
 
+### Cloudflare runtime packaging
+
+The Worker application code must come from the exact repository checkpoint being
+validated, not from the public PyPI `trendcite` release. The public 0.1.0 artifact
+predates the Cloud package.
+
+Before pywrangler sync/dry-run/deploy, `scripts/prepare_cloudflare_runtime.py` builds
+the current repository into
+`deploy/cloudflare/wheelhouse/trendcite-0.1.0-py3-none-any.whl` and verifies that the
+wheel contains the required async runtime modules. The Worker pyproject redirects
+`trendcite` to that local wheel using `[tool.uv.sources]`. Pywrangler then vendors
+that wheel and compatible third-party packages into `python_modules/`, which Wrangler
+bundles with the Worker.
+
+The wheelhouse, `python_modules`, lockfiles and Worker-local virtual environments are
+generated validation/deployment artifacts and are not committed.
+
 ## Explicitly incomplete
 
 This checkpoint does **not** yet provide:
