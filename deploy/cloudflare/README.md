@@ -53,5 +53,32 @@ The execution bundle contains signals/snapshots, relevance, match state and audi
 coverage, usage, alert candidates and the final succeeded `RadarRun`. The bundle is
 written transactionally before the schedule tick is settled.
 
+## Runtime packaging
+
+The Worker must never resolve the public PyPI `trendcite` package as its application
+code. The public 0.1.0 release predates the Cloud runtime modules.
+
+Before any pywrangler sync, dry-run or deploy, build the exact repository checkpoint
+into the worker wheelhouse:
+
+```text
+python scripts/prepare_cloudflare_runtime.py
+```
+
+That command:
+
+1. builds `trendcite-0.1.0-py3-none-any.whl` from the current repository;
+2. verifies that the wheel contains the required async Cloud runtime modules;
+3. prints the wheel SHA-256 as packaging evidence.
+
+`deploy/cloudflare/pyproject.toml` redirects the logical `trendcite` dependency to
+that wheel through `[tool.uv.sources]`. Pywrangler then vendors it, together with
+`asyncpg`, into `python_modules/`. Generated wheelhouse, lock, venv and
+`python_modules` artefacts are gitignored.
+
+`wrangler.jsonc` is the canonical scaffold configuration. Its non-production
+resource identifiers remain deliberate placeholders and must be replaced only inside
+an explicitly authorized runtime-validation or deployment gate.
+
 This scaffold is locally built only. It does not claim deployment or production
 readiness.

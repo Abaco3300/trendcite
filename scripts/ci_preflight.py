@@ -126,9 +126,17 @@ def step_build() -> None:
         run([str(vpy), "-m", "pip", "install", "--quiet", "--no-deps", str(wheels[0])])
         check = (
             "import trendcite, trendcite.cli; "
+            "import trendcite.cloud.async_application; "
+            "import trendcite.cloud.async_execution; "
+            "import trendcite.cloud.async_http; "
+            "import trendcite.cloud.async_scheduler; "
+            "import trendcite.cloud.async_sources; "
+            "import trendcite.cloud.db.postgres; "
+            "import trendcite.cloud.db.postgres_execution; "
             "from trendcite.pipeline import run_demo; "
             "r = run_demo(); assert 3 <= len(r.briefs) <= 5, len(r.briefs); "
-            "print('    wheel import OK:', trendcite.__version__, len(r.briefs), 'briefs')"
+            "print('    wheel import OK:', trendcite.__version__, len(r.briefs), 'briefs', "
+            "'+ cloud runtime modules')"
         )
         # Run outside the repo so the installed wheel (not ./src) is imported.
         run([str(vpy), "-c", check], cwd=Path(tmp))
