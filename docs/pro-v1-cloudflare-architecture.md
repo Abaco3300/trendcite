@@ -115,11 +115,25 @@ transport retry rather than ACKing. If settlement loses the lease, it also reque
 transport retry. A failed tick is explicitly re-enqueued only while its attempt budget
 remains.
 
+`AsyncExecutionPipelineImpl` now implements the durable result half of scheduled
+execution. It consumes an async `ExecutionBatch`, reuses the canonical relevance,
+matching and materiality domain services, builds one complete persistence bundle and
+hands that bundle to `PostgresExecutionStore` for one PostgreSQL transaction. The
+transaction writes global signals/snapshots, tenant relevance/match state and audit
+history, run-signal edges, source coverage, usage events, alert candidates and only
+then settles the `RadarRun` as succeeded.
+
+`PostgresExecutionStore` is intentionally separate from `PostgresRuntimeStore`:
+Scheduler concurrency/leases and Signal Engine result persistence are different
+responsibilities even though both share the same Hyperdrive connector and runtime
+role.
+
 The Cloudflare Queue entrypoint still refuses to consume `scheduled_radar_tick`
-messages and calls `retry()` because the concrete `AsyncExecutionPipeline` is not yet
-configured. This is intentional fail-closed behavior: planning/enqueue, claim/settle
-and run-level retry semantics are built; Signal Engine/result persistence wiring is the
-remaining application boundary.
+messages and calls `retry()` because there is not yet a Cloudflare-safe async source
+collector/executor. The existing `pipeline.run_live()` and source adapters are
+synchronous and can perform network I/O, so wiring them directly into the Workers event
+loop would violate the async boundary established by E0. This is intentional fail-closed
+behavior, not an unfinished persistence path.
 
 ## Explicitly incomplete
 
@@ -127,8 +141,8 @@ This checkpoint does **not** yet provide:
 
 - a full async PostgreSQL implementation of every existing repository;
 - async implementations of the remaining interactive CloudApplication use cases;
-- a concrete `AsyncExecutionPipeline` that executes the Signal Engine and persists
-  signals, snapshots, relevance, matches, coverage, usage and alert candidates;
+- a Cloudflare-safe async source collector/executor that produces `ExecutionBatch`
+  without running synchronous network I/O inside the Workers event loop;
 - Supabase Auth integration;
 - React/Vite frontend;
 - Postmark delivery integration;

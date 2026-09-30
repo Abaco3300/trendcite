@@ -1,8 +1,9 @@
 # TrendCite Cloudflare runtime scaffold
 
 This directory is a **non-production** deployment scaffold created under
-`HG-TRENDCITE-PRO-V1-CLOUDFLARE-ARCHITECTURE-ADOPTION-001` and extended under
-`HG-TRENDCITE-PRO-V1-ASYNC-APPLICATION-SCHEDULER-BUILD-001`.
+`HG-TRENDCITE-PRO-V1-CLOUDFLARE-ARCHITECTURE-ADOPTION-001`, extended under
+`HG-TRENDCITE-PRO-V1-ASYNC-APPLICATION-SCHEDULER-BUILD-001`, and complemented by
+`HG-TRENDCITE-PRO-V1-ASYNC-EXECUTION-PIPELINE-BUILD-001`.
 
 It deliberately contains placeholder resource identifiers and must not be deployed
 as-is.
@@ -12,45 +13,55 @@ as-is.
 - Python Workers runtime.
 - Hyperdrive binding: `HYPERDRIVE`.
 - Queue binding: `TREND_QUEUE`.
-- PostgreSQL is reached only through the asyncpg/Hyperdrive adapter.
+- PostgreSQL is reached only through asyncpg/Hyperdrive adapters.
 - Runtime SQL is schema-qualified to `trendcite`.
 - Schema migrations are administrative work and never run from the Worker.
 - Generic Queue delivery deduplication may use
   `trendcite.cloud_queue_delivery UNIQUE(workspace_id, logical_id)`.
 - **Scheduled radar ticks do not use that ledger as a pre-execution gate.**
-  Their idempotency/recovery authority is `cloud_schedule_tick` atomic claim,
-  lease expiry and owner-guarded settlement.
+  Their authority is `cloud_schedule_tick` atomic claim, lease expiry and
+  owner-guarded settlement.
 
-## Scheduled flow now built
-
-The Cron entrypoint performs:
+## Scheduled flow built
 
 ```text
-list enabled schedules
-→ derive canonical due boundaries
-→ persist pending/skipped ticks idempotently
-→ advance planning watermark
-→ enqueue newly-created pending ticks
+Cron
+→ plan due radar boundaries
+→ persist ticks
+→ enqueue
+→ Queue tick
+→ atomic claim / lease
+→ AsyncCloudApplicationRunner
+→ AsyncExecutionPipelineImpl
+→ PostgreSQL atomic execution bundle
+→ tick settlement / retry
 ```
 
-`trendcite.cloud.async_scheduler.AsyncScheduledCoordinator` implements the worker-side
-semantics for:
+The execution bundle contains:
 
-```text
-load tick
-→ atomic claim
-→ execute async radar runner
-→ settle success/failure
-→ requeue retryable failures
-→ request transport retry after lost claim/lease
-```
+- globally canonical signals and signal snapshots;
+- relevance evaluations and current watchlist-match state;
+- match audit rows and current radar-match state;
+- run-signal edges;
+- per-source coverage;
+- usage events;
+- alert candidates, including suppressed candidates;
+- the final succeeded `RadarRun`.
 
-`AsyncCloudApplicationRunner` now provides run identity/retry semantics, backed by
-PostgreSQL run get-or-create/update operations. Its concrete `AsyncExecutionPipeline`
-for Signal Engine execution and detailed result persistence is intentionally **not
-wired yet**. Until that component exists, the Cloudflare Queue entrypoint calls
-`retry()` for `kind=scheduled_radar_tick` rather than consuming the message. This
-fail-closed behavior prevents a partially configured deployment from losing scheduled
-work.
+`PostgresExecutionStore.persist_execution()` writes that bundle in one transaction and
+settles the `RadarRun` only after the result rows have been written.
+
+## Intentional fail-closed boundary
+
+The Cloudflare Queue entrypoint still calls `retry()` for
+`kind=scheduled_radar_tick` because TrendCite does not yet have a Cloudflare-safe
+**async source collector/executor**.
+
+The current live path in `trendcite.pipeline.run_live()` uses synchronous source
+adapters and may perform network I/O. It must not be inserted directly into the Workers
+event loop merely to make the scaffold look complete.
+
+The next runtime block is therefore source acquisition / async collector adaptation,
+not result persistence.
 
 This scaffold does not claim production readiness.
