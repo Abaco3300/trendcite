@@ -13,13 +13,44 @@ from typing import Any
 
 from workers import Response, WorkerEntrypoint
 
+from trendcite.cloud.async_scheduler import AsyncRunResult, AsyncScheduledCoordinator
 from trendcite.cloud.db.postgres import AsyncpgHyperdriveConnector, PostgresRuntimeStore
+
+
+class _CloudflareQueuePublisher:
+    def __init__(self, binding: Any) -> None:
+        self.binding = binding
+
+    async def send(self, payload: dict[str, str]) -> None:
+        await self.binding.send(json.dumps(payload, separators=(",", ":")))
+
+
+class _UnwiredRadarRunner:
+    async def run_radar(
+        self,
+        *,
+        workspace_id: str,
+        radar_id: str,
+        evaluation_cutoff: datetime,
+    ) -> AsyncRunResult:
+        raise RuntimeError("async radar runner is not configured")
 
 
 def _store(env: Any) -> PostgresRuntimeStore:
     if not hasattr(env, "HYPERDRIVE"):
         raise RuntimeError("HYPERDRIVE binding is required")
     return PostgresRuntimeStore(AsyncpgHyperdriveConnector(env.HYPERDRIVE))
+
+
+def _coordinator(env: Any) -> AsyncScheduledCoordinator:
+    if not hasattr(env, "TREND_QUEUE"):
+        raise RuntimeError("TREND_QUEUE binding is required")
+    return AsyncScheduledCoordinator(
+        _store(env),
+        _CloudflareQueuePublisher(env.TREND_QUEUE),
+        _UnwiredRadarRunner(),
+        worker_id="cloudflare-scheduler",
+    )
 
 
 class Default(WorkerEntrypoint):
@@ -39,11 +70,29 @@ class Default(WorkerEntrypoint):
                 missing = [name for name in required if not payload.get(name)]
                 if missing:
                     raise ValueError("missing queue fields: " + ", ".join(missing))
+                kind = str(payload["kind"])
+                if kind == "scheduled_radar_tick":
+                    # Scheduled ticks are NOT deduped by cloud_queue_delivery. The
+                    # atomic cloud_schedule_tick claim + lease is the authority: a
+                    # transport retry must remain available if a claimant crashes.
+                    print(
+                        json.dumps(
+                            {
+                                "event": "trendcite.queue.scheduled_tick",
+                                "status": "scheduler_not_wired",
+                                "tick_id": str(payload.get("tick_id") or ""),
+                            },
+                            sort_keys=True,
+                        )
+                    )
+                    message.retry()
+                    continue
+
                 inserted = await store.record_queue_once(
                     delivery_id=str(payload.get("delivery_id") or uuid.uuid4().hex),
                     workspace_id=str(payload["workspace_id"]),
                     logical_id=str(payload["logical_id"]),
-                    kind=str(payload["kind"]),
+                    kind=kind,
                     first_seen_at=datetime.now(UTC).replace(microsecond=0),
                 )
                 print(
@@ -72,17 +121,18 @@ class Default(WorkerEntrypoint):
                 message.retry()
 
     async def scheduled(self, controller: Any, env: Any, ctx: Any) -> None:
-        # Architecture scaffold only. Persistence connectivity is validated here;
-        # planning/claim/execution wiring is intentionally a later local build block.
-        ok = await _store(env).healthcheck()
+        result = await _coordinator(env).plan_and_enqueue(
+            now=datetime.now(UTC).replace(microsecond=0)
+        )
         print(
             json.dumps(
                 {
                     "event": "trendcite.scheduler.tick",
-                    "persistence_ready": ok,
                     "cron": str(getattr(controller, "cron", "")),
                     "scheduled_time": str(getattr(controller, "scheduledTime", "")),
-                    "scheduler_adapter": "not_configured",
+                    "schedules": len(result.schedules),
+                    "enqueued": result.enqueued,
+                    "execution_runner": "not_configured",
                 },
                 sort_keys=True,
             )
