@@ -156,6 +156,26 @@ scheduled_radar_tick
 The old synchronous `pipeline.run_live()` remains the OSS/local live path and is not
 called from the Workers event loop.
 
+### Runtime remediation after non-production validation
+
+The first integrated non-production run exposed two implementation defects that are
+now remediated in this checkpoint:
+
+1. The Hyperdrive login is deliberately `NOINHERIT`. Therefore every Cloud data
+   read must explicitly assume `trendcite_runtime`. Read paths in both
+   `PostgresRuntimeStore` and `PostgresExecutionStore` now use the same transaction
+   boundary as writes: open connection → begin transaction → `SET LOCAL ROLE
+   trendcite_runtime` → query → close. The direct login no longer needs permanent
+   schema/table read grants.
+2. `workers.fetch()` returns the Python `workers.Response` wrapper. That wrapper
+   exposes body buffering through `bytes()`, not the JavaScript-level
+   `arrayBuffer()` method. `CloudflareFetchTransport` now consumes
+   `await response.bytes()` and applies the request/body operation under an async
+   timeout without JS `AbortController` / `Uint8Array` conversion.
+
+Regression tests enforce both boundaries, including a guard that no Cloud data-read
+method can silently open a raw connection outside the runtime-role transaction.
+
 ### Cloudflare runtime packaging
 
 The Worker application code must come from the exact repository checkpoint being

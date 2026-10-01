@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
-from js import AbortController, Uint8Array, clearTimeout, setTimeout
 from workers import fetch
 
 from trendcite.http import MAX_BYTES, FetchError
@@ -17,17 +17,8 @@ class CloudflareFetchTransport:
         timeout: float,
         headers: dict[str, str],
     ) -> tuple[int, bytes]:
-        controller = AbortController.new()
-        timer = setTimeout(
-            lambda: controller.abort(),
-            max(1, int(timeout * 1000)),
-        )
-        try:
-            response = await fetch(
-                url,
-                headers=headers,
-                signal=controller.signal,
-            )
+        async def request_and_read() -> tuple[int, bytes]:
+            response = await fetch(url, headers=headers)
             content_length = response.headers.get("content-length")
             if content_length:
                 try:
@@ -35,12 +26,11 @@ class CloudflareFetchTransport:
                         raise FetchError(f"response exceeds {MAX_BYTES} bytes")
                 except ValueError:
                     pass
-            buffer = await response.arrayBuffer()
-        finally:
-            clearTimeout(timer)
 
-        body: Any = Uint8Array.new(buffer).to_py()
-        data = bytes(body)
-        if len(data) > MAX_BYTES:
-            raise FetchError(f"response exceeds {MAX_BYTES} bytes")
-        return int(response.status), data
+            body: Any = await response.bytes()
+            data = bytes(body)
+            if len(data) > MAX_BYTES:
+                raise FetchError(f"response exceeds {MAX_BYTES} bytes")
+            return int(response.status), data
+
+        return await asyncio.wait_for(request_and_read(), timeout=timeout)

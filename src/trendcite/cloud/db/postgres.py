@@ -203,8 +203,7 @@ class PostgresRuntimeStore:
             return _run(row)
 
     async def get_run(self, workspace_id: str, run_id: str) -> RadarRun | None:
-        conn: Connection = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT *
@@ -215,8 +214,6 @@ class PostgresRuntimeStore:
                 run_id,
             )
             return None if row is None else _run(row)
-        finally:
-            await conn.close()
 
     async def update_run(self, run: RadarRun) -> None:
         async with self._transaction() as conn:
@@ -278,8 +275,7 @@ class PostgresRuntimeStore:
             return row is not None
 
     async def list_enabled_schedules(self) -> tuple[RadarSchedule, ...]:
-        conn: Connection = await self._connector()
-        try:
+        async with self._transaction() as conn:
             rows = await conn.fetch(
                 """
                 SELECT schedule_id, workspace_id, radar_id, enabled, cadence,
@@ -292,8 +288,6 @@ class PostgresRuntimeStore:
                 """
             )
             return tuple(_schedule(row) for row in rows)
-        finally:
-            await conn.close()
 
     async def persist_plan(
         self,
@@ -338,8 +332,7 @@ class PostgresRuntimeStore:
         return tuple(created)
 
     async def get_schedule(self, workspace_id: str, schedule_id: str) -> RadarSchedule | None:
-        conn: Connection = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT schedule_id, workspace_id, radar_id, enabled, cadence,
@@ -353,12 +346,9 @@ class PostgresRuntimeStore:
                 schedule_id,
             )
             return None if row is None else _schedule(row)
-        finally:
-            await conn.close()
 
     async def get_tick(self, workspace_id: str, tick_id: str) -> ScheduleTick | None:
-        conn: Connection = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT *
@@ -369,8 +359,6 @@ class PostgresRuntimeStore:
                 tick_id,
             )
             return None if row is None else _tick(row)
-        finally:
-            await conn.close()
 
     async def claim_tick(
         self,
