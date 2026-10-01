@@ -42,8 +42,7 @@ class PostgresExecutionStore:
         workspace_id: str,
         version_id: str,
     ) -> RadarVersion | None:
-        conn = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT *
@@ -54,16 +53,13 @@ class PostgresExecutionStore:
                 version_id,
             )
             return None if row is None else _radar_version(row)
-        finally:
-            await conn.close()
 
     async def get_watchlist_version(
         self,
         workspace_id: str,
         version_id: str,
     ) -> WatchlistVersion | None:
-        conn = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT *
@@ -74,8 +70,6 @@ class PostgresExecutionStore:
                 version_id,
             )
             return None if row is None else _watchlist_version(row)
-        finally:
-            await conn.close()
 
     async def get_watchlist_signal_match(
         self,
@@ -83,8 +77,7 @@ class PostgresExecutionStore:
         watchlist_id: str,
         signal_id: str,
     ) -> WatchlistSignalMatch | None:
-        conn = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT *
@@ -96,8 +89,6 @@ class PostgresExecutionStore:
                 signal_id,
             )
             return None if row is None else _watchlist_match(row)
-        finally:
-            await conn.close()
 
     async def get_match(
         self,
@@ -105,8 +96,7 @@ class PostgresExecutionStore:
         radar_id: str,
         signal_id: str,
     ) -> Match | None:
-        conn = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT *
@@ -118,16 +108,13 @@ class PostgresExecutionStore:
                 signal_id,
             )
             return None if row is None else _match(row)
-        finally:
-            await conn.close()
 
     async def get_alert_policy(
         self,
         workspace_id: str,
         radar_id: str,
     ) -> AlertPolicy | None:
-        conn = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT *
@@ -138,8 +125,6 @@ class PostgresExecutionStore:
                 radar_id,
             )
             return None if row is None else _alert_policy(row)
-        finally:
-            await conn.close()
 
     async def get_alert_baseline(
         self,
@@ -147,8 +132,7 @@ class PostgresExecutionStore:
         watchlist_id: str,
         signal_id: str,
     ) -> AlertBaseline | None:
-        conn = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT *
@@ -160,8 +144,6 @@ class PostgresExecutionStore:
                 signal_id,
             )
             return None if row is None else _alert_baseline(row)
-        finally:
-            await conn.close()
 
     async def get_or_create_run(
         self,
@@ -233,8 +215,7 @@ class PostgresExecutionStore:
             return _radar_run(row)
 
     async def get_run(self, workspace_id: str, run_id: str) -> RadarRun | None:
-        conn = await self._connector()
-        try:
+        async with self._transaction() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT *
@@ -245,8 +226,6 @@ class PostgresExecutionStore:
                 run_id,
             )
             return None if row is None else _radar_run(row)
-        finally:
-            await conn.close()
 
     async def update_run(self, run: RadarRun) -> None:
         async with self._transaction() as conn:
