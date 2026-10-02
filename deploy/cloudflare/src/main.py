@@ -138,7 +138,8 @@ class Default(WorkerEntrypoint):
                 message.retry()
 
     async def scheduled(self, controller: Any, env: Any, ctx: Any) -> None:
-        result = await _coordinator(env).plan_and_enqueue(
+        runtime_env = env if env is not None else self.env
+        result = await _coordinator(runtime_env).plan_and_enqueue(
             now=datetime.now(UTC).replace(microsecond=0)
         )
         print(
