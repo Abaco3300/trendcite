@@ -51,3 +51,9 @@ def test_generated_cloudflare_packaging_artifacts_are_gitignored() -> None:
         "deploy/cloudflare/pylock.toml",
     ):
         assert path in text
+
+
+def test_scheduled_handler_falls_back_to_worker_entrypoint_env() -> None:
+    text = (WORKER / "src" / "main.py").read_text(encoding="utf-8")
+    assert "runtime_env = env if env is not None else self.env" in text
+    assert "result = await _coordinator(runtime_env).plan_and_enqueue(" in text
