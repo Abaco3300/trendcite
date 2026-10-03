@@ -10,6 +10,29 @@ body:
         **This is a public GitHub issue. Do not include secrets, private URLs, customer data, API keys, or other confidential information.**
 
   - type: dropdown
+    id: discovery_source
+    attributes:
+      label: Where did you first discover TrendCite?
+      options:
+        - GitHub repository / README
+        - CLI output
+        - PyPI
+        - Claude Code / Agent Skill
+        - Awesome list or directory
+        - Social post or community
+        - Direct recommendation
+        - Search engine
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: discovery_detail
+    attributes:
+      label: What made you decide to try it?
+      description: Optional. A short, non-confidential answer helps us understand which problem or signal caught your attention.
+
+  - type: dropdown
     id: usage_mode
     attributes:
       label: How are you using TrendCite?
