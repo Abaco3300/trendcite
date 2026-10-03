@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a reproducible problem in TrendCite Public.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for reporting a problem. Do not include API keys, private URLs, customer data, or other secrets."
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Give the command/config needed to reproduce it, with secrets and private data removed.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: TrendCite version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Execution mode
+      options:
+        - CLI / human
+        - AI agent / Agent Skill
+        - Automation / CI
+        - Python API
+        - Other
+    validations:
+      required: true
