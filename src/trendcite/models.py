@@ -20,7 +20,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from .identity import ObservationIdentity, resolve_identity, story_key_for_url
-from .versions import CONTENT_OPPORTUNITY_SCORE_VERSION, engine_versions
+from .versions import CONTENT_OPPORTUNITY_SCORE_VERSION, REPORT_SCHEMA_VERSION, engine_versions
 
 if TYPE_CHECKING:  # pragma: no cover - typing only, avoids an import cycle
     from .signal import SignalBrief
@@ -212,7 +212,7 @@ class Report:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "tool": "trendcite",
+            "tool": "trendcite",\n            "schema_version": REPORT_SCHEMA_VERSION,
             "generated_at": self.generated_at.isoformat(),
             "mode": self.mode,
             "niche": self.niche,
