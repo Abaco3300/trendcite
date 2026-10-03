@@ -1,0 +1,31 @@
+name: Share a use case
+description: Tell us how you use TrendCite Public and what value it provides.
+title: "[Use case] "
+body:
+  - type: markdown
+    attributes:
+      value: "This is voluntary and public. Do not include secrets, private URLs, customer data, or confidential information."
+  - type: dropdown
+    id: mode
+    attributes:
+      label: How do you use TrendCite?
+      options:
+        - CLI manually
+        - Claude Code / AI agent
+        - Automation / scheduled workflow
+        - Python integration
+        - Evaluation only
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: job
+    attributes:
+      label: What job does TrendCite help you do?
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: What has been useful?
+      description: Optional. Concrete, non-confidential examples are especially helpful.

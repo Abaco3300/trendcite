@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an improvement to TrendCite Public.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or missing capability
+      description: What are you trying to accomplish that TrendCite Public cannot do well today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the result you need rather than only a specific implementation.
+    validations:
+      required: true
+  - type: dropdown
+    id: consumer
+    attributes:
+      label: Primary consumer
+      options:
+        - Human CLI user
+        - AI agent
+        - Automation / CI
+        - Python integration
+        - Not sure / multiple
+    validations:
+      required: true

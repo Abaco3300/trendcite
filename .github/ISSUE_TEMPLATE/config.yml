@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: TrendCite Pro / API interest
+    url: https://github.com/Abaco3300/trendcite/issues/new?template=pro-interest.yml
+    about: Share voluntary interest in hosted, team, API, or agent capabilities.
