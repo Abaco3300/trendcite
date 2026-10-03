@@ -25,15 +25,26 @@ def test_worker_uses_canonical_wrangler_config_with_fail_closed_placeholders() -
     assert "REPLACE_WITH_NONPROD_DLQ_NAME" in text
 
 
+def test_packaging_preparer_derives_wheel_version_from_pyproject() -> None:
+    text = (ROOT / "scripts" / "prepare_cloudflare_runtime.py").read_text(encoding="utf-8")
+    assert "tomllib.load" in text
+    assert 'data.get("project", {}).get("version", "")' in text
+    assert 'f"trendcite-{project_version()}-py3-none-any.whl"' in text
+    assert "trendcite-0.1.0-py3-none-any.whl" not in text
+
+
 def test_packaging_preparer_requires_current_cloud_runtime_modules() -> None:
     text = (ROOT / "scripts" / "prepare_cloudflare_runtime.py").read_text(encoding="utf-8")
     for member in (
         "trendcite/cloud/async_application.py",
+        "trendcite/cloud/async_delivery.py",
+        "trendcite/cloud/async_delivery_service.py",
         "trendcite/cloud/async_execution.py",
         "trendcite/cloud/async_http.py",
         "trendcite/cloud/async_scheduler.py",
         "trendcite/cloud/async_sources.py",
         "trendcite/cloud/db/postgres.py",
+        "trendcite/cloud/db/postgres_delivery.py",
         "trendcite/cloud/db/postgres_execution.py",
     ):
         assert member in text
@@ -63,6 +74,15 @@ def test_worker_uses_configured_runtime_role() -> None:
     text = (WORKER / "src" / "main.py").read_text(encoding="utf-8")
     assert 'getattr(env, "TRENDCITE_RUNTIME_ROLE", "trendcite_runtime")' in text
     assert "runtime_role=_runtime_role(env)" in text
+
+
+def test_worker_delivery_is_explicit_and_fail_closed() -> None:
+    text = (WORKER / "src" / "main.py").read_text(encoding="utf-8")
+    assert 'getattr(env, "TRENDCITE_DELIVERY_PROVIDER", "")' in text
+    assert 'provider != "postmark-nonprod"' in text
+    assert 'kind == "deliver_alert"' in text
+    assert 'kind == "deliver_digest"' in text
+    assert "CloudflarePostTransport" in text
 
 
 def test_nonprod_wrangler_config_uses_persistent_resources() -> None:

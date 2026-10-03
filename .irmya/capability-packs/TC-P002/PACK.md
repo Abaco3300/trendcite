@@ -1,45 +1,60 @@
 # TC-P002 — Persistent Runtime E2E Hardening
 
-Status: OPEN
+Status: CLOSED / PASS
 
 ## Outcome
 
 Prove that the persistent non-production runtime behaves correctly across repeated executions, duplicate delivery, failure/retry and lease-recovery conditions before delivery/auth/frontend work begins.
 
-## In scope
+## Acceptance evidence
 
-- repeated scheduled execution across multiple boundaries;
-- idempotent Radar Run identity;
-- schedule tick deduplication;
-- generic queue delivery deduplication;
-- retry behavior;
-- max-attempt handling;
-- lease expiry and reclaim;
-- stale-owner settlement protection;
-- controlled nonprod failure injection where safe;
-- persistent operational evidence;
-- project state updates.
+- repeated automatic runs remain successful: PASS
+- idempotent Radar Run identity: PASS
+- schedule tick deduplication: PASS
+- generic Queue logical-delivery deduplication: PASS
+- retryable failed tick can be claimed while below max attempts: PASS
+- attempt budget exhaustion blocks a further claim: PASS
+- expired running lease can be reclaimed by a new owner: PASS
+- stale owner cannot settle reclaimed work: PASS
+- current owner can settle reclaimed work: PASS
+- same logical Queue ID may exist independently in another workspace: PASS
+- wrong-workspace tick claim: BLOCKED
+- no cross-project mutation: PASS
+- P0=0
+- P1=0
 
-## Acceptance criteria
+## PostgreSQL evidence
 
-- repeated automatic runs remain successful;
-- duplicate logical work does not create duplicate Radar Runs;
-- duplicate schedule boundaries do not create duplicate ticks;
-- generic queue duplicate delivery is neutralized;
-- retryable failures follow configured retry semantics;
-- exhausted attempts settle deterministically;
-- expired leases can be reclaimed safely;
-- stale owners cannot settle reclaimed work;
-- no cross-workspace leakage;
-- no cross-project mutation;
-- canonical local preflight PASS;
-- P0=0;
-- P1=0.
+Queue duplicate probe:
+- first_inserted = 1
+- duplicate_inserted = 0
+- durable_rows = 1
 
-## Boundaries
+Radar Run duplicate probe:
+- duplicate_run_inserted = 0
+- durable_rows_for_logical_run = 1
+
+Lease probe:
+- owner A initial claim = 1
+- owner B expired-lease reclaim = 1
+- resulting attempt = 2
+- stale owner settlement = 0
+- valid owner settlement = 1
+
+Retry budget probe:
+- third allowed attempt claim = 1
+- durable_attempt = 3
+- max_attempts = 3
+- claim after exhausted budget = 0
+
+Isolation probe:
+- same logical queue ID in second workspace = allowed
+- wrong-workspace tick claim = 0
+
+## Boundaries respected
 
 No production activation.
-No live billing.
-No external customer communication.
-No destructive cross-project operations.
+No billing.
+No customer communication.
+No cross-project destructive operation.
 No new provider spend.

@@ -7,21 +7,36 @@ import hashlib
 import shutil
 import subprocess
 import sys
+import tomllib
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKER = ROOT / "deploy" / "cloudflare"
 WHEELHOUSE = WORKER / "wheelhouse"
-EXPECTED_WHEEL = WHEELHOUSE / "trendcite-0.1.0-py3-none-any.whl"
+
+
+def project_version() -> str:
+    with (ROOT / "pyproject.toml").open("rb") as handle:
+        data = tomllib.load(handle)
+    version = str(data.get("project", {}).get("version", "")).strip()
+    if not version:
+        raise RuntimeError("pyproject.toml is missing project.version")
+    return version
+
+
+EXPECTED_WHEEL = WHEELHOUSE / f"trendcite-{project_version()}-py3-none-any.whl"
 
 REQUIRED_MEMBERS = {
     "trendcite/cloud/async_application.py",
+    "trendcite/cloud/async_delivery.py",
+    "trendcite/cloud/async_delivery_service.py",
     "trendcite/cloud/async_execution.py",
     "trendcite/cloud/async_http.py",
     "trendcite/cloud/async_scheduler.py",
     "trendcite/cloud/async_sources.py",
     "trendcite/cloud/db/postgres.py",
+    "trendcite/cloud/db/postgres_delivery.py",
     "trendcite/cloud/db/postgres_execution.py",
 }
 
