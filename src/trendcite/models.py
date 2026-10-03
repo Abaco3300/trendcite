@@ -89,6 +89,8 @@ class EvidenceItem:
             return m.get("points", m.get("score", 0.0)) + 0.5 * m.get("comments", 0.0)
         if self.source == "github" and "stars" in m:
             return m["stars"] + 0.25 * m.get("forks", 0.0)
+        if self.source == "devto" and ("reactions" in m or "comments" in m):
+            return m.get("reactions", 0.0) + 0.5 * m.get("comments", 0.0)
         return None
 
     def to_dict(self) -> dict[str, Any]:

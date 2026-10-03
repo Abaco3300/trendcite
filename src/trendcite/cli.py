@@ -49,7 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
     live = sub.add_parser("live", help="collect from public read-only sources and build briefs")
     _add_common(live)
     live.add_argument("--config", type=Path, help="path to trendcite.toml")
-    live.add_argument("--sources", help="comma-separated: hackernews,github,rss,reddit,x")
+    live.add_argument("--sources", help="comma-separated: hackernews,github,rss,reddit,devto,x")
     live.add_argument("--feeds", help="comma-separated RSS/Atom URLs (replaces configured feeds)")
     live.add_argument("--subreddits", help="comma-separated subreddit names")
     live.add_argument("--github-queries", help="comma-separated GitHub search queries")
@@ -118,7 +118,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "sources":
             for adapter in make_adapters(
-                Config(sources=["hackernews", "github", "rss", "reddit", "x"])
+                Config(sources=["hackernews", "github", "rss", "reddit", "devto", "x"])
             ):
                 print(f"{adapter.name:<11} {adapter.description}")
             return 0

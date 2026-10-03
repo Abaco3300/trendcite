@@ -39,7 +39,7 @@ def test_cli_demo_llm_flag_without_provider_is_safe(
 def test_cli_sources(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["sources"]) == 0
     out = capsys.readouterr().out
-    for name in ("hackernews", "github", "rss", "reddit", "x"):
+    for name in ("hackernews", "github", "rss", "reddit", "devto", "x"):
         assert name in out
 
 
