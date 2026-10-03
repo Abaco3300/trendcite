@@ -36,6 +36,7 @@ from .scoring import (
 from .signal import CandidateSignal, SignalBrief
 from .signal_scoring import build_signal_brief
 from .sources import (
+    DevToAdapter,
     GitHubAdapter,
     HackerNewsAdapter,
     RedditAdapter,
@@ -181,6 +182,7 @@ def load_demo_items() -> tuple[list[EvidenceItem], datetime, list[str], list[Sou
 def make_adapters(cfg: Config, transport: Transport | None = None) -> list[SourceAdapter]:
     available: dict[str, SourceAdapter] = {
         "hackernews": HackerNewsAdapter(limit=cfg.hn_limit, transport=transport),
+        "devto": DevToAdapter(transport=transport),
         "github": GitHubAdapter(cfg.github_queries, transport=transport),
         "rss": RSSAdapter(cfg.feeds, transport=transport),
         "reddit": RedditAdapter(cfg.subreddits, transport=transport),
