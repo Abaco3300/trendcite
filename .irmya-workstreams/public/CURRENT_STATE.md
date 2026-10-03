@@ -24,12 +24,25 @@ TCP-P001 / PR #18 Public Onboarding, CLI & Agent Interface: MERGED — 1d434ed4b
 Adapt, improve and expand TrendCite Public as a useful open-source, local-first, evidence-first and agent-friendly product while preserving privacy and a clean boundary with TrendCite Pro.
 
 ## Active internal Pack
-ACTIVE_PACK = TCP-P002
-PACK_NAME = Evidence Quality & Output Reliability
-PACK_STATUS = OPEN
+ACTIVE_PACK = NONE
+PACK_NAME = NONE
+PACK_STATUS = ALL_AUTHORIZED_PUBLIC_PACKS_CLOSED
 
 ## Human Gates
 NEXT_REAL_HUMAN_GATE = NONE_CURRENTLY_IDENTIFIED
 
 ## Next automatic action
-Version the public report contract -> verify evidence/output invariants -> strengthen regression coverage where gaps exist -> remote CI checkpoint -> Professional QA -> close TCP-P002 -> continue automatically.
+Prepare and validate v0.1.1 release candidate. Stop before publishing a GitHub Release or dispatching the manual PyPI workflow; those are explicit release/production actions requiring a Human Gate.
+
+
+## Completed Public expansion
+TCP-P002: report contract versioned and regression-protected — MERGED
+TCP-P003: DEV Community public source adapter — MERGED
+TCP-P004: discoverability and packaging alignment — MERGED
+TCP-P005: structured voluntary feedback channels — MERGED
+
+## Release boundary
+RELEASE_CANDIDATE = v0.1.1
+GITHUB_RELEASE = NOT_CREATED
+PYPI_PUBLISH = NOT_DISPATCHED
+NEXT_REAL_HUMAN_GATE = AUTHORIZE_PUBLIC_RELEASE_V0_1_1
