@@ -7,14 +7,14 @@ Status: ACTIVE
 
 Repository: Abaco3300/trendcite
 Canonical branch: main
-Last verified main: 07954bb4c03688d6f94634be34c63eaa6f54bf6a
+Last verified main before TC-P001 checkpoint: 9a6bd3bce4c510f75650df061c513efcde9e4480
 Package version: 0.1.0
 
 ## Readiness
 
 RUNTIME_CORE_READY = YES
-PERSISTENT_NONPROD = IN_PROGRESS
-HOSTED_PRODUCT = NO
+PERSISTENT_NONPROD = YES
+HOSTED_PRODUCT = NONPROD_ONLY
 CUSTOMER_AUTH = NO
 CUSTOMER_FRONTEND = NO
 DELIVERY_INTEGRATION = NO
@@ -22,45 +22,63 @@ BILLING_ENTITLEMENTS = NO
 PRODUCTION_READY = NO
 COMMERCIALIZATION_READY = NO
 
-## Runtime validation already closed
-
-- PostgreSQL runtime: PASS
-- NOINHERIT + SET LOCAL ROLE: PASS
-- Hyperdrive runtime validation: PASS
-- real Hacker News fetch: PASS
-- Queue -> Worker: PASS
-- Radar Run: PASS
-- result persistence: PASS
-- Cron auto-fire: PASS
-- Cron -> TrendCite scheduled(): PASS
-- automatic schedule tick persistence: PASS
-- scheduled env fallback remediation: MERGED
-- local and remote CI: PASS
-
 ## Persistent nonprod state
 
 Supabase schema: trendcite
 Persistent tables: 27
 Runtime role: trendcite_nonprod_runtime
 Hyperdrive login role: trendcite_nonprod_hyperdrive_login
+Hyperdrive: trendcite-nonprod-hyperdrive
+Hyperdrive ID: 403038608f454b4b8172d9609f6a7383
 Queue: trendcite-nonprod-queue
 Queue ID: 752b703ee758448d81be0bc3639abfdf
 DLQ: trendcite-nonprod-dlq
 DLQ ID: a5c3d474d01c45e085b5152575f4408e
-Hyperdrive: NOT_PRESENT_AS_OF_2026-10-03
-Persistent Worker: NOT_DEPLOYED
-Persistent Cron: NOT_ACTIVATED
+Worker: trendcite-nonprod-runtime
+Worker version: c7ea2bd1-9d23-46ce-9599-5e74d740ba30
+Worker URL: https://trendcite-nonprod-runtime.istriadegroupllc.workers.dev
+Cron: */5 * * * *
+Runtime role binding: TRENDCITE_RUNTIME_ROLE=trendcite_nonprod_runtime
+
+## TC-P001 Professional QA evidence
+
+- 27 canonical tables: PASS
+- login NOINHERIT / no direct table access: PASS
+- runtime access via SET LOCAL ROLE: PASS
+- Hyperdrive persistent binding: PASS
+- Worker deploy: PASS
+- Queue producer + consumer: PASS
+- DLQ configuration: PASS
+- /health: HTTP 200 / {"ok": true}
+- Cron automatic fire: PASS
+- schedule watermark advance: PASS through 2026-10-03T20:00:00Z
+- automatic schedule tick persistence: PASS
+- Queue -> Worker: PASS
+- real Hacker News acquisition: PASS
+- Radar execution: PASS
+- result persistence: PASS
+- persistent runs observed: 3 succeeded
+- coverage: complete
+- global signal persistence: PASS
+- local canonical preflight: PASS, 300 tests
+- package version remains 0.1.0
+- P0 = 0
+- P1 = 0
+
+## Closed Pack
+
+TC-P001 — Persistent Nonprod Foundation = CLOSED / PASS
 
 ## Active internal Pack
 
-ACTIVE_PACK = TC-P001
-PACK_NAME = Persistent Nonprod Foundation
-PACK_STATUS = BLOCKED_AT_CREDENTIAL_TRANSPORT
+ACTIVE_PACK = TC-P002
+PACK_NAME = Persistent Runtime E2E Hardening
+PACK_STATUS = OPEN
 
 ## Current Human Gate
 
-The persistent Hyperdrive requires the already-planned nonprod PostgreSQL login password to be set securely and entered into Cloudflare. Plaintext password must not enter Git or chat.
+NONE
 
-## Next automatic action after gate
+## Next automatic action
 
-Verify Hyperdrive -> package exact repository checkpoint -> deploy persistent nonprod Worker -> bind Queue/DLQ/Cron -> run persistent E2E -> repair in-scope defects -> close TC-P001 after Professional QA.
+Validate repeated scheduled execution, idempotency, retry/recovery, queue deduplication, lease reclaim behavior and persistent operational evidence on the stable nonprod foundation. Repair in-scope defects, run Professional QA, close TC-P002, and continue automatically unless a genuine Human Gate appears.

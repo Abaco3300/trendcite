@@ -37,12 +37,22 @@ def _connector(env: Any) -> AsyncpgHyperdriveConnector:
     return AsyncpgHyperdriveConnector(env.HYPERDRIVE)
 
 
+def _runtime_role(env: Any) -> str:
+    role = str(getattr(env, "TRENDCITE_RUNTIME_ROLE", "trendcite_runtime"))
+    if not role:
+        raise RuntimeError("TRENDCITE_RUNTIME_ROLE must not be empty")
+    return role
+
+
 def _store(env: Any) -> PostgresRuntimeStore:
-    return PostgresRuntimeStore(_connector(env))
+    return PostgresRuntimeStore(_connector(env), runtime_role=_runtime_role(env))
 
 
 def _runner(env: Any) -> AsyncCloudApplicationRunner:
-    execution_store = PostgresExecutionStore(_connector(env))
+    execution_store = PostgresExecutionStore(
+        _connector(env),
+        runtime_role=_runtime_role(env),
+    )
     source_service = AsyncSourceExecutionServiceImpl(
         CloudflareFetchTransport(),
         config=Config(),
