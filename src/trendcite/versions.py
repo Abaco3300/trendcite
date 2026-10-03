@@ -13,6 +13,9 @@ from __future__ import annotations
 
 from typing import Final
 
+#: Version of the public JSON report envelope. Additive fields remain compatible within v1.
+REPORT_SCHEMA_VERSION: Final = "trendcite-report-v1"
+
 #: How an observation's stable identity is derived (native id -> URL -> fingerprint).
 OBSERVATION_IDENTITY_VERSION: Final = "observation-identity-v1"
 

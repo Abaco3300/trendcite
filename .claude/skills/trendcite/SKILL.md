@@ -55,7 +55,7 @@ For agents and automation, prefer `--format json` on stdout and do not parse std
 
 ## Reading the output
 
-JSON top level: `mode`, `generated_at`, `niche`, `total_items`, `source_status[]`, `notes[]`, `briefs[]`, `engine` (the version of each deterministic algorithm that produced the report).
+JSON top level: `tool`, `schema_version`, `mode`, `generated_at`, `niche`, `total_items`, `source_status[]`, `notes[]`, `briefs[]`, `engine`. `schema_version` identifies the public report-envelope contract; `engine` identifies the deterministic algorithms that produced the report.
 
 Each brief: `rank`, `topic`, `angle`, `why_now[]`, `evidence[]` (each with `source`, `source_label`, `title`, `excerpt`, `url`, `discussion_url`, `author`, `published_at`, `metrics`, `flags`), `score` (`recency`, `engagement`, `corroboration`, `relevance`, `diversity`, `total`, `confidence`), `score_explanation[]`, `counterpoints[]`, `founder_questions[]`, `draft_outline_not_evidence[]`, `flags[]`, `synthesis_note`, `signal`.
 
