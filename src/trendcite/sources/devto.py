@@ -16,7 +16,8 @@ API = "https://dev.to/api/articles?per_page={n}"
 def normalize_devto_article(record: Any, fetched_at: datetime) -> EvidenceItem | None:
     if not isinstance(record, dict):
         return None
-    user = record.get("user") if isinstance(record.get("user"), dict) else {}
+    raw_user = record.get("user")
+    user: dict[str, Any] = raw_user if isinstance(raw_user, dict) else {}
     tags = record.get("tag_list") or []
     if isinstance(tags, str):
         tags = [t.strip() for t in tags.split(",") if t.strip()]
@@ -30,7 +31,9 @@ def normalize_devto_article(record: Any, fetched_at: datetime) -> EvidenceItem |
         excerpt=record.get("description") or " ".join(str(t) for t in tags[:8]),
         author=user.get("username"),
         metrics={
-            "reactions": record.get("positive_reactions_count", record.get("public_reactions_count", 0)),
+            "reactions": record.get(
+                "positive_reactions_count", record.get("public_reactions_count", 0)
+            ),
             "comments": record.get("comments_count", 0),
         },
         raw={"devto_id": record.get("id")},
