@@ -57,3 +57,18 @@ def test_scheduled_handler_falls_back_to_worker_entrypoint_env() -> None:
     text = (WORKER / "src" / "main.py").read_text(encoding="utf-8")
     assert "runtime_env = env if env is not None else self.env" in text
     assert "result = await _coordinator(runtime_env).plan_and_enqueue(" in text
+
+
+def test_worker_uses_configured_runtime_role() -> None:
+    text = (WORKER / "src" / "main.py").read_text(encoding="utf-8")
+    assert 'getattr(env, "TRENDCITE_RUNTIME_ROLE", "trendcite_runtime")' in text
+    assert "runtime_role=_runtime_role(env)" in text
+
+
+def test_nonprod_wrangler_config_uses_persistent_resources() -> None:
+    text = (WORKER / "wrangler.nonprod.jsonc").read_text(encoding="utf-8")
+    assert '"name": "trendcite-nonprod-runtime"' in text
+    assert '"TRENDCITE_RUNTIME_ROLE": "trendcite_nonprod_runtime"' in text
+    assert '"id": "403038608f454b4b8172d9609f6a7383"' in text
+    assert '"queue": "trendcite-nonprod-queue"' in text
+    assert '"dead_letter_queue": "trendcite-nonprod-dlq"' in text

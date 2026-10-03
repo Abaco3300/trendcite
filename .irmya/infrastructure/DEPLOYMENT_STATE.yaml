@@ -1,12 +1,17 @@
 nonprod:
   database_schema: ACTIVE
   database_roles: ACTIVE
-  hyperdrive: NOT_PRESENT
+  hyperdrive: ACTIVE
+  hyperdrive_id: 403038608f454b4b8172d9609f6a7383
   queue: ACTIVE
   dlq: ACTIVE
-  worker: NOT_DEPLOYED
-  cron: NOT_ACTIVE
-  runtime_e2e: NOT_YET_PERSISTENTLY_VERIFIED
+  worker: ACTIVE
+  worker_name: trendcite-nonprod-runtime
+  worker_version: c7ea2bd1-9d23-46ce-9599-5e74d740ba30
+  cron: ACTIVE
+  cron_schedule: "*/5 * * * *"
+  health: PASS
+  runtime_e2e: PASS
 
 production:
   configured: false

@@ -4,13 +4,15 @@ local:
 
 nonprod:
   class: DEVELOPMENT
-  status: PROVISIONING
+  status: ACTIVE
   database: ISTRIADE_PLATFORM/trendcite
   cloudflare_queue: trendcite-nonprod-queue
   cloudflare_dlq: trendcite-nonprod-dlq
-  cloudflare_hyperdrive: PENDING
-  cloudflare_worker: PENDING
-  cron: PENDING
+  cloudflare_hyperdrive: trendcite-nonprod-hyperdrive
+  cloudflare_worker: trendcite-nonprod-runtime
+  cron: "*/5 * * * *"
+  health: PASS
+  runtime_e2e: PASS
 
 production:
   class: PRODUCTION

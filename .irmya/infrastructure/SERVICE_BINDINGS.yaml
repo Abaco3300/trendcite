@@ -27,15 +27,17 @@ hyperdrive:
   capability: postgres_connection_acceleration
   provider: Cloudflare_Hyperdrive
   resource: trendcite-nonprod-hyperdrive
+  resource_id: 403038608f454b4b8172d9609f6a7383
   environment: nonprod
-  status: PENDING
+  status: ACTIVE
 
 worker:
   capability: hosted_async_runtime
   provider: Cloudflare_Workers
   resource: trendcite-nonprod-runtime
+  version_id: c7ea2bd1-9d23-46ce-9599-5e74d740ba30
   environment: nonprod
-  status: PENDING
+  status: ACTIVE
 
 transactional_email:
   capability: alerts_and_digests
