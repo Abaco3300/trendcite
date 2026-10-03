@@ -1,0 +1,15 @@
+nonprod:
+  database_schema: ACTIVE
+  database_roles: ACTIVE
+  hyperdrive: NOT_PRESENT
+  queue: ACTIVE
+  dlq: ACTIVE
+  worker: NOT_DEPLOYED
+  cron: NOT_ACTIVE
+  runtime_e2e: NOT_YET_PERSISTENTLY_VERIFIED
+
+production:
+  configured: false
+  ready: false
+  active: false
+  activation_authorized: false

@@ -1,0 +1,44 @@
+database:
+  capability: persistent_relational_state
+  provider: Supabase_PostgreSQL
+  resource: ISTRIADE_PLATFORM
+  namespace: trendcite
+  environment: nonprod
+  ownership: ORGANIZATION_SHARED
+  status: ACTIVE
+
+queue:
+  capability: asynchronous_execution
+  provider: Cloudflare_Queues
+  resource: trendcite-nonprod-queue
+  environment: nonprod
+  ownership: ORGANIZATION_SHARED
+  project_isolation: PROJECT_NAMED_RESOURCE
+  status: ACTIVE
+
+dead_letter_queue:
+  capability: failed_message_retention
+  provider: Cloudflare_Queues
+  resource: trendcite-nonprod-dlq
+  environment: nonprod
+  status: ACTIVE
+
+hyperdrive:
+  capability: postgres_connection_acceleration
+  provider: Cloudflare_Hyperdrive
+  resource: trendcite-nonprod-hyperdrive
+  environment: nonprod
+  status: PENDING
+
+worker:
+  capability: hosted_async_runtime
+  provider: Cloudflare_Workers
+  resource: trendcite-nonprod-runtime
+  environment: nonprod
+  status: PENDING
+
+transactional_email:
+  capability: alerts_and_digests
+  provider: Postmark
+  environment: nonprod
+  status: DEFERRED

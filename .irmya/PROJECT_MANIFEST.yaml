@@ -1,0 +1,11 @@
+project_id: TRENDCITE
+project_name: TrendCite
+owner: ISTRIADE_GROUP_LLC
+canonical_repository: Abaco3300/trendcite
+irmya_governance: ACTIVE
+execution_mode: OUTCOME_DRIVEN_AUTONOMOUS
+lifecycle_phase: PRE_PRODUCTION_BUILD
+package_version: 0.1.0
+production_status: INACTIVE
+commercialization_status: NOT_READY
+authorized_outcome: persistent_nonprod_to_production_readiness
