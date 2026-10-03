@@ -66,6 +66,16 @@ def _emit(text: str, out: Path | None) -> None:
     sys.stderr.write(f"trendcite: wrote {out}\n")
 
 
+def _maybe_pro_notice() -> None:
+    """Show an optional Pro/feedback pointer only in an interactive terminal."""
+    if not sys.stderr.isatty():
+        return
+    sys.stderr.write(
+        "trendcite: using or evaluating TrendCite? Share your use case / Pro interest: "
+        "https://github.com/Abaco3300/trendcite/issues/new?template=pro-interest.yml\\n"
+    )
+
+
 def _maybe_llm(report: Report, enabled: bool) -> None:
     if not enabled:
         return
@@ -119,6 +129,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         _maybe_llm(report, args.llm)
         rendered = to_json(report) if args.format == "json" else to_markdown(report)
         _emit(rendered, args.out)
+        _maybe_pro_notice()
         if args.command == "live" and not any(s.ok for s in report.source_status):
             sys.stderr.write("trendcite: no source was reachable; see the source table.\n")
             return 2

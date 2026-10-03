@@ -1,0 +1,73 @@
+name: TrendCite use case / Pro interest
+description: Tell us how you use TrendCite and what would make a hosted edition useful. This issue is public.
+title: "[Pro interest] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying TrendCite. This optional form helps us distinguish real use from anonymous repository activity and shape TrendCite Pro.
+
+        **This is a public GitHub issue. Do not include secrets, private URLs, customer data, API keys, or other confidential information.**
+
+  - type: dropdown
+    id: usage_mode
+    attributes:
+      label: How are you using TrendCite?
+      options:
+        - CLI manually
+        - Claude Code or another AI agent
+        - Automation / CI / scheduled workflow
+        - Evaluating it, not using it yet
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: What are you using it for?
+      description: A short, non-confidential description is enough.
+      placeholder: "Example: monitoring AI developer-tool topics before deciding what to write about."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: pro_interest
+    attributes:
+      label: Would a hosted TrendCite Pro be useful to you?
+      options:
+        - Yes
+        - Maybe
+        - No
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: capabilities
+    attributes:
+      label: Which capabilities would matter?
+      options:
+        - label: Continuous monitoring
+        - label: Signal history and change over time
+        - label: Alerts / digests
+        - label: Managed dashboard
+        - label: Team workspaces
+        - label: API for software or AI agents
+        - label: More data sources
+
+  - type: textarea
+    id: missing
+    attributes:
+      label: What is missing from TrendCite today?
+      description: Optional. Tell us the one thing that would make it substantially more useful.
+
+  - type: dropdown
+    id: agent_api
+    attributes:
+      label: Would you integrate TrendCite from software or an AI agent?
+      options:
+        - Yes
+        - Maybe
+        - No
+    validations:
+      required: true
