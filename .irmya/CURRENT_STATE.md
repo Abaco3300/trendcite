@@ -1,3 +1,5 @@
+[Reading 98 lines from start (total: 98 lines, 0 remaining)]
+
 [Reading 93 lines from start (total: 93 lines, 0 remaining)]
 
 [Reading 89 lines from start (total: 89 lines, 0 remaining)]
@@ -67,6 +69,18 @@ ACTIVE_PACK = TC-P003
 PACK_NAME = Transactional Delivery / Postmark
 PACK_STATUS = BUILD_READY / LIVE_VALIDATION_PENDING
 
+## TC-P003 packaging remediation
+
+- stale/hybrid vendored package detected after PR #25 deploy: YES
+- root cause: worker uv source + pylock/vendor retained TrendCite 0.1.0
+- deterministic wheel source update: IMPLEMENTED
+- generated vendor/cache invalidation: IMPLEMENTED
+- pywrangler sync inside packaging preparer: IMPLEMENTED
+- wheel/vendor byte equality for Cloud modules: IMPLEMENTED
+- pylock current-version assertion: IMPLEMENTED
+- pywrangler dry-run with vendored modules: PASS (211 modules)
+- remediation merge/redeploy: PENDING
+
 ## TC-P003 build evidence
 
 - provider-neutral async delivery boundary: PASS
@@ -92,6 +106,8 @@ NONE
 ## Next automatic action
 
 Complete final post-reconciliation Professional QA, checkpoint TC-P003 build in GitHub, deploy the fail-closed delivery-capable Worker to persistent nonprod, verify unchanged Radar health, then perform provider test-mode validation. Stop only if a genuine credential/recipient/production/spend Human Gate is reached.
+
+[executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
 
 [executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
 

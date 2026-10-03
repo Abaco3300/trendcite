@@ -19,4 +19,4 @@ package = false
 [tool.uv.sources]
 # Build this wheel from the exact repository checkpoint before pywrangler sync/deploy.
 # This prevents Cloudflare from resolving the older public PyPI package.
-trendcite = { path = "wheelhouse/trendcite-0.1.0-py3-none-any.whl" }
+trendcite = { path = "wheelhouse/trendcite-0.1.1-py3-none-any.whl" }

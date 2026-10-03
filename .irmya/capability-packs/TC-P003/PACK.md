@@ -1,3 +1,5 @@
+[Reading 61 lines from start (total: 61 lines, 0 remaining)]
+
 [Reading 58 lines from start (total: 58 lines, 0 remaining)]
 
 [Reading 54 lines from start (total: 54 lines, 0 remaining)]
@@ -41,6 +43,21 @@ Add a production-shaped but non-production-gated transactional delivery layer fo
 
 Postmark does not provide a client idempotency key for /email. TrendCite therefore preserves its own deterministic delivery-attempt identity and sends it as provider metadata for correlation. Exactly-once provider delivery is not claimed.
 
+## Packaging remediation
+
+- stale mixed vendor detected after initial delivery-capable deploy: confirmed
+- worker uv source still pointed to trendcite 0.1.0: confirmed root cause
+- prepare script now derives the root project version: PASS
+- worker pyproject is rewritten to the exact wheel: PASS
+- generated python_modules / venv / lock caches are invalidated: PASS
+- pywrangler sync is executed by the preparer: PASS
+- wheel/vendor byte equality is checked for required Cloud modules: PASS
+- pylock current-version/current-wheel assertions: PASS
+- regenerated vendor version: 0.1.1
+- pywrangler dry-run: PASS, 211 modules
+- canonical local preflight after remediation: PASS
+- production untouched
+
 ## Remaining live validation
 
 - GitHub checkpoint;
@@ -55,6 +72,8 @@ Postmark does not provide a client idempotency key for /email. TrendCite therefo
 Real external email delivery requires an explicitly authorized recipient.
 Production delivery activation requires a separate Human Gate.
 Any new paid provider spend requires a separate Human Gate.
+
+[executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
 
 [executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
 

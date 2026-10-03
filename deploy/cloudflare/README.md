@@ -56,10 +56,10 @@ written transactionally before the schedule tick is settled.
 ## Runtime packaging
 
 The Worker must never resolve the public PyPI `trendcite` package as its application
-code. The public 0.1.0 release predates the Cloud runtime modules.
+code. It must use the exact repository checkpoint being deployed.
 
-Before any pywrangler sync, dry-run or deploy, build the exact repository checkpoint
-into the worker wheelhouse:
+Before any Wrangler dry-run or deploy, build the exact repository checkpoint into the
+worker wheelhouse:
 
 ```text
 python scripts/prepare_cloudflare_runtime.py
@@ -67,14 +67,28 @@ python scripts/prepare_cloudflare_runtime.py
 
 That command:
 
-1. builds `trendcite-0.1.0-py3-none-any.whl` from the current repository;
-2. verifies that the wheel contains the required async Cloud runtime modules;
-3. prints the wheel SHA-256 as packaging evidence.
+1. reads the current package version from the root `pyproject.toml`;
+2. builds the matching `trendcite-<version>-py3-none-any.whl`;
+3. verifies that the wheel contains the required async Cloud runtime modules;
+4. rewrites `deploy/cloudflare/pyproject.toml` to the exact wheel name;
+5. removes generated vendor/lock/venv caches so Wrangler cannot reuse a mixed or stale
+   `python_modules` tree;
+6. prints the wheel SHA-256 as packaging evidence.
 
 `deploy/cloudflare/pyproject.toml` redirects the logical `trendcite` dependency to
-that wheel through `[tool.uv.sources]`. Pywrangler then vendors it, together with
-`asyncpg`, into `python_modules/`. Generated wheelhouse, lock, venv and
-`python_modules` artefacts are gitignored.
+that wheel through `[tool.uv.sources]`. Pywrangler regenerates and vendors it,
+together with `asyncpg`, into `python_modules/`. Generated wheelhouse, lock, venv
+and `python_modules` artefacts are gitignored.
+
+Python Worker dry-runs and deploys must use the dependency-aware wrapper, not raw
+Wrangler:
+
+```text
+uv run pywrangler deploy --config wrangler.nonprod.jsonc --dry-run
+uv run pywrangler deploy --config wrangler.nonprod.jsonc
+```
+
+`uv` and the `workers-py`/pywrangler tooling are therefore deployment prerequisites.
 
 `wrangler.jsonc` is the canonical scaffold configuration. Its non-production
 resource identifiers remain deliberate placeholders and must be replaced only inside
