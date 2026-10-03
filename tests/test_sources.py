@@ -161,7 +161,6 @@ def test_github_rate_limited_is_graceful() -> None:
         GitHubAdapter(["mcp"], transport=fake).collect(NOW)
 
 
-
 def test_devto_adapter_with_mocked_public_api() -> None:
     payload = [
         {
