@@ -129,10 +129,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         _maybe_llm(report, args.llm)
         rendered = to_json(report) if args.format == "json" else to_markdown(report)
         _emit(rendered, args.out)
-        _maybe_pro_notice()
         if args.command == "live" and not any(s.ok for s in report.source_status):
             sys.stderr.write("trendcite: no source was reachable; see the source table.\n")
             return 2
+        _maybe_pro_notice()
         return 0
     except (ConfigError, ValueError) as exc:
         sys.stderr.write(f"trendcite: error: {redact(str(exc))}\n")
