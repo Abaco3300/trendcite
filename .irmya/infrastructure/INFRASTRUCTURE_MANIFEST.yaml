@@ -1,0 +1,29 @@
+github:
+  ownership: PROJECT_OWNED
+  repository: Abaco3300/trendcite
+  status: ACTIVE
+
+supabase:
+  ownership: ORGANIZATION_SHARED
+  project_ref: yntcafxmjgfjrdinwdmo
+  project_name: ISTRIADE PLATFORM
+  schema: trendcite
+  status: ACTIVE
+
+cloudflare:
+  ownership: ORGANIZATION_SHARED
+  account_id: a4c8274fca447382525edd54ee20fd74
+  queue:
+    name: trendcite-nonprod-queue
+    id: 752b703ee758448d81be0bc3639abfdf
+    status: ACTIVE
+  dlq:
+    name: trendcite-nonprod-dlq
+    id: a5c3d474d01c45e085b5152575f4408e
+    status: ACTIVE
+  hyperdrive:
+    name: trendcite-nonprod-hyperdrive
+    status: NOT_PRESENT
+  worker:
+    name: trendcite-nonprod-runtime
+    status: NOT_DEPLOYED

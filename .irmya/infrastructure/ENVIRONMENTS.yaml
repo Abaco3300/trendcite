@@ -1,0 +1,18 @@
+local:
+  class: LOCAL
+  status: ACTIVE
+
+nonprod:
+  class: DEVELOPMENT
+  status: PROVISIONING
+  database: ISTRIADE_PLATFORM/trendcite
+  cloudflare_queue: trendcite-nonprod-queue
+  cloudflare_dlq: trendcite-nonprod-dlq
+  cloudflare_hyperdrive: PENDING
+  cloudflare_worker: PENDING
+  cron: PENDING
+
+production:
+  class: PRODUCTION
+  status: NOT_CONFIGURED
+  activation: NOT_AUTHORIZED
