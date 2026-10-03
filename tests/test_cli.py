@@ -69,3 +69,21 @@ def test_example_config_is_valid() -> None:
     example = Path(__file__).resolve().parents[1] / "examples" / "trendcite.toml"
     cfg = load_config(example)
     assert cfg.feeds and cfg.niche
+
+
+def test_cli_pro_notice_only_in_interactive_terminal(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("trendcite.cli.sys.stderr.isatty", lambda: True)
+    assert main(["demo", "--out", "unused-report.md"]) == 0
+    err = capsys.readouterr().err
+    assert "Share your use case / Pro interest" in err
+    Path("unused-report.md").unlink(missing_ok=True)
+
+
+def test_cli_pro_notice_silent_when_noninteractive(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("trendcite.cli.sys.stderr.isatty", lambda: False)
+    assert main(["demo"]) == 0
+    assert "Pro interest" not in capsys.readouterr().err

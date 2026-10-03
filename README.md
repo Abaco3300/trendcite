@@ -8,7 +8,17 @@
 
 It is not another scheduler. TrendCite never posts anything. It does the research step that comes *before* writing: what is actually being discussed, where, how strongly, why it may matter to you, and what the evidence does *not* show. You write the post yourself.
 
-Status: early open-source MVP (v0.1.0, alpha). Local CLI plus a Claude Code Skill. No hosted service exists.
+Status: early open-source MVP (v0.1.0, alpha). Local CLI plus a Claude Code Skill. No hosted service is available today. **TrendCite Pro is now in active development** as a future hosted/team edition; it is not yet available for purchase.
+
+## Using TrendCite? Help shape TrendCite Pro
+
+The open-source CLI stays useful on its own: there is no hidden telemetry, no account requirement, and no Pro feature gate in the local tool.
+
+If you are using or evaluating TrendCite, a short public GitHub form helps us understand what is happening after installs and clones: whether you use the CLI directly, invoke it from Claude Code or another agent, run it in automation, and which hosted capabilities would actually matter to you.
+
+**[Share your use case / TrendCite Pro interest](https://github.com/Abaco3300/trendcite/issues/new?template=pro-interest.yml)**
+
+The form does not ask for an email address. GitHub issues are public, so do not include secrets, private URLs, customer data, or other confidential information. Submitting the form is optional and does not change how TrendCite works.
 
 ## Try it in 60 seconds (offline, no API key, no network)
 
@@ -338,7 +348,7 @@ Possible next steps, not commitments:
 - More adapters with lawful, documented access: Lobsters, Product Hunt, dev.to, Mastodon, Bluesky, and the official X API behind the existing interface.
 - Optional fetching of linked article text (bounded, sanitised) to improve clustering.
 - Configurable scoring weights with a validation report.
-- A hosted or team edition is only a possible future option. Nothing like that exists today, and this project is free, MIT-licensed software.
+- TrendCite Pro, a future hosted/team edition, is in active development. It is not available for purchase today. The open-source project remains free, MIT-licensed software.
 
 ## License
 
