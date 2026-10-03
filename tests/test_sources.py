@@ -8,6 +8,7 @@ from trendcite.config import Config
 from trendcite.http import FetchError, fetch_bytes
 from trendcite.pipeline import collect, make_adapters, run_live
 from trendcite.sources import (
+    DevToAdapter,
     GitHubAdapter,
     HackerNewsAdapter,
     RedditAdapter,
@@ -158,6 +159,27 @@ def test_github_rate_limited_is_graceful() -> None:
     fake = FakeTransport({"api.github.com": (403, b"")})
     with pytest.raises(SourceUnavailable, match="GitHub"):
         GitHubAdapter(["mcp"], transport=fake).collect(NOW)
+
+
+
+def test_devto_adapter_with_mocked_public_api() -> None:
+    payload = [
+        {
+            "id": 42,
+            "title": "Agent evals in production",
+            "description": "What teams learned from production agent evaluation.",
+            "url": "https://dev.to/example/agent-evals-42",
+            "published_at": "2026-09-18T10:00:00Z",
+            "positive_reactions_count": 25,
+            "comments_count": 6,
+            "user": {"username": "example"},
+        }
+    ]
+    fake = FakeTransport({"dev.to/api/articles": (200, json.dumps(payload).encode())})
+    items = DevToAdapter(transport=fake).collect(NOW)
+    assert [i.source for i in items] == ["devto"]
+    assert items[0].engagement() == 28.0
+    assert "per_page=30" in fake.calls[0]
 
 
 def test_reddit_adapter_blocked_and_invalid_names() -> None:
