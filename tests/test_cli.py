@@ -97,5 +97,6 @@ def test_cli_json_stdout_is_machine_parseable_without_notice(
     captured = capsys.readouterr()
     data = json.loads(captured.out)
     assert data["mode"] == "demo"
+    assert data["schema_version"] == "trendcite-report-v1"
     assert "Pro interest" not in captured.out
     assert "Pro interest" not in captured.err
