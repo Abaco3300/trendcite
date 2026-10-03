@@ -286,6 +286,7 @@ Live mode only issues read-only GET requests to public endpoints named in your c
 | GitHub | Unauthenticated repository search, recently created repos sorted by stars | stars, forks | About 10 search requests/minute unauthenticated; results match your query by construction, so GitHub-only clusters are weak evidence |
 | RSS / Atom | Any feed URL you configure | none | No engagement signal; feeds with DTD/entity declarations are refused |
 | Reddit | Public per-subreddit Atom feeds (`/r/<sub>/top/.rss`) | none | Feeds carry no vote counts; Reddit often rate-limits anonymous clients (reported as unavailable) |
+| DEV Community | Public Forem published-articles API | reactions, comments | Popular published articles; no API key required for this read-only endpoint |
 | X / Twitter | Interface only | n/a | Not implemented. TrendCite does not scrape X or work around access controls |
 
 General limitations:
