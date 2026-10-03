@@ -87,3 +87,15 @@ def test_cli_pro_notice_silent_when_noninteractive(
     monkeypatch.setattr("trendcite.cli.sys.stderr.isatty", lambda: False)
     assert main(["demo"]) == 0
     assert "Pro interest" not in capsys.readouterr().err
+
+
+def test_cli_json_stdout_is_machine_parseable_without_notice(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("trendcite.cli.sys.stderr.isatty", lambda: False)
+    assert main(["demo", "--format", "json"]) == 0
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert data["mode"] == "demo"
+    assert "Pro interest" not in captured.out
+    assert "Pro interest" not in captured.err

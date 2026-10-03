@@ -49,7 +49,9 @@ Inputs:
 | Number of briefs | `--top N` (clamped to 3-5) |
 | Optional LLM refinement | `--llm` plus `TRENDCITE_LLM_PROVIDER` and the provider's key in the environment |
 
-Exit code 0 means a report was written. Exit code 2 means a configuration error or that no live source was reachable. Check the source status table either way.
+Exit code 0 means a report was written successfully. Exit code 2 means a configuration error or that no live source was reachable. Check the source status table either way.
+
+For agents and automation, prefer `--format json` on stdout and do not parse stderr. TrendCite keeps stdout machine-readable; human notices are emitted only to an interactive stderr terminal and never to non-interactive agent/CI runs. Consumers should ignore unknown future JSON fields for forward compatibility.
 
 ## Reading the output
 
