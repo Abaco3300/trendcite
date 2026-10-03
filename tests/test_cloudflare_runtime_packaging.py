@@ -7,11 +7,13 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKER = ROOT / "deploy" / "cloudflare"
 
 
-def test_worker_resolves_trendcite_from_local_runtime_wheel() -> None:
-    data = tomllib.loads((WORKER / "pyproject.toml").read_text(encoding="utf-8"))
-    assert "trendcite" in data["project"]["dependencies"]
-    source = data["tool"]["uv"]["sources"]["trendcite"]
-    assert source == {"path": "wheelhouse/trendcite-0.1.0-py3-none-any.whl"}
+def test_worker_resolves_trendcite_from_current_local_runtime_wheel() -> None:
+    worker = tomllib.loads((WORKER / "pyproject.toml").read_text(encoding="utf-8"))
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    assert "trendcite" in worker["project"]["dependencies"]
+    source = worker["tool"]["uv"]["sources"]["trendcite"]
+    version = project["project"]["version"]
+    assert source == {"path": f"wheelhouse/trendcite-{version}-py3-none-any.whl"}
 
 
 def test_worker_uses_canonical_wrangler_config_with_fail_closed_placeholders() -> None:
@@ -25,11 +27,18 @@ def test_worker_uses_canonical_wrangler_config_with_fail_closed_placeholders() -
     assert "REPLACE_WITH_NONPROD_DLQ_NAME" in text
 
 
-def test_packaging_preparer_derives_wheel_version_from_pyproject() -> None:
+def test_packaging_preparer_derives_wheel_version_and_invalidates_vendor_cache() -> None:
     text = (ROOT / "scripts" / "prepare_cloudflare_runtime.py").read_text(encoding="utf-8")
     assert "tomllib.load" in text
     assert 'data.get("project", {}).get("version", "")' in text
     assert 'f"trendcite-{project_version()}-py3-none-any.whl"' in text
+    assert "sync_worker_source()" in text
+    assert "clear_generated_runtime()" in text
+    assert "sync_vendor()" in text
+    assert "verify_vendor(EXPECTED_WHEEL)" in text
+    assert 'WORKER / "python_modules"' in text
+    assert 'WORKER / ".venv-workers"' in text
+    assert 'WORKER / "pylock.toml"' in text
     assert "trendcite-0.1.0-py3-none-any.whl" not in text
 
 

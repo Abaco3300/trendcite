@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import re
 import shutil
 import subprocess
 import sys
@@ -14,6 +16,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORKER = ROOT / "deploy" / "cloudflare"
 WHEELHOUSE = WORKER / "wheelhouse"
+WORKER_PYPROJECT = WORKER / "pyproject.toml"
+GENERATED_RUNTIME_DIRS = (
+    WORKER / "python_modules",
+    WORKER / ".venv",
+    WORKER / ".venv-workers",
+)
+GENERATED_RUNTIME_FILES = (
+    WORKER / "pylock.toml",
+    WORKER / "uv.lock",
+)
 
 
 def project_version() -> str:
@@ -59,6 +71,74 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def sync_worker_source() -> None:
+    text = WORKER_PYPROJECT.read_text(encoding="utf-8")
+    replacement = f'trendcite = {{ path = "wheelhouse/{EXPECTED_WHEEL.name}" }}'
+    pattern = r'trendcite = \{ path = "wheelhouse/trendcite-[^"]+\.whl" \}'
+    updated, count = re.subn(pattern, replacement, text)
+    if count != 1:
+        raise PackagingError(
+            "worker pyproject must contain exactly one local TrendCite wheel source"
+        )
+    WORKER_PYPROJECT.write_text(updated, encoding="utf-8")
+
+
+def clear_generated_runtime() -> None:
+    for path in GENERATED_RUNTIME_DIRS:
+        shutil.rmtree(path, ignore_errors=True)
+    for path in GENERATED_RUNTIME_FILES:
+        path.unlink(missing_ok=True)
+
+
+def uv_executable() -> Path:
+    resolved = shutil.which("uv")
+    if resolved:
+        return Path(resolved)
+    sibling = Path(sys.executable).with_name("uv.exe" if os.name == "nt" else "uv")
+    if sibling.exists():
+        return sibling
+    raise PackagingError(
+        "uv is required for Cloudflare Python dependency sync; install uv before deploy"
+    )
+
+
+def sync_vendor() -> None:
+    uv = uv_executable()
+    env = os.environ.copy()
+    env["PATH"] = str(uv.parent) + os.pathsep + env.get("PATH", "")
+    result = subprocess.run(
+        [str(uv), "run", "pywrangler", "sync"],
+        cwd=WORKER,
+        env=env,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise PackagingError(f"pywrangler sync failed ({result.returncode})")
+
+
+def verify_vendor(path: Path) -> None:
+    vendor = WORKER / "python_modules"
+    if not vendor.exists():
+        raise PackagingError("pywrangler sync did not create python_modules")
+
+    with zipfile.ZipFile(path) as archive:
+        for member in REQUIRED_MEMBERS | {"trendcite/__init__.py"}:
+            expected = archive.read(member)
+            actual_path = vendor / Path(member)
+            if not actual_path.exists():
+                raise PackagingError(f"vendored runtime is missing {member}")
+            if actual_path.read_bytes() != expected:
+                raise PackagingError(f"vendored runtime differs from wheel: {member}")
+
+    lock = WORKER / "pylock.toml"
+    lock_text = lock.read_text(encoding="utf-8")
+    version = project_version()
+    if f'version = "{version}"' not in lock_text:
+        raise PackagingError("pylock does not contain current TrendCite version")
+    if f"wheelhouse/trendcite-{version}-py3-none-any.whl" not in lock_text:
+        raise PackagingError("pylock does not point to current TrendCite wheel")
+
+
 def verify_wheel(path: Path) -> set[str]:
     if not path.exists():
         raise PackagingError(f"expected wheel was not produced: {path}")
@@ -96,8 +176,14 @@ def main() -> int:
         )
 
     verify_wheel(EXPECTED_WHEEL)
+    sync_worker_source()
+    clear_generated_runtime()
+    sync_vendor()
+    verify_vendor(EXPECTED_WHEEL)
     print(f"wheel={EXPECTED_WHEEL}")
     print(f"sha256={sha256(EXPECTED_WHEEL)}")
+    print(f"worker_source=wheelhouse/{EXPECTED_WHEEL.name}")
+    print("vendor_sync=PASS")
     print(f"required_cloud_modules={len(REQUIRED_MEMBERS)}")
     print("PACKAGING SOURCE PROOF = PASS")
     return 0
