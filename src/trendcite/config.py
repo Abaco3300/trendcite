@@ -32,7 +32,9 @@ class Config:
     subreddits: list[str] = field(default_factory=lambda: list(DEFAULT_SUBREDDITS))
     github_queries: list[str] = field(default_factory=lambda: list(DEFAULT_GITHUB_QUERIES))
     hn_limit: int = 30
-    sources: list[str] = field(default_factory=lambda: ["hackernews", "github", "rss", "reddit", "devto"])
+    sources: list[str] = field(
+        default_factory=lambda: ["hackernews", "github", "rss", "reddit", "devto"]
+    )
     top: int = 5
 
 
