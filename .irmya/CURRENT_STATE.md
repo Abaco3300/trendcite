@@ -1,9 +1,3 @@
-[Reading 98 lines from start (total: 98 lines, 0 remaining)]
-
-[Reading 93 lines from start (total: 93 lines, 0 remaining)]
-
-[Reading 89 lines from start (total: 89 lines, 0 remaining)]
-
 # TrendCite — Current IRMYA State
 
 Updated: 2026-10-03
@@ -22,7 +16,7 @@ PERSISTENT_NONPROD = YES
 HOSTED_PRODUCT = NONPROD_ONLY
 CUSTOMER_AUTH = NO
 CUSTOMER_FRONTEND = NO
-DELIVERY_INTEGRATION = BUILD_READY / LIVE_VALIDATION_PENDING
+DELIVERY_INTEGRATION = TEST_MODE_VALIDATED / REAL_RECIPIENT_PENDING
 BILLING_ENTITLEMENTS = NO
 PRODUCTION_READY = NO
 COMMERCIALIZATION_READY = NO
@@ -40,7 +34,7 @@ Queue ID: 752b703ee758448d81be0bc3639abfdf
 DLQ: trendcite-nonprod-dlq
 DLQ ID: a5c3d474d01c45e085b5152575f4408e
 Worker: trendcite-nonprod-runtime
-Worker version before TC-P003 deploy: c7ea2bd1-9d23-46ce-9599-5e74d740ba30
+Worker version: ddb8640c-6a88-4483-9b60-1655cde4522a
 Worker URL: https://trendcite-nonprod-runtime.istriadegroupllc.workers.dev
 Cron: */5 * * * *
 Runtime role binding: TRENDCITE_RUNTIME_ROLE=trendcite_nonprod_runtime
@@ -67,48 +61,69 @@ TC-P002 — Persistent Runtime E2E Hardening = CLOSED / PASS
 
 ACTIVE_PACK = TC-P003
 PACK_NAME = Transactional Delivery / Postmark
-PACK_STATUS = BUILD_READY / LIVE_VALIDATION_PENDING
+PACK_STATUS = TEST_MODE_VALIDATED / REAL_RECIPIENT_HUMAN_GATE
 
-## TC-P003 packaging remediation
-
-- stale/hybrid vendored package detected after PR #25 deploy: YES
-- root cause: worker uv source + pylock/vendor retained TrendCite 0.1.0
-- deterministic wheel source update: IMPLEMENTED
-- generated vendor/cache invalidation: IMPLEMENTED
-- pywrangler sync inside packaging preparer: IMPLEMENTED
-- wheel/vendor byte equality for Cloud modules: IMPLEMENTED
-- pylock current-version assertion: IMPLEMENTED
-- pywrangler dry-run with vendored modules: PASS (211 modules)
-- remediation merge/redeploy: PENDING
-
-## TC-P003 build evidence
+## TC-P003 build and packaging evidence
 
 - provider-neutral async delivery boundary: PASS
 - Postmark adapter: PASS
 - Cloudflare POST transport: PASS
-- Postmark metadata correlation by TrendCite delivery-attempt ID: PASS
 - PostgreSQL alert/digest/delivery store: PASS
-- async alert materialization: PASS
 - alert retry + hard max-attempt boundary: PASS
 - failed delivery does not move baseline: PASS
 - successful delivery moves baseline: PASS
 - digest idempotency + retry: PASS
-- Worker delivery mode fail-closed unless explicitly configured: PASS
 - delivery failures isolated from Radar success: PASS
+- Worker delivery fail-closed unless explicitly configured: PASS
 - package remains 0.1.1
-- Cloudflare packaging source proof: PASS for trendcite-0.1.1
-- local post-reconciliation preflight: PASS
+- local preflight: PASS
+- stale/hybrid vendor root cause identified: PASS
+- deterministic wheel source update: PASS
+- generated vendor/cache invalidation: PASS
+- pywrangler sync inside packaging preparer: PASS
+- wheel/vendor byte equality: PASS
+- pylock current-version/current-wheel assertion: PASS
+- pywrangler dry-run: PASS (211 modules)
+- remediation PR #26 merged to main: PASS
+- clean nonprod redeploy: PASS
+- clean Worker version: ddb8640c-6a88-4483-9b60-1655cde4522a
+- /health after clean redeploy: HTTP 200 / {"ok": true}
+- automatic Radar tick 2026-10-03T22:00:00Z: succeeded
+- Radar Run coverage: complete
+
+## TC-P003 Postmark provider test-mode evidence
+
+- provider mode: POSTMARK_API_TEST
+- real recipient delivery: NO
+- synthetic workspace only: PASS
+- alert materialized: PASS
+- provider request: PASS
+- delivery state: delivered
+- attempt count: 1
+- delivery attempt persisted: succeeded
+- provider reference persisted: PASS
+- baseline advanced only after successful delivery: PASS
+- probe Worker teardown: PASS
+- synthetic workspace/data teardown: PASS (0 residual rows)
+- temporary probe files removed: PASS
+- final persistent Worker artifact contains no probe module: PASS
+- production untouched: PASS
 
 ## Current Human Gate
 
-NONE
+HG-TRENDCITE-PRO-V1-POSTMARK-NONPROD-REAL-DELIVERY-001
 
-## Next automatic action
+Purpose:
+Authorize exactly one controlled real nonprod Postmark delivery to an explicitly authorized recipient, using real nonproduction provider credentials/sender configuration.
 
-Complete final post-reconciliation Professional QA, checkpoint TC-P003 build in GitHub, deploy the fail-closed delivery-capable Worker to persistent nonprod, verify unchanged Radar health, then perform provider test-mode validation. Stop only if a genuine credential/recipient/production/spend Human Gate is reached.
+Required before execution:
+- explicit human approval;
+- explicitly authorized recipient;
+- real nonprod Postmark credential/sender available without exposing secrets;
+- no production activation;
+- no customer broadcast;
+- no new paid provider spend without separate authorization.
 
-[executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
+## Next action after approval
 
-[executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
-
-[executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
+Configure the real nonprod Postmark bindings, send exactly one controlled alert, verify provider response + persisted attempt + delivered baseline, remove or disable the temporary delivery bindings as appropriate, and continue automatically to the next genuine Human Gate.

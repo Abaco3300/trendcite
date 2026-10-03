@@ -1,12 +1,6 @@
-[Reading 61 lines from start (total: 61 lines, 0 remaining)]
-
-[Reading 58 lines from start (total: 58 lines, 0 remaining)]
-
-[Reading 54 lines from start (total: 54 lines, 0 remaining)]
-
 # TC-P003 — Transactional Delivery / Postmark
 
-Status: BUILD_READY / LIVE_VALIDATION_PENDING
+Status: TEST_MODE_VALIDATED / REAL_RECIPIENT_HUMAN_GATE
 
 ## Outcome
 
@@ -31,13 +25,13 @@ Add a production-shaped but non-production-gated transactional delivery layer fo
 
 - async Postmark adapter tests: PASS
 - async delivery-service tests: PASS
-- PostgreSQL delivery-store contract tests: added
-- Cloudflare packaging includes new runtime modules: PASS
+- PostgreSQL delivery-store contract tests: PASS
+- Cloudflare packaging includes required runtime modules: PASS
 - fail-closed Worker configuration test: PASS
 - ruff: PASS
 - mypy: PASS
-- full local preflight before final reconciliation: PASS
-- package version remains 0.1.1
+- canonical local preflight: PASS
+- package version: 0.1.1
 
 ## Provider semantics
 
@@ -45,36 +39,55 @@ Postmark does not provide a client idempotency key for /email. TrendCite therefo
 
 ## Packaging remediation
 
-- stale mixed vendor detected after initial delivery-capable deploy: confirmed
-- worker uv source still pointed to trendcite 0.1.0: confirmed root cause
-- prepare script now derives the root project version: PASS
-- worker pyproject is rewritten to the exact wheel: PASS
-- generated python_modules / venv / lock caches are invalidated: PASS
-- pywrangler sync is executed by the preparer: PASS
-- wheel/vendor byte equality is checked for required Cloud modules: PASS
+- stale mixed vendor after initial delivery-capable deploy: confirmed
+- root cause: worker uv source / lock / vendor retained TrendCite 0.1.0
+- root project version drives wheel name: PASS
+- worker pyproject rewritten to exact wheel: PASS
+- generated python_modules / venv / lock caches invalidated: PASS
+- pywrangler sync executed by preparer: PASS
+- wheel/vendor byte equality checked: PASS
 - pylock current-version/current-wheel assertions: PASS
 - regenerated vendor version: 0.1.1
-- pywrangler dry-run: PASS, 211 modules
-- canonical local preflight after remediation: PASS
+- pywrangler dry-run: PASS (211 modules)
+- remediation PR #26: MERGED
+- clean persistent nonprod redeploy: PASS
+- persistent Worker version: ddb8640c-6a88-4483-9b60-1655cde4522a
 - production untouched
 
-## Remaining live validation
+## Runtime regression evidence after remediation
 
-- GitHub checkpoint;
-- deploy delivery-capable Worker with delivery still disabled;
-- verify /health + scheduled Radar path unchanged;
-- provider test-mode request with no real recipient delivery;
-- validate persisted delivery attempt behavior;
-- validate one controlled real nonprod recipient only if explicitly authorized.
+- /health: PASS (HTTP 200)
+- automatic tick 2026-10-03T22:00:00Z: succeeded
+- corresponding Radar Run: succeeded
+- coverage_state: complete
+- existing Hyperdrive / Queue / Cron bindings preserved
+- Postmark delivery provider not enabled on persistent Worker
 
-## Human-gate boundaries
+## Postmark test-mode validation
 
-Real external email delivery requires an explicitly authorized recipient.
-Production delivery activation requires a separate Human Gate.
-Any new paid provider spend requires a separate Human Gate.
+Executed with POSTMARK_API_TEST and fictitious sender/recipient values, so no real email was delivered.
 
-[executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
+Results:
+- isolated synthetic workspace: PASS
+- alert materialization: PASS
+- provider request: PASS
+- alert delivery_state: delivered
+- attempt_count: 1
+- cloud_delivery_attempt status: succeeded
+- provider reference persisted: PASS
+- delivered baseline advanced after success: PASS
+- probe Worker deleted: PASS
+- synthetic workspace and all dependent rows deleted: PASS
+- temporary probe source/config deleted: PASS
+- clean persistent Worker redeployed without probe module: PASS
 
-[executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
+## Human Gate
 
-[executed on device: LAPTOP-JOSEMILE (23bf38cb-a252-4cba-9357-1c203afc359d)]
+HG-TRENDCITE-PRO-V1-POSTMARK-NONPROD-REAL-DELIVERY-001
+
+A real external email must not be sent until the human explicitly authorizes:
+- exactly one controlled real nonprod delivery;
+- the intended recipient;
+- use of real nonprod Postmark credential/sender configuration.
+
+Production activation and new paid provider spend remain separate Human Gates.
