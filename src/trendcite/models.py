@@ -212,7 +212,8 @@ class Report:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "tool": "trendcite",\n            "schema_version": REPORT_SCHEMA_VERSION,
+            "tool": "trendcite",
+            "schema_version": REPORT_SCHEMA_VERSION,
             "generated_at": self.generated_at.isoformat(),
             "mode": self.mode,
             "niche": self.niche,
