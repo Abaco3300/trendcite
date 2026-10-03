@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Final
 
-#: How an observation's stable identity is derived (native id -> URL -> fingerprint).
+#: Version of the public JSON report envelope. Additive fields remain compatible within v1.\nREPORT_SCHEMA_VERSION: Final = "trendcite-report-v1"\n\n#: How an observation's stable identity is derived (native id -> URL -> fingerprint).
 OBSERVATION_IDENTITY_VERSION: Final = "observation-identity-v1"
 
 #: How the ordered evidence set backing an evaluation is hashed.
