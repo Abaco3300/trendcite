@@ -5,8 +5,8 @@
 # Phrases describing your niche. They drive the "relevance" score component.
 niche = ["ai agents", "developer tools", "pricing", "saas"]
 
-# Which adapters to run: hackernews, github, rss, reddit, x (x is interface-only).
-sources = ["hackernews", "github", "rss", "reddit"]
+# Which adapters to run: hackernews, github, rss, reddit, devto, x (x is interface-only).
+sources = ["hackernews", "github", "rss", "reddit", "devto"]
 
 # RSS 2.0 / Atom feeds (http/https only; internal hosts are refused).
 feeds = [
