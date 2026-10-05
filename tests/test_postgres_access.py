@@ -83,9 +83,7 @@ def test_list_workspaces_is_scoped_to_principal_id() -> None:
     assert len(result) == 1
     assert result[0].role == "viewer"
     query, args = next(
-        (query, args)
-        for query, args in conn.calls
-        if "FROM trendcite.cloud_membership" in query
+        (query, args) for query, args in conn.calls if "FROM trendcite.cloud_membership" in query
     )
     assert "WHERE m.principal_id=$1" in query
     assert args == ("user-123",)
@@ -100,9 +98,7 @@ def test_get_workspace_requires_both_principal_and_workspace() -> None:
 
     assert result is not None
     query, args = next(
-        (query, args)
-        for query, args in conn.calls
-        if "FROM trendcite.cloud_membership" in query
+        (query, args) for query, args in conn.calls if "FROM trendcite.cloud_membership" in query
     )
     assert "m.principal_id=$1 AND w.workspace_id=$2" in query
     assert args == ("user-123", "ws-1")
