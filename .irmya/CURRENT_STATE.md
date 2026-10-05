@@ -14,7 +14,7 @@ Package version: 0.1.1
 RUNTIME_CORE_READY = YES
 PERSISTENT_NONPROD = YES
 HOSTED_PRODUCT = NONPROD_ONLY
-CUSTOMER_AUTH = BUILD_IN_PROGRESS / POSITIVE_IDENTITY_VALIDATION_PENDING
+CUSTOMER_AUTH = NONPROD_DEPLOYED / POSITIVE_IDENTITY_HUMAN_GATE
 CUSTOMER_FRONTEND = NO
 DELIVERY_INTEGRATION = REAL_NONPROD_VALIDATED / PERSISTENT_DELIVERY_DISABLED
 BILLING_ENTITLEMENTS = NO
@@ -33,7 +33,7 @@ Queue ID: 752b703ee758448d81be0bc3639abfdf
 DLQ: trendcite-nonprod-dlq
 DLQ ID: a5c3d474d01c45e085b5152575f4408e
 Worker: trendcite-nonprod-runtime
-Worker version after TC-P003 teardown: 60244630-f37f-4835-acb4-a0717d454dac
+Worker version: e96fd573-45dc-42e9-97fa-1572a0f699ee
 Worker URL: https://trendcite-nonprod-runtime.istriadegroupllc.workers.dev
 Cron: */5 * * * *
 Runtime role binding: TRENDCITE_RUNTIME_ROLE=trendcite_nonprod_runtime
@@ -46,54 +46,60 @@ TC-P001 — Persistent Nonprod Foundation = CLOSED / PASS
 TC-P002 — Persistent Runtime E2E Hardening = CLOSED / PASS
 TC-P003 — Transactional Delivery / Postmark = CLOSED / PASS
 
-## TC-P003 real nonprod evidence
-
-- explicit Human Gate approval received: PASS
-- authorized recipient: correo@dominio.com
-- Postmark server: TrendCite Nonprod
-- verified sending domain: notify.istriadegroup.com
-- first two attempts rejected before delivery because sender domain was mistyped as otify.istriadegroup.com
-- no baseline advanced on failed attempts: PASS
-- final sender: trendcite@notify.istriadegroup.com
-- final delivery attempt: succeeded
-- Postmark provider reference persisted: 98895ae8-3c79-409b-9295-4317d10dbcd4
-- alert delivery_state: delivered
-- delivered_at: 2026-10-04T23:36:23Z
-- baseline advanced only after success: PASS
-- persistent delivery provider binding disabled after validation: PASS
-- synthetic workspace/data teardown: PASS (0 residual rows)
-- temporary delivery config/files removed: PASS
-- production untouched: PASS
-- P0 = 0
-- P1 = 0
-
 ## Active internal Pack
 
 ACTIVE_PACK = TC-P004
 PACK_NAME = Authentication and Tenant Access
-PACK_STATUS = BUILD_IN_PROGRESS / POSITIVE_IDENTITY_VALIDATION_PENDING
+PACK_STATUS = NONPROD_DEPLOYED / POSITIVE_IDENTITY_HUMAN_GATE
 
-## TC-P004 current build evidence
+## TC-P004 evidence
 
 - Supabase Auth project JWKS endpoint: PASS
 - signing algorithm: ES256
-- new publishable key available: PASS
-- customer API identity validation design: Supabase Auth /auth/v1/user
+- publishable key runtime configuration: PASS
+- identity validation boundary: Supabase Auth /auth/v1/user
 - authorization source: trendcite.cloud_membership
 - principal mapping: Supabase user id -> Membership.principal_id
 - user_metadata used for authorization: NO
-- customer API read boundary:
+- customer API:
   - GET /api/v1/workspaces
   - GET /api/v1/workspaces/{workspace_id}
 - cross-workspace existence leakage: BLOCKED via membership-scoped lookup + 404
-- tests focalizados: 22/22 PASS
-- ruff/mypy execution: BLOCKED_BY_WINDOWS_APP_CONTROL, not a code failure
+- full local pytest suite: PASS
+- focused auth/access/packaging tests: 22/22 PASS
+- Python compile: PASS
+- Pyodide vendor sync: PASS
+- source/vendor equality for auth.py + postgres_access.py: PASS
+- Wrangler dry-run: PASS (213 modules)
+- PR #28: MERGED
+- merge commit: 735e3f1ecec679e88867daef4358deebd8a92f09
+- remote CI Preflight Python 3.11: PASS
+- persistent nonprod deploy: PASS
+- /health: 200 / {"ok": true}
+- /api/v1/workspaces without Authorization: 401 / unauthorized
+- /api/v1/workspaces with invalid bearer: 401 / unauthorized
+- cloud_membership rows: 0
+- memberships backed by auth.users: 0
+- linked Auth principals: 0
 - production activation: NO
+- P0 = 0
+- P1 = 0
 
 ## Current Human Gate
 
-NONE YET
+HG-TRENDCITE-PRO-V1-SUPABASE-AUTH-NONPROD-IDENTITY-001
 
-## Next automatic action
+Purpose:
+Authorize creation or use of exactly one real nonprod Supabase Auth test identity and one linked TrendCite workspace membership for positive authenticated E2E validation.
 
-Complete TC-P004 packaging, local regression validation, deploy the auth-capable Worker to persistent nonprod, validate unauthenticated and invalid-token behavior, and then stop only if a real Supabase Auth nonprod identity must be created or authorized for positive E2E validation.
+Required before execution:
+- explicit human approval;
+- explicitly authorized nonprod test email/identity;
+- no production Auth configuration;
+- no customer account creation;
+- no use of personal credentials in chat;
+- no commercial activation.
+
+## Next action after approval
+
+Provision or use one authorized nonprod Supabase Auth test identity, create one synthetic TrendCite workspace + membership linked to that Auth user, obtain a session without exposing credentials, validate own-workspace access and cross-tenant denial, then remove the synthetic validation data or preserve it only if explicitly required for the next Pack.
