@@ -10,6 +10,7 @@ import json
 import uuid
 from datetime import UTC, datetime
 from typing import Any
+from urllib.parse import urlparse
 
 from http_transport import CloudflareFetchTransport, CloudflarePostTransport
 from workers import Response, WorkerEntrypoint
@@ -20,7 +21,14 @@ from trendcite.cloud.async_delivery_service import AsyncDeliveryService
 from trendcite.cloud.async_execution import AsyncExecutionPipelineImpl
 from trendcite.cloud.async_scheduler import AsyncScheduledCoordinator
 from trendcite.cloud.async_sources import AsyncSourceExecutionServiceImpl
+from trendcite.cloud.auth import (
+    AsyncSupabaseAuth,
+    AuthenticationError,
+    AuthenticationUpstreamError,
+    SupabaseAuthConfig,
+)
 from trendcite.cloud.db.postgres import AsyncpgHyperdriveConnector, PostgresRuntimeStore
+from trendcite.cloud.db.postgres_access import PostgresAccessStore
 from trendcite.cloud.db.postgres_delivery import PostgresDeliveryStore
 from trendcite.cloud.db.postgres_execution import PostgresExecutionStore
 from trendcite.cloud.domain.alerts import DELIVERY_PENDING
@@ -76,6 +84,27 @@ def _coordinator(env: Any) -> AsyncScheduledCoordinator:
     )
 
 
+def _auth_service(env: Any) -> AsyncSupabaseAuth:
+    supabase_url = str(getattr(env, "SUPABASE_URL", "")).strip()
+    publishable_key = str(getattr(env, "SUPABASE_PUBLISHABLE_KEY", "")).strip()
+    if not supabase_url or not publishable_key:
+        raise RuntimeError("Supabase Auth bindings are required")
+    return AsyncSupabaseAuth(
+        CloudflareFetchTransport(),
+        SupabaseAuthConfig(
+            supabase_url=supabase_url,
+            publishable_key=publishable_key,
+        ),
+    )
+
+
+def _access_store(env: Any) -> PostgresAccessStore:
+    return PostgresAccessStore(
+        _connector(env),
+        runtime_role=_runtime_role(env),
+    )
+
+
 def _delivery_service(env: Any) -> AsyncDeliveryService | None:
     provider = str(getattr(env, "TRENDCITE_DELIVERY_PROVIDER", "")).strip()
     if not provider:
@@ -108,9 +137,55 @@ def _delivery_service(env: Any) -> AsyncDeliveryService | None:
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request: Any) -> Any:
-        if str(request.url).endswith("/health"):
+        path = urlparse(str(request.url)).path
+        if path == "/health":
             ok = await _store(self.env).healthcheck()
             return Response.json({"ok": ok})
+
+        if path == "/api/v1/workspaces" or path.startswith("/api/v1/workspaces/"):
+            try:
+                principal = await _auth_service(self.env).authenticate(
+                    request.headers.get("Authorization")
+                )
+            except AuthenticationError:
+                return Response.json(
+                    {"ok": False, "error": "unauthorized"},
+                    status=401,
+                )
+            except AuthenticationUpstreamError:
+                return Response.json(
+                    {"ok": False, "error": "auth_unavailable"},
+                    status=503,
+                )
+
+            access = _access_store(self.env)
+            if path == "/api/v1/workspaces":
+                workspaces = await access.list_workspaces(principal.principal_id)
+                return Response.json(
+                    {
+                        "ok": True,
+                        "principal_id": principal.principal_id,
+                        "workspaces": [workspace.to_dict() for workspace in workspaces],
+                    }
+                )
+
+            workspace_id = path.removeprefix("/api/v1/workspaces/").strip("/")
+            if not workspace_id or "/" in workspace_id:
+                return Response.json({"ok": False, "error": "not_found"}, status=404)
+            workspace = await access.get_workspace(
+                principal.principal_id,
+                workspace_id,
+            )
+            if workspace is None:
+                return Response.json({"ok": False, "error": "not_found"}, status=404)
+            return Response.json(
+                {
+                    "ok": True,
+                    "principal_id": principal.principal_id,
+                    "workspace": workspace.to_dict(),
+                }
+            )
+
         return Response.json({"ok": False, "error": "not_found"}, status=404)
 
     async def queue(self, batch: Any, env: Any = None, ctx: Any = None) -> None:

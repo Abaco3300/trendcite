@@ -46,6 +46,7 @@ def test_packaging_preparer_requires_current_cloud_runtime_modules() -> None:
     text = (ROOT / "scripts" / "prepare_cloudflare_runtime.py").read_text(encoding="utf-8")
     for member in (
         "trendcite/cloud/async_application.py",
+        "trendcite/cloud/auth.py",
         "trendcite/cloud/async_delivery.py",
         "trendcite/cloud/async_delivery_service.py",
         "trendcite/cloud/async_execution.py",
@@ -53,6 +54,7 @@ def test_packaging_preparer_requires_current_cloud_runtime_modules() -> None:
         "trendcite/cloud/async_scheduler.py",
         "trendcite/cloud/async_sources.py",
         "trendcite/cloud/db/postgres.py",
+        "trendcite/cloud/db/postgres_access.py",
         "trendcite/cloud/db/postgres_delivery.py",
         "trendcite/cloud/db/postgres_execution.py",
     ):
@@ -94,10 +96,21 @@ def test_worker_delivery_is_explicit_and_fail_closed() -> None:
     assert "CloudflarePostTransport" in text
 
 
+def test_worker_exposes_authenticated_workspace_api_boundary() -> None:
+    text = (WORKER / "src" / "main.py").read_text(encoding="utf-8")
+    assert 'path == "/api/v1/workspaces"' in text
+    assert 'path.startswith("/api/v1/workspaces/")' in text
+    assert 'request.headers.get("Authorization")' in text
+    assert '"unauthorized"' in text
+    assert "principal.principal_id" in text
+
+
 def test_nonprod_wrangler_config_uses_persistent_resources() -> None:
     text = (WORKER / "wrangler.nonprod.jsonc").read_text(encoding="utf-8")
     assert '"name": "trendcite-nonprod-runtime"' in text
     assert '"TRENDCITE_RUNTIME_ROLE": "trendcite_nonprod_runtime"' in text
+    assert '"SUPABASE_URL": "https://yntcafxmjgfjrdinwdmo.supabase.co"' in text
+    assert '"SUPABASE_PUBLISHABLE_KEY": "sb_publishable_' in text
     assert '"id": "403038608f454b4b8172d9609f6a7383"' in text
     assert '"queue": "trendcite-nonprod-queue"' in text
     assert '"dead_letter_queue": "trendcite-nonprod-dlq"' in text

@@ -4,7 +4,9 @@
   "compatibility_date": "2026-09-23",
   "compatibility_flags": ["python_workers"],
   "vars": {
-    "TRENDCITE_RUNTIME_ROLE": "trendcite_nonprod_runtime"
+    "TRENDCITE_RUNTIME_ROLE": "trendcite_nonprod_runtime",
+    "SUPABASE_URL": "https://yntcafxmjgfjrdinwdmo.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_HvHnOaQ77fNrD0vnZaN-aQ_lB7NNHrU"
   },
   "hyperdrive": [
     {
