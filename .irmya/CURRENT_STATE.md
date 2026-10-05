@@ -1,6 +1,6 @@
 # TrendCite — Current IRMYA State
 
-Updated: 2026-10-04
+Updated: 2026-10-05
 Status: ACTIVE
 
 ## Canonical checkpoint
@@ -14,8 +14,8 @@ Package version: 0.1.1
 RUNTIME_CORE_READY = YES
 PERSISTENT_NONPROD = YES
 HOSTED_PRODUCT = NONPROD_ONLY
-CUSTOMER_AUTH = NONPROD_DEPLOYED / POSITIVE_IDENTITY_HUMAN_GATE
-CUSTOMER_FRONTEND = NO
+CUSTOMER_AUTH = REAL_NONPROD_VALIDATED
+CUSTOMER_FRONTEND = LOCAL_VALIDATED / REMOTE_CHECKPOINT_PENDING
 DELIVERY_INTEGRATION = REAL_NONPROD_VALIDATED / PERSISTENT_DELIVERY_DISABLED
 BILLING_ENTITLEMENTS = NO
 PRODUCTION_READY = NO
@@ -45,14 +45,15 @@ Postmark nonprod secret: PROVISIONED / WRITE_ONLY
 TC-P001 — Persistent Nonprod Foundation = CLOSED / PASS
 TC-P002 — Persistent Runtime E2E Hardening = CLOSED / PASS
 TC-P003 — Transactional Delivery / Postmark = CLOSED / PASS
+TC-P004 — Authentication and Tenant Access = CLOSED / PASS
 
 ## Active internal Pack
 
-ACTIVE_PACK = TC-P004
-PACK_NAME = Authentication and Tenant Access
-PACK_STATUS = NONPROD_DEPLOYED / POSITIVE_IDENTITY_HUMAN_GATE
+ACTIVE_PACK = TC-P005
+PACK_NAME = Customer Application
+PACK_STATUS = LOCAL_VALIDATED / REMOTE_CHECKPOINT_PENDING
 
-## TC-P004 evidence
+## TC-P004 closure evidence
 
 - Supabase Auth project JWKS endpoint: PASS
 - signing algorithm: ES256
@@ -64,42 +65,64 @@ PACK_STATUS = NONPROD_DEPLOYED / POSITIVE_IDENTITY_HUMAN_GATE
 - customer API:
   - GET /api/v1/workspaces
   - GET /api/v1/workspaces/{workspace_id}
-- cross-workspace existence leakage: BLOCKED via membership-scoped lookup + 404
-- full local pytest suite: PASS
-- focused auth/access/packaging tests: 22/22 PASS
-- Python compile: PASS
-- Pyodide vendor sync: PASS
-- source/vendor equality for auth.py + postgres_access.py: PASS
-- Wrangler dry-run: PASS (213 modules)
-- PR #28: MERGED
-- merge commit: 735e3f1ecec679e88867daef4358deebd8a92f09
-- remote CI Preflight Python 3.11: PASS
 - persistent nonprod deploy: PASS
+- real Supabase Auth session: PASS
 - /health: 200 / {"ok": true}
-- /api/v1/workspaces without Authorization: 401 / unauthorized
-- /api/v1/workspaces with invalid bearer: 401 / unauthorized
-- cloud_membership rows: 0
-- memberships backed by auth.users: 0
-- linked Auth principals: 0
+- /api/v1/workspaces without Authorization: 401
+- /api/v1/workspaces with invalid bearer: 401
+- authenticated workspace list: 200
+- authorized workspace A: 200
+- unauthorized workspace B: 404
+- workspace list contains A and excludes B: PASS
+- cross-workspace existence leakage: BLOCKED
+- password persisted by validator: NO
+- bearer token persisted by validator: NO
 - production activation: NO
+- Data API exposed schemas verified via Supabase CLI: public, graphql_public, seo_agent
+- trendcite schema exposed through Data API: NO
+- direct PostgREST probe using Accept-Profile=trendcite: 406 / PGRST106 Invalid schema
+- TrendCite database path remains direct PostgreSQL via Cloudflare Hyperdrive
 - P0 = 0
 - P1 = 0
 
+## Data API security disposition
+
+HG-TRENDCITE-PRO-V1-DATA-API-EXPOSURE-CLOSURE-001 was approved to remove only the trendcite schema if exposed.
+
+Verification established that trendcite was already absent from the remote Data API exposed-schema list. No remote configuration change was required or performed.
+
+The Supabase Advisor may still report RLS disabled for trendcite tables. In the current architecture those tables are not exposed through PostgREST/Data API; Hyperdrive reaches PostgreSQL directly through the controlled runtime role. RLS remains available as defense-in-depth work if the architecture later exposes these tables through Supabase client/Data API access.
+
+## TC-P005 local validation evidence
+
+- authenticated customer API router: IMPLEMENTED
+- same-transaction membership authorization: IMPLEMENTED
+- viewer write denial: IMPLEMENTED
+- cross-tenant reads/writes: 404 / NO EXISTENCE LEAKAGE
+- watchlist/radar immutable version writes: IMPLEMENTED
+- customer mutations: FAIL-CLOSED unless TRENDCITE_CUSTOMER_MUTATIONS=nonprod-enabled
+- React/Vite customer application: IMPLEMENTED
+- browser credential/token persistence: NONE
+- workspace/watchlist/radar UI: IMPLEMENTED
+- runs/signals/history/alerts/digests views: IMPLEMENTED
+- frontend tests: 3/3 PASS
+- frontend production build: PASS
+- Python full pytest suite: PASS
+- Ruff format/check: PASS
+- mypy strict: PASS
+- offline demo: PASS
+- wheel build/install/import in isolated venv: PASS
+- canonical local preflight: PASS (47.1s)
+- production activation: NO
+- live billing / IRCL live: NO
+- persistent outbound delivery: DISABLED
+- Dodo Payments TEST MODE: FROZEN / NO ACTIONS
+- Dodo Payments LIVE MODE: FROZEN / NO ACTIONS
+
 ## Current Human Gate
 
-HG-TRENDCITE-PRO-V1-SUPABASE-AUTH-NONPROD-IDENTITY-001
+NEXT_REAL_HUMAN_GATE = NONE_CURRENTLY_IDENTIFIED
 
-Purpose:
-Authorize creation or use of exactly one real nonprod Supabase Auth test identity and one linked TrendCite workspace membership for positive authenticated E2E validation.
+## Next automatic action
 
-Required before execution:
-- explicit human approval;
-- explicitly authorized nonprod test email/identity;
-- no production Auth configuration;
-- no customer account creation;
-- no use of personal credentials in chat;
-- no commercial activation.
-
-## Next action after approval
-
-Provision or use one authorized nonprod Supabase Auth test identity, create one synthetic TrendCite workspace + membership linked to that Auth user, obtain a session without exposing credentials, validate own-workspace access and cross-tenant denial, then remove the synthetic validation data or preserve it only if explicitly required for the next Pack.
+Create one logical GitHub checkpoint for TC-P005, run remote CI once, merge if green, then perform the already-authorized safe persistent-nonprod deploy and browser/API E2E validation. Keep production, billing, persistent outbound delivery, commercialization and all Dodo Payments actions disabled.

@@ -41,6 +41,14 @@ class TenantIsolationError(CloudError):
     """
 
 
+class PermissionDeniedError(CloudError):
+    """An authorized workspace member attempted an action their role does not allow.
+
+    Only raised *after* membership is proven, so it never discloses that a workspace
+    or object exists to a non-member; non-members always see :class:`NotFoundError`.
+    """
+
+
 class MigrationError(CloudError):
     """The migration ledger disagrees with the migrations on disk."""
 
