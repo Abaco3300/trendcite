@@ -7,14 +7,16 @@ nonprod:
   dlq: ACTIVE
   worker: ACTIVE
   worker_name: trendcite-nonprod-runtime
-  worker_version: 60244630-f37f-4835-acb4-a0717d454dac
+  worker_version: e96fd573-45dc-42e9-97fa-1572a0f699ee
   cron: ACTIVE
   cron_schedule: "*/5 * * * *"
   health: PASS
   runtime_e2e: PASS
   transactional_delivery: REAL_NONPROD_VALIDATED
   persistent_delivery_provider: DISABLED
-  auth_api: BUILD_IN_PROGRESS
+  auth_api: NONPROD_DEPLOYED
+  auth_negative_validation: PASS
+  auth_positive_validation: HUMAN_GATE_PENDING
 
 production:
   configured: false
