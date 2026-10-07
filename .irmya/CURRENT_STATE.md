@@ -246,3 +246,56 @@ NEXT_REAL_HUMAN_GATE = HG-TRENDCITE-VECTURL-NONPROD-INTERNAL-CONSUMER-ONBOARDING
 ## Next automatic action
 
 Create one logical GitHub checkpoint for TC-P007, run remote CI once, merge if green, then deploy only persistent nonprod and validate heartbeat plus the authenticated /operations surface. Keep production activation, billing, checkout, persistent outbound delivery, commercialization, Dodo TEST MODE and Dodo LIVE MODE disabled.
+
+
+## HG-TRENDCITE-VECTURL-NONPROD-INTERNAL-CONSUMER-ONBOARDING-001 — 2026-10-07
+
+`RESULT = PASS / CLOSED`
+`TRENDCITE_VECTURL_CONSUMER_ID = trendcite-nonprod`
+`TRENDCITE_VECTURL_CREDENTIAL = ISSUED / SERVER_SIDE_ONLY / NONPROD`
+`TRENDCITE_VECTURL_SMOKE = PASS / CLOSED`
+`TRENDCITE_VECTURL_RUNTIME_ROUTING = NOT_ACTIVATED`
+`TRENDCITE_SCORING_IMPACT = NONE`
+`DODO_TEST_AND_LIVE_FREEZE = ACTIVE_USER_ORDER`
+
+Implementation:
+- VectURL PR #41 added the dedicated isolated secret slot for `trendcite-nonprod`; merge `2aa55026ae3e639a392816b8ab7955081655fbe5`;
+- VectURL production auth code deployed as version `be29e48e-4a0e-4764-b393-0252be337afb`;
+- persistent consumer secret installed in VectURL as `VECTURL_CONSUMER_TOKEN_TRENDCITE_NONPROD`;
+- VectURL current version after secret installation: `1beb1221-e78f-4b53-bf89-b7ab346b01d6`;
+- TrendCite PR #36 added the guarded nonprod smoke and canonical VectURL identity vars; merge `a433eb2d5339f2dcac82b031f39ec8967c1aa980`;
+- exact repository wheel packaging proof PASS; wheel SHA-256 `adce12ac4aba3a680c8cd11414c6b0a90935409f73335e2644c4b9508d33a302`;
+- TrendCite nonprod runtime deployed as version `f2008be7-5673-4d14-b68a-943f8e9f0269`;
+- persistent `VECTURL_CONSUMER_TOKEN` installed as secret_text.
+
+Controlled smoke:
+- source = `https://example.com/`;
+- consumer = `trendcite-nonprod`;
+- required capabilities = metadata + text;
+- policy = best_effort;
+- max cost = 0 micro-USD;
+- result bundle = `veb_926c307ff529c0e6ee11d1d9`;
+- status = ready;
+- fulfilled = text + metadata;
+- missing capabilities = none;
+- actual cost = 0 micro-USD.
+
+Durable VectURL telemetry:
+- `ingestion_create / 2xx / count 1 / 422 ms / cost 0`;
+- `ingestion_status / 2xx / count 1 / 73 ms / cost 0`;
+- `content_get / 2xx / count 1 / 37 ms / cost 0`.
+
+Closure:
+- temporary `TRENDCITE_VECTURL_SMOKE_TOKEN` deleted;
+- local temporary token files/scripts deleted;
+- final TrendCite secret list contains `POSTMARK_SERVER_TOKEN` and permanent `VECTURL_CONSUMER_TOKEN` only;
+- final TrendCite Worker version after smoke-secret deletion = `8c550a88-2de5-4829-97b7-c395cc186fc0`;
+- `GET /health` = HTTP 200 / ok true;
+- unauthenticated internal smoke route = HTTP 404.
+
+Boundary preserved:
+- VectURL linked-content enrichment is still dormant in normal TrendCite execution;
+- VectURL does not create `EvidenceItem` rows and cannot alter scoring;
+- no production, customer traffic, commercialization, billing, IRCL, Dodo or customer charge occurred.
+
+`NEXT_REAL_HUMAN_GATE_VECTURL = HG-TRENDCITE-VECTURL-NONPROD-RUNTIME-ENRICHMENT-ACTIVATION-001`
