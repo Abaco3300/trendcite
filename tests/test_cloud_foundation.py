@@ -93,6 +93,7 @@ def test_migrations_bootstrap_and_repeat(db: Path) -> None:
         "0006_entitlements_metering.sql",
         "0007_full_automation_readiness.sql",
         "0008_vecturl_linked_content_enrichment.sql",
+            "0009_vecturl_linked_content_schema_reconcile.sql",
     ]
     assert second == first
     conn = connect(db)
