@@ -187,6 +187,10 @@ async def enrich_report_linked_content(
                     text_fragments=linked.text_fragments,
                     provenance_json=provenance_json,
                     quality_overall=linked.quality_overall,
+                    quality_completeness=linked.quality_completeness,
+                    quality_provenance_coverage=linked.quality_provenance_coverage,
+                    fulfilled_capabilities=linked.fulfilled_capabilities,
+                    missing_capabilities=linked.missing_capabilities,
                     actual_cost_micro_usd=linked.actual_cost_micro_usd or 0,
                 )
             )
