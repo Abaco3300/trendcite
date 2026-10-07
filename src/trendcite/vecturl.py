@@ -233,14 +233,26 @@ def linked_content_from_bundle(bundle: Mapping[str, Any]) -> LinkedContentEviden
                 continue
             provenance_rows.append(
                 LinkedContentProvenance(
-                    provenance_id=item.get("provenanceId") if isinstance(item.get("provenanceId"), str) else None,
-                    origin_type=item.get("originType") if isinstance(item.get("originType"), str) else None,
+                    provenance_id=item.get("provenanceId")
+                    if isinstance(item.get("provenanceId"), str)
+                    else None,
+                    origin_type=item.get("originType")
+                    if isinstance(item.get("originType"), str)
+                    else None,
                     method=item.get("method") if isinstance(item.get("method"), str) else None,
-                    provider=item.get("provider") if isinstance(item.get("provider"), str) else None,
-                    provider_product=item.get("providerProduct") if isinstance(item.get("providerProduct"), str) else None,
+                    provider=item.get("provider")
+                    if isinstance(item.get("provider"), str)
+                    else None,
+                    provider_product=item.get("providerProduct")
+                    if isinstance(item.get("providerProduct"), str)
+                    else None,
                     model=item.get("model") if isinstance(item.get("model"), str) else None,
-                    source_ref=item.get("sourceRef") if isinstance(item.get("sourceRef"), str) else None,
-                    created_at=item.get("createdAt") if isinstance(item.get("createdAt"), str) else None,
+                    source_ref=item.get("sourceRef")
+                    if isinstance(item.get("sourceRef"), str)
+                    else None,
+                    created_at=item.get("createdAt")
+                    if isinstance(item.get("createdAt"), str)
+                    else None,
                 )
             )
 
@@ -263,7 +275,13 @@ def linked_content_from_bundle(bundle: Mapping[str, Any]) -> LinkedContentEviden
         quality_overall=_number(quality.get("overall")),
         quality_completeness=_number(quality.get("completeness")),
         quality_provenance_coverage=_number(quality.get("provenanceCoverage")),
-        fulfilled_capabilities=tuple(x for x in fulfilled if isinstance(x, str)) if isinstance(fulfilled, list) else (),
-        missing_capabilities=tuple(x for x in missing if isinstance(x, str)) if isinstance(missing, list) else (),
-        actual_cost_micro_usd=int(actual) if isinstance(actual, int) and not isinstance(actual, bool) else None,
+        fulfilled_capabilities=tuple(x for x in fulfilled if isinstance(x, str))
+        if isinstance(fulfilled, list)
+        else (),
+        missing_capabilities=tuple(x for x in missing if isinstance(x, str))
+        if isinstance(missing, list)
+        else (),
+        actual_cost_micro_usd=int(actual)
+        if isinstance(actual, int) and not isinstance(actual, bool)
+        else None,
     )
