@@ -41,8 +41,10 @@ EXPECTED_WHEEL = WHEELHOUSE / f"trendcite-{project_version()}-py3-none-any.whl"
 
 REQUIRED_MEMBERS = {
     "trendcite/cloud/async_application.py",
+    "trendcite/cloud/async_automation.py",
     "trendcite/cloud/auth.py",
     "trendcite/cloud/customer_api.py",
+    "trendcite/cloud/domain/automation.py",
     "trendcite/cloud/domain/entitlements.py",
     "trendcite/cloud/async_delivery.py",
     "trendcite/cloud/async_delivery_service.py",
@@ -52,6 +54,7 @@ REQUIRED_MEMBERS = {
     "trendcite/cloud/async_sources.py",
     "trendcite/cloud/db/postgres.py",
     "trendcite/cloud/db/postgres_access.py",
+    "trendcite/cloud/db/postgres_automation.py",
     "trendcite/cloud/db/postgres_customer.py",
     "trendcite/cloud/db/postgres_entitlements.py",
     "trendcite/cloud/db/postgres_delivery.py",
