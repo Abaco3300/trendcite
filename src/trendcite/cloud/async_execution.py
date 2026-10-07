@@ -55,6 +55,7 @@ from .domain.alerts import (
     MaterialityService,
     materiality_at_least,
 )
+from .domain.linked_content import RunLinkedContentEvidence
 from .domain.usage import (
     USAGE_ALERT_CANDIDATE,
     USAGE_ALERT_SUPPRESSED,
@@ -135,6 +136,7 @@ class ExecutionPersistenceBundle:
     coverage: tuple[Coverage, ...]
     usage_events: tuple[UsageEvent, ...]
     alert_candidates: tuple[AlertCandidate, ...]
+    linked_content: tuple[RunLinkedContentEvidence, ...] = ()
 
 
 class AsyncExecutionPipelineImpl:
@@ -365,6 +367,15 @@ class AsyncExecutionPipelineImpl:
             finished_at=now,
         )
         usage = _usage_events(finished, candidates, now=now)
+        linked_content = tuple(
+            RunLinkedContentEvidence.create(
+                workspace_id=run.workspace_id,
+                run_id=run.run_id,
+                enrichment=enrichment,
+                captured_at=now,
+            )
+            for enrichment in batch.linked_content
+        )
         bundle = ExecutionPersistenceBundle(
             run=finished,
             signals=tuple(signals),
@@ -377,6 +388,7 @@ class AsyncExecutionPipelineImpl:
             coverage=tuple(coverage),
             usage_events=usage,
             alert_candidates=_dedupe_by_id(candidates, "candidate_id"),
+            linked_content=linked_content,
         )
         persisted = await self.store.persist_execution(bundle)
         if persisted.run_id != run.run_id or persisted.status != RUN_SUCCEEDED:

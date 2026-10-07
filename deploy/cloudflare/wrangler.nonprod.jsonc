@@ -17,7 +17,9 @@
     "TRENDCITE_SCHEDULER_STALE_SECONDS": "600",
     "TRENDCITE_QUEUE_MAX_ATTEMPTS": "3",
     "VECTURL_BASE_URL": "https://vecturl.getistriade.com",
-    "VECTURL_CONSUMER_ID": "trendcite-nonprod"
+    "VECTURL_CONSUMER_ID": "trendcite-nonprod",
+    "TRENDCITE_VECTURL_RUNTIME_ENRICHMENT": "nonprod-enabled",
+    "TRENDCITE_VECTURL_RUNTIME_LIMIT": "3"
   },
   "assets": {
     "directory": "../../web/dist",

@@ -20,6 +20,7 @@ from trendcite.cloud.async_sources import (
 )
 from trendcite.cloud.domain.radar import RadarVersion
 from trendcite.config import Config
+from trendcite.vecturl import linked_content_from_bundle
 
 NOW = datetime(2026, 9, 29, 12, 0, tzinfo=UTC)
 FIXTURES = Path("src/trendcite/fixtures")
@@ -177,3 +178,95 @@ def test_collector_set_rejects_unknown_source() -> None:
 
     with pytest.raises(ValueError, match="unknown source"):
         collectors.for_radar(_radar(["unknown"]))
+
+
+class FakeLinkedContentProvider:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+        self.calls: list[str] = []
+
+    async def acquire_linked_content(self, url: str):
+        self.calls.append(url)
+        if self.fail:
+            raise RuntimeError("synthetic linked-content failure")
+        return linked_content_from_bundle(
+            {
+                "schema": "vecturl.evidence_bundle.v1",
+                "bundleId": "veb_" + str(len(self.calls)),
+                "source": {"canonicalUrl": url},
+                "evidence": [{"text": "supplemental linked context"}],
+                "provenance": [],
+                "quality": {
+                    "overall": 1,
+                    "completeness": 1,
+                    "provenanceCoverage": 1,
+                },
+                "processing": {
+                    "fulfilledCapabilities": ["metadata", "text"],
+                    "missingCapabilities": [],
+                },
+                "cost": {"actualMicroUsd": 0},
+            }
+        )
+
+
+def _fixture_config() -> Config:
+    return Config(
+        feeds=["https://example.com/feed.xml"],
+        subreddits=["SaaS", "ExperiencedDevs"],
+        github_queries=["ai agent", "developer tools"],
+        hn_limit=30,
+        sources=["hackernews", "github", "rss", "reddit"],
+        top=5,
+    )
+
+
+def test_vecturl_enrichment_happens_after_scoring_and_does_not_mutate_signals() -> None:
+    radar = _radar(["hackernews", "github", "rss", "reddit"])
+    baseline = _run(
+        AsyncSourceExecutionServiceImpl(
+            FixtureTransport(),
+            config=_fixture_config(),
+        ).execute(radar, evaluation_cutoff=NOW)
+    )
+    provider = FakeLinkedContentProvider()
+    enriched = _run(
+        AsyncSourceExecutionServiceImpl(
+            FixtureTransport(),
+            config=_fixture_config(),
+            linked_content_provider=provider,
+            linked_content_limit=2,
+        ).execute(radar, evaluation_cutoff=NOW)
+    )
+
+    assert [signal.to_dict() for signal in enriched.signals] == [
+        signal.to_dict() for signal in baseline.signals
+    ]
+    assert len(enriched.linked_content) == 2
+    assert len(provider.calls) == 2
+    assert all(row.evidence.actual_cost_micro_usd == 0 for row in enriched.linked_content)
+
+
+def test_vecturl_enrichment_failure_is_fail_open_for_normal_run() -> None:
+    radar = _radar(["hackernews", "github", "rss", "reddit"])
+    baseline = _run(
+        AsyncSourceExecutionServiceImpl(
+            FixtureTransport(),
+            config=_fixture_config(),
+        ).execute(radar, evaluation_cutoff=NOW)
+    )
+    provider = FakeLinkedContentProvider(fail=True)
+    enriched = _run(
+        AsyncSourceExecutionServiceImpl(
+            FixtureTransport(),
+            config=_fixture_config(),
+            linked_content_provider=provider,
+            linked_content_limit=2,
+        ).execute(radar, evaluation_cutoff=NOW)
+    )
+
+    assert [signal.to_dict() for signal in enriched.signals] == [
+        signal.to_dict() for signal in baseline.signals
+    ]
+    assert enriched.linked_content == ()
+    assert provider.calls

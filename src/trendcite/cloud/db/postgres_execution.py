@@ -530,6 +530,46 @@ class PostgresExecutionStore:
                     event.dedupe_key,
                 )
 
+            for linked in bundle.linked_content:
+                await conn.execute(
+                    """
+                    INSERT INTO trendcite.cloud_run_linked_content
+                        (linked_content_id, workspace_id, run_id, signal_id, bundle_id,
+                         source_url, text_fragments, provenance_json, quality_overall,
+                         quality_completeness, quality_provenance_coverage,
+                         fulfilled_capabilities, missing_capabilities,
+                         actual_cost_micro_usd, captured_at)
+                    VALUES
+                        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+                    ON CONFLICT (run_id, signal_id, source_url) DO UPDATE SET
+                        bundle_id=EXCLUDED.bundle_id,
+                        text_fragments=EXCLUDED.text_fragments,
+                        provenance_json=EXCLUDED.provenance_json,
+                        quality_overall=EXCLUDED.quality_overall,
+                        quality_completeness=EXCLUDED.quality_completeness,
+                        quality_provenance_coverage=EXCLUDED.quality_provenance_coverage,
+                        fulfilled_capabilities=EXCLUDED.fulfilled_capabilities,
+                        missing_capabilities=EXCLUDED.missing_capabilities,
+                        actual_cost_micro_usd=EXCLUDED.actual_cost_micro_usd,
+                        captured_at=EXCLUDED.captured_at
+                    """,
+                    linked.linked_content_id,
+                    linked.workspace_id,
+                    linked.run_id,
+                    linked.signal_id,
+                    linked.bundle_id,
+                    linked.source_url,
+                    _json(linked.text_fragments),
+                    _json(linked.provenance),
+                    linked.quality_overall,
+                    linked.quality_completeness,
+                    linked.quality_provenance_coverage,
+                    _json(linked.fulfilled_capabilities),
+                    _json(linked.missing_capabilities),
+                    linked.actual_cost_micro_usd,
+                    linked.captured_at.isoformat(),
+                )
+
             status = await conn.execute(
                 """
                 UPDATE trendcite.cloud_radar_run

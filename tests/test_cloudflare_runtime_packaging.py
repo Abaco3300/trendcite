@@ -54,12 +54,15 @@ def test_packaging_preparer_requires_current_cloud_runtime_modules() -> None:
         "trendcite/cloud/async_http.py",
         "trendcite/cloud/async_scheduler.py",
         "trendcite/cloud/async_sources.py",
+        "trendcite/cloud/async_vecturl.py",
         "trendcite/cloud/domain/automation.py",
+        "trendcite/cloud/domain/linked_content.py",
         "trendcite/cloud/db/postgres.py",
         "trendcite/cloud/db/postgres_access.py",
         "trendcite/cloud/db/postgres_automation.py",
         "trendcite/cloud/db/postgres_delivery.py",
         "trendcite/cloud/db/postgres_execution.py",
+        "trendcite/vecturl.py",
     ):
         assert member in text
 
@@ -123,6 +126,9 @@ def test_nonprod_wrangler_config_uses_persistent_resources() -> None:
     assert '"TRENDCITE_AUTOMATION_RECOVERY_AFTER": "2026-10-07T21:30:00+00:00"' in text
     assert '"TRENDCITE_SCHEDULER_STALE_SECONDS": "600"' in text
     assert '"TRENDCITE_QUEUE_MAX_ATTEMPTS": "3"' in text
+    assert '"TRENDCITE_VECTURL_RUNTIME_ENRICHMENT": "nonprod-enabled"' in text
+    assert '"TRENDCITE_VECTURL_RUNTIME_LIMIT": "3"' in text
+    assert '"VECTURL_CONSUMER_ID": "trendcite-nonprod"' in text
     assert '"max_retries": 2' in text
     assert '"binding": "ASSETS"' in text
     assert '"id": "403038608f454b4b8172d9609f6a7383"' in text

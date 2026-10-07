@@ -25,6 +25,7 @@ from trendcite.cloud.async_delivery_service import AsyncDeliveryService
 from trendcite.cloud.async_execution import AsyncExecutionPipelineImpl
 from trendcite.cloud.async_scheduler import AsyncScheduledCoordinator
 from trendcite.cloud.async_sources import AsyncSourceExecutionServiceImpl
+from trendcite.cloud.async_vecturl import AsyncVectURLClient
 from trendcite.cloud.auth import AsyncSupabaseAuth, SupabaseAuthConfig
 from trendcite.cloud.customer_api import (
     ApiRequest,
@@ -120,14 +121,52 @@ def _automation_reconciler(env: Any) -> AsyncAutomationReconciler:
     )
 
 
+def _vecturl_runtime_enrichment_enabled(env: Any) -> bool:
+    flag = str(getattr(env, "TRENDCITE_VECTURL_RUNTIME_ENRICHMENT", "") or "").strip()
+    if flag != "nonprod-enabled":
+        return False
+    if "nonprod" not in _runtime_role(env):
+        raise RuntimeError("VectURL runtime enrichment is nonprod-only")
+    base = str(getattr(env, "VECTURL_BASE_URL", "") or "").strip().rstrip("/")
+    consumer_id = str(getattr(env, "VECTURL_CONSUMER_ID", "") or "").strip()
+    token = str(getattr(env, "VECTURL_CONSUMER_TOKEN", "") or "").strip()
+    if base != "https://vecturl.getistriade.com":
+        raise RuntimeError("VectURL runtime enrichment base URL is invalid")
+    if consumer_id != "trendcite-nonprod":
+        raise RuntimeError("VectURL runtime enrichment consumer is invalid")
+    if not token:
+        raise RuntimeError("VectURL runtime enrichment token is missing")
+    return True
+
+
+class _CloudflareVectURLTransport:
+    def __init__(self, env: Any) -> None:
+        self.env = env
+
+    async def request_json(
+        self,
+        method: str,
+        path: str,
+        body: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return await _vecturl_json(self.env, method, path, body)
+
+
 def _runner(env: Any) -> AsyncCloudApplicationRunner:
     execution_store = PostgresExecutionStore(
         _connector(env),
         runtime_role=_runtime_role(env),
     )
+    linked_provider = (
+        AsyncVectURLClient(_CloudflareVectURLTransport(env))
+        if _vecturl_runtime_enrichment_enabled(env)
+        else None
+    )
     source_service = AsyncSourceExecutionServiceImpl(
         CloudflareFetchTransport(),
         config=Config(),
+        linked_content_provider=linked_provider,
+        linked_content_limit=_env_positive_int(env, "TRENDCITE_VECTURL_RUNTIME_LIMIT", 3),
     )
     pipeline = AsyncExecutionPipelineImpl(execution_store, source_service)
     gate = _entitlement_store(env) if _entitlements_enabled(env) else None

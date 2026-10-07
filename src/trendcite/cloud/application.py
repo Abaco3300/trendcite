@@ -37,6 +37,7 @@ from .domain import (
     Workspace,
     summarize_coverage,
 )
+from .domain.linked_content import LinkedContentEnrichment
 from .domain.usage import USAGE_MATCH_RECORDED, USAGE_RADAR_RUN, USAGE_SIGNAL_EVALUATED
 from .errors import NotFoundError, TenantIsolationError, safe_error
 from .matcher import DEFAULT_MATCHER, WatchlistMatcher
@@ -63,10 +64,15 @@ class AlertingHook(Protocol):
 
 @dataclass(frozen=True)
 class ExecutionBatch:
-    """One deterministic Signal Engine result plus explicit source coverage."""
+    """One deterministic Signal Engine result plus explicit source coverage.
+
+    linked_content is supplemental context acquired only after scoring. It is never
+    an EvidenceItem and is not an input to signal evaluation or relevance.
+    """
 
     signals: tuple[SignalBrief, ...]
     source_status: tuple[SourceStatus, ...]
+    linked_content: tuple[LinkedContentEnrichment, ...] = ()
 
 
 Clock = Callable[[], datetime]

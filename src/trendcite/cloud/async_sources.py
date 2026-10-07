@@ -16,12 +16,19 @@ from ..sources.hackernews import API, normalize_hn_item
 from ..sources.reddit import _SUB_RE, parse_reddit_feed
 from ..sources.reddit import FEED as REDDIT_FEED
 from ..sources.rss import parse_feed
+from ..vecturl import LinkedContentEvidence
 from .application import ExecutionBatch
 from .async_execution import AsyncSignalExecutionService
 from .async_http import AsyncHTTPTransport, fetch_bytes_async, fetch_json_async
+from .domain.linked_content import LinkedContentEnrichment
 from .domain.radar import RadarVersion
 
 log = logging.getLogger("trendcite.cloud.async_sources")
+
+
+class AsyncLinkedContentProvider:
+    async def acquire_linked_content(self, url: str) -> LinkedContentEvidence:
+        raise NotImplementedError
 
 
 class AsyncSourceCollector:
@@ -227,8 +234,12 @@ class AsyncSourceExecutionServiceImpl(AsyncSignalExecutionService):
         transport: AsyncHTTPTransport,
         *,
         config: Config | None = None,
+        linked_content_provider: AsyncLinkedContentProvider | None = None,
+        linked_content_limit: int = 3,
     ) -> None:
         self.collectors = AsyncCollectorSet(transport, config or Config())
+        self.linked_content_provider = linked_content_provider
+        self.linked_content_limit = max(0, min(int(linked_content_limit), 10))
 
     async def execute(
         self,
@@ -249,7 +260,43 @@ class AsyncSourceExecutionServiceImpl(AsyncSignalExecutionService):
             source_status=statuses,
         )
         signals = tuple(brief.signal for brief in report.briefs if brief.signal is not None)
+
+        linked_content: list[LinkedContentEnrichment] = []
+        if self.linked_content_provider is not None and self.linked_content_limit > 0:
+            seen_urls: set[str] = set()
+            for brief in report.briefs:
+                signal = brief.signal
+                if signal is None:
+                    continue
+                if len(linked_content) >= self.linked_content_limit:
+                    break
+                source_url = next(
+                    (
+                        observation.url
+                        for observation in signal.observations
+                        if observation.url.startswith(("https://", "http://"))
+                        and observation.url not in seen_urls
+                    ),
+                    None,
+                )
+                if source_url is None:
+                    continue
+                seen_urls.add(source_url)
+                try:
+                    evidence = await self.linked_content_provider.acquire_linked_content(source_url)
+                except Exception as exc:
+                    log.warning(
+                        "VectURL linked-content enrichment failed for signal %s: %s",
+                        signal.signal_id,
+                        type(exc).__name__,
+                    )
+                    continue
+                linked_content.append(
+                    LinkedContentEnrichment.from_evidence(signal.signal_id, evidence)
+                )
+
         return ExecutionBatch(
             signals=signals,
             source_status=tuple(statuses),
+            linked_content=tuple(linked_content),
         )

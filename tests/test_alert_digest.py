@@ -416,4 +416,4 @@ def test_alert_policy_defaults_and_migration_0003(tmp_path: Path) -> None:
     assert policy.max_delivery_attempts == 3
 
     names = SQLiteUnitOfWorkFactory(db).bootstrap()
-    assert names[-1] == "0007_full_automation_readiness.sql"
+    assert names[-1] == "0008_vecturl_linked_content_runtime.sql"
