@@ -7,6 +7,8 @@ trendcite.cloud.customer_api). Everything else is served by Workers static asset
 
 from __future__ import annotations
 
+import asyncio
+import hmac
 import json
 import uuid
 from datetime import UTC, datetime
@@ -14,7 +16,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from http_transport import CloudflareFetchTransport, CloudflarePostTransport
-from workers import Response, WorkerEntrypoint
+from workers import Response, WorkerEntrypoint, fetch
 
 from trendcite.cloud.async_application import AsyncCloudApplicationRunner
 from trendcite.cloud.async_automation import AsyncAutomationReconciler
@@ -243,12 +245,125 @@ def _delivery_service(env: Any) -> AsyncDeliveryService | None:
     return AsyncDeliveryService(store, port)
 
 
+VECTURL_SMOKE_PATH = "/api/internal/vecturl-runtime-smoke"
+VECTURL_SMOKE_URL = "https://example.com/"
+
+
+def _vecturl_smoke_authorized(env: Any, request: Any) -> bool:
+    expected = str(getattr(env, "TRENDCITE_VECTURL_SMOKE_TOKEN", "") or "").strip()
+    if len(expected) < 32:
+        return False
+    authorization = str(request.headers.get("Authorization") or "")
+    if not authorization.startswith("Bearer "):
+        return False
+    received = authorization[len("Bearer ") :]
+    return hmac.compare_digest(expected, received)
+
+
+async def _vecturl_json(
+    env: Any,
+    method: str,
+    path: str,
+    body: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    base = str(getattr(env, "VECTURL_BASE_URL", "") or "").strip().rstrip("/")
+    consumer_id = str(getattr(env, "VECTURL_CONSUMER_ID", "") or "").strip()
+    token = str(getattr(env, "VECTURL_CONSUMER_TOKEN", "") or "").strip()
+    if base != "https://vecturl.getistriade.com" or consumer_id != "trendcite-nonprod" or not token:
+        raise RuntimeError("vecturl_not_configured")
+    kwargs: dict[str, Any] = {
+        "method": method,
+        "headers": {
+            "content-type": "application/json",
+            "x-vecturl-consumer-id": consumer_id,
+            "authorization": "Bearer " + token,
+        },
+    }
+    if body is not None:
+        kwargs["body"] = json.dumps(body, separators=(",", ":"))
+    response = await fetch(base + path, **kwargs)
+    payload = json.loads(str(await response.text()))
+    if int(response.status) < 200 or int(response.status) >= 300:
+        raise RuntimeError("vecturl_http_error")
+    if not isinstance(payload, dict):
+        raise RuntimeError("vecturl_response_invalid")
+    return payload
+
+
+async def _vecturl_smoke_response(env: Any) -> Any:
+    started = await _vecturl_json(
+        env,
+        "POST",
+        "/v1/ingestions",
+        {
+            "url": VECTURL_SMOKE_URL,
+            "request": {
+                "required": ["metadata", "text"],
+                "profile": "balanced",
+                "maxCostMicroUsd": 0,
+                "policyProfile": "best_effort",
+            },
+        },
+    )
+    job_id = started.get("jobId")
+    if started.get("schema") != "vecturl.ingestion_accept.v1" or not isinstance(job_id, str):
+        raise RuntimeError("vecturl_start_invalid")
+
+    bundle_id: str | None = None
+    for attempt in range(20):
+        status = await _vecturl_json(env, "GET", "/v1/ingestions/" + job_id)
+        state = status.get("status")
+        candidate = status.get("bundleId")
+        if state == "failed":
+            raise RuntimeError("vecturl_job_failed")
+        if state in {"ready", "partial"} and isinstance(candidate, str) and candidate:
+            bundle_id = candidate
+            break
+        if attempt < 19:
+            await asyncio.sleep(0.5)
+    if bundle_id is None:
+        raise RuntimeError("vecturl_poll_timeout")
+
+    bundle = await _vecturl_json(env, "GET", "/v1/content/" + bundle_id)
+    if bundle.get("schema") != "vecturl.evidence_bundle.v1":
+        raise RuntimeError("vecturl_bundle_invalid")
+    processing = bundle.get("processing")
+    processing = processing if isinstance(processing, dict) else {}
+    cost = bundle.get("cost")
+    cost = cost if isinstance(cost, dict) else {}
+    return Response.json(
+        {
+            "ok": True,
+            "consumer_id": "trendcite-nonprod",
+            "bundle_id": bundle_id,
+            "status": bundle.get("status"),
+            "fulfilled_capabilities": processing.get("fulfilledCapabilities", []),
+            "missing_capabilities": processing.get("missingCapabilities", []),
+            "actual_cost_micro_usd": cost.get("actualMicroUsd"),
+        }
+    )
+
+
 class Default(WorkerEntrypoint):
     async def fetch(self, request: Any) -> Any:
         path = urlparse(request.url).path
         if path == "/health":
             ok = await _store(self.env).healthcheck()
             return Response.json({"ok": ok})
+
+        if path == VECTURL_SMOKE_PATH:
+            if not _vecturl_smoke_authorized(self.env, request):
+                return Response.json({"ok": False, "error": "not_found"}, status=404)
+            try:
+                return await _vecturl_smoke_response(self.env)
+            except Exception as exc:
+                _log_event(
+                    {
+                        "event": "trendcite.vecturl_smoke.failed",
+                        "error_type": type(exc).__name__,
+                    }
+                )
+                return Response.json({"ok": False, "error": "vecturl_smoke_failed"}, status=502)
 
         if is_customer_api_path(path):
             return await _customer_api_response(self.env, request)
