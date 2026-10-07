@@ -35,6 +35,14 @@ Thumbs.db
 .claude/settings.local.json
 .preflight_tmp/
 
+# Customer frontend generated artifacts
+web/node_modules/
+web/dist/
+
+# Local validation scratch
+.tmp-wheel-check/
+.wrangler/
+
 # Cloudflare Python Worker generated packaging artifacts
 deploy/cloudflare/wheelhouse/
 deploy/cloudflare/python_modules/

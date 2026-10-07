@@ -9,8 +9,9 @@ Steps (all must pass; a missing tool is a failure, not a skip):
   3. ruff check
   4. mypy (strict, configured in pyproject.toml)
   5. pytest (offline, deterministic)
-  6. offline demo smoke test (python -m trendcite demo --format json)
-  7. build sdist + wheel, install the wheel into a throwaway venv, import-check it
+  6. customer frontend tests + production build (dependencies must already be installed)
+  7. offline demo smoke test (python -m trendcite demo --format json)
+  8. build sdist + wheel, install the wheel into a throwaway venv, import-check it
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+WEB = ROOT / "web"
 PY = sys.executable
 # Keep every temporary artefact (build envs, throwaway venv, pip cache) inside the repo.
 WORK = ROOT / ".preflight_tmp"
@@ -35,7 +37,13 @@ class StepFailed(RuntimeError):
     pass
 
 
-def run(cmd: list[str], *, cwd: Path = ROOT, capture: bool = False) -> str:
+def run(
+    cmd: list[str],
+    *,
+    cwd: Path = ROOT,
+    capture: bool = False,
+    isolated_python: bool = False,
+) -> str:
     print(f"    $ {' '.join(cmd)}", flush=True)
     env = {
         **os.environ,
@@ -46,6 +54,9 @@ def run(cmd: list[str], *, cwd: Path = ROOT, capture: bool = False) -> str:
         "PIP_CACHE_DIR": str(WORK / "pip-cache"),
         "PIP_DISABLE_PIP_VERSION_CHECK": "1",
     }
+    if isolated_python:
+        env.pop("PYTHONPATH", None)
+        env.pop("PYTHONHOME", None)
     result = subprocess.run(
         cmd, cwd=cwd, env=env, text=True, encoding="utf-8", capture_output=capture, check=False
     )
@@ -100,6 +111,16 @@ def step_tests() -> None:
     run([PY, "-m", "pytest", "-q"])
 
 
+def step_frontend() -> None:
+    npm = shutil.which("npm")
+    if npm is None:
+        raise StepFailed("npm is not installed")
+    if not (WEB / "node_modules").exists():
+        raise StepFailed("frontend dependencies are missing; run: npm ci --prefix web")
+    run([npm, "test"], cwd=WEB)
+    run([npm, "run", "build"], cwd=WEB)
+
+
 def step_demo() -> None:
     out = run([PY, "-m", "trendcite", "demo", "--format", "json"], capture=True)
     data = json.loads(out)
@@ -123,7 +144,10 @@ def step_build() -> None:
         venv = Path(tmp) / "venv"
         run([PY, "-m", "venv", str(venv)])
         vpy = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-        run([str(vpy), "-m", "pip", "install", "--quiet", "--no-deps", str(wheels[0])])
+        run(
+            [str(vpy), "-m", "pip", "install", "--quiet", "--no-deps", str(wheels[0])],
+            isolated_python=True,
+        )
         check = (
             "import trendcite, trendcite.cli; "
             "import trendcite.cloud.async_application; "
@@ -133,7 +157,9 @@ def step_build() -> None:
             "import trendcite.cloud.async_http; "
             "import trendcite.cloud.async_scheduler; "
             "import trendcite.cloud.async_sources; "
+            "import trendcite.cloud.customer_api; "
             "import trendcite.cloud.db.postgres; "
+            "import trendcite.cloud.db.postgres_customer; "
             "import trendcite.cloud.db.postgres_delivery; "
             "import trendcite.cloud.db.postgres_execution; "
             "from trendcite.pipeline import run_demo; "
@@ -142,7 +168,7 @@ def step_build() -> None:
             "'+ cloud runtime modules')"
         )
         # Run outside the repo so the installed wheel (not ./src) is imported.
-        run([str(vpy), "-c", check], cwd=Path(tmp))
+        run([str(vpy), "-c", check], cwd=Path(tmp), isolated_python=True)
 
 
 STEPS = [
@@ -151,6 +177,7 @@ STEPS = [
     ("ruff check", step_lint),
     ("mypy", step_types),
     ("pytest", step_tests),
+    ("customer frontend tests + build", step_frontend),
     ("offline demo smoke test", step_demo),
     ("build + wheel import check", step_build),
 ]

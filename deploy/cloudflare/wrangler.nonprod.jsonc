@@ -6,7 +6,13 @@
   "vars": {
     "TRENDCITE_RUNTIME_ROLE": "trendcite_nonprod_runtime",
     "SUPABASE_URL": "https://yntcafxmjgfjrdinwdmo.supabase.co",
-    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_HvHnOaQ77fNrD0vnZaN-aQ_lB7NNHrU"
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_HvHnOaQ77fNrD0vnZaN-aQ_lB7NNHrU",
+    "TRENDCITE_CUSTOMER_MUTATIONS": "nonprod-enabled"
+  },
+  "assets": {
+    "directory": "../../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/health"]
   },
   "hyperdrive": [
     {

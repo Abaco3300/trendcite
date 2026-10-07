@@ -1,7 +1,8 @@
-"""Non-production Cloudflare Python Worker scaffold for TrendCite Pro v1.
+"""Non-production Cloudflare Python Worker for TrendCite Pro v1.
 
-This file is intentionally deployment-inert until concrete non-production resource
-bindings and a scheduler adapter are authorized in a later gate.
+HTTP surface: /health and the authenticated customer API under /api/v1 (see
+trendcite.cloud.customer_api). Everything else is served by Workers static assets
+(the customer frontend) when an assets directory is configured.
 """
 
 from __future__ import annotations
@@ -21,14 +22,15 @@ from trendcite.cloud.async_delivery_service import AsyncDeliveryService
 from trendcite.cloud.async_execution import AsyncExecutionPipelineImpl
 from trendcite.cloud.async_scheduler import AsyncScheduledCoordinator
 from trendcite.cloud.async_sources import AsyncSourceExecutionServiceImpl
-from trendcite.cloud.auth import (
-    AsyncSupabaseAuth,
-    AuthenticationError,
-    AuthenticationUpstreamError,
-    SupabaseAuthConfig,
+from trendcite.cloud.auth import AsyncSupabaseAuth, SupabaseAuthConfig
+from trendcite.cloud.customer_api import (
+    ApiRequest,
+    CustomerApi,
+    is_customer_api_path,
+    mutations_enabled,
 )
 from trendcite.cloud.db.postgres import AsyncpgHyperdriveConnector, PostgresRuntimeStore
-from trendcite.cloud.db.postgres_access import PostgresAccessStore
+from trendcite.cloud.db.postgres_customer import PostgresCustomerStore
 from trendcite.cloud.db.postgres_delivery import PostgresDeliveryStore
 from trendcite.cloud.db.postgres_execution import PostgresExecutionStore
 from trendcite.cloud.domain.alerts import DELIVERY_PENDING
@@ -98,11 +100,52 @@ def _auth_service(env: Any) -> AsyncSupabaseAuth:
     )
 
 
-def _access_store(env: Any) -> PostgresAccessStore:
-    return PostgresAccessStore(
+def _customer_store(env: Any) -> PostgresCustomerStore:
+    return PostgresCustomerStore(
         _connector(env),
         runtime_role=_runtime_role(env),
     )
+
+
+def _log_event(event: dict[str, Any]) -> None:
+    print(json.dumps(event, sort_keys=True))
+
+
+async def _customer_api_response(env: Any, request: Any) -> Any:
+    """Adapt a Fetch request to the transport-neutral customer API.
+
+    The Authorization header is handed to the auth service and never logged; the
+    body is read only for methods that can carry one.
+    """
+
+    method = str(request.method).upper()
+    body = b""
+    if method in {"POST", "PUT", "PATCH"}:
+        body = str(await request.text()).encode("utf-8")
+    parsed = urlparse(str(request.url))
+    try:
+        api = CustomerApi(
+            _auth_service(env),
+            _customer_store(env),
+            mutations_enabled=mutations_enabled(env),
+            log=_log_event,
+        )
+    except RuntimeError as exc:
+        _log_event(
+            {"event": "trendcite.customer_api.misconfigured", "error_type": type(exc).__name__}
+        )
+        return Response.json({"ok": False, "error": "unavailable"}, status=503)
+    result = await api.handle(
+        ApiRequest(
+            method=method,
+            path=parsed.path,
+            query=parsed.query,
+            authorization=request.headers.get("Authorization"),
+            content_type=str(request.headers.get("Content-Type") or ""),
+            body=body,
+        )
+    )
+    return Response.json(result.payload, status=result.status, headers=dict(result.headers))
 
 
 def _delivery_service(env: Any) -> AsyncDeliveryService | None:
@@ -142,49 +185,8 @@ class Default(WorkerEntrypoint):
             ok = await _store(self.env).healthcheck()
             return Response.json({"ok": ok})
 
-        if path == "/api/v1/workspaces" or path.startswith("/api/v1/workspaces/"):
-            try:
-                principal = await _auth_service(self.env).authenticate(
-                    request.headers.get("Authorization")
-                )
-            except AuthenticationError:
-                return Response.json(
-                    {"ok": False, "error": "unauthorized"},
-                    status=401,
-                )
-            except AuthenticationUpstreamError:
-                return Response.json(
-                    {"ok": False, "error": "auth_unavailable"},
-                    status=503,
-                )
-
-            access = _access_store(self.env)
-            if path == "/api/v1/workspaces":
-                workspaces = await access.list_workspaces(principal.principal_id)
-                return Response.json(
-                    {
-                        "ok": True,
-                        "principal_id": principal.principal_id,
-                        "workspaces": [workspace.to_dict() for workspace in workspaces],
-                    }
-                )
-
-            workspace_id = path.removeprefix("/api/v1/workspaces/").strip("/")
-            if not workspace_id or "/" in workspace_id:
-                return Response.json({"ok": False, "error": "not_found"}, status=404)
-            workspace = await access.get_workspace(
-                principal.principal_id,
-                workspace_id,
-            )
-            if workspace is None:
-                return Response.json({"ok": False, "error": "not_found"}, status=404)
-            return Response.json(
-                {
-                    "ok": True,
-                    "principal_id": principal.principal_id,
-                    "workspace": workspace.to_dict(),
-                }
-            )
+        if is_customer_api_path(path):
+            return await _customer_api_response(self.env, request)
 
         return Response.json({"ok": False, "error": "not_found"}, status=404)
 

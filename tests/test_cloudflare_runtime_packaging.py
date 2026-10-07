@@ -98,11 +98,11 @@ def test_worker_delivery_is_explicit_and_fail_closed() -> None:
 
 def test_worker_exposes_authenticated_workspace_api_boundary() -> None:
     text = (WORKER / "src" / "main.py").read_text(encoding="utf-8")
-    assert 'path == "/api/v1/workspaces"' in text
-    assert 'path.startswith("/api/v1/workspaces/")' in text
+    assert "is_customer_api_path(path)" in text
+    assert "CustomerApi(" in text
     assert 'request.headers.get("Authorization")' in text
-    assert '"unauthorized"' in text
-    assert "principal.principal_id" in text
+    assert "mutations_enabled(env)" in text
+    assert "PostgresCustomerStore" in text
 
 
 def test_nonprod_wrangler_config_uses_persistent_resources() -> None:
