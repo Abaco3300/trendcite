@@ -97,3 +97,21 @@ Stop only for a genuine authority boundary:
 - destructive or hard-to-reverse operation;
 - non-remediable P0;
 - material change to product objective/scope.
+
+
+## Current implementation evidence
+
+- Existing idempotent usage ledger reused: cloud_usage_event.
+- Entitlement plan and workspace assignment schema added by portable migration 0006.
+- Hosted nonprod migration applied as hg_trendcite_nonprod_0006_entitlements_metering.
+- nonprod_limited and nonprod_full plans seeded with commercial=0.
+- All existing synthetic/nonprod workspaces assigned nonprod_full before runtime enforcement activation.
+- Effective capability resolution is server-side and fail-closed.
+- Monthly UTC usage aggregation and quota decision logic implemented.
+- radar_run quota enforcement occurs before run creation and expensive execution.
+- Authenticated entitlement and usage endpoints are membership-scoped.
+- Plan & Usage customer UI reads server-authoritative state.
+- Focused tests, full pytest, Ruff, mypy, frontend tests/build and canonical local preflight: PASS.
+- Cloudflare packaging proof and pywrangler dry-run: PASS.
+- TRENDCITE_ENTITLEMENTS nonprod flag is ready but not yet deployed from this branch.
+- Production, billing, checkout, customer charging, persistent outbound delivery and all Dodo Payments actions remain disabled.

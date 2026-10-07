@@ -14,8 +14,9 @@ from datetime import UTC, datetime
 from typing import Protocol
 
 from .async_scheduler import AsyncRadarRunner, AsyncRunResult
+from .domain.entitlements import CAP_RADAR_RUN, EntitlementDecision
 from .domain.radar import RUN_FAILED, RUN_SUCCEEDED, RadarRun
-from .errors import NotFoundError, safe_error
+from .errors import EntitlementDeniedError, NotFoundError, safe_error
 
 
 def utc_now() -> datetime:
@@ -39,6 +40,16 @@ class AsyncRunRepository(Protocol):
     async def update_run(self, run: RadarRun) -> None: ...
 
 
+class AsyncEntitlementGate(Protocol):
+    async def resolve_capability(
+        self,
+        workspace_id: str,
+        capability_key: str,
+        *,
+        at: datetime,
+    ) -> EntitlementDecision: ...
+
+
 class AsyncExecutionPipeline(Protocol):
     async def execute_and_persist(self, run: RadarRun) -> RadarRun:
         """Execute the pinned radar version and atomically persist its durable result.
@@ -57,9 +68,11 @@ class AsyncCloudApplicationRunner(AsyncRadarRunner):
         self,
         runs: AsyncRunRepository,
         pipeline: AsyncExecutionPipeline,
+        entitlements: AsyncEntitlementGate | None = None,
     ) -> None:
         self.runs = runs
         self.pipeline = pipeline
+        self.entitlements = entitlements
 
     async def run_radar(
         self,
@@ -69,6 +82,14 @@ class AsyncCloudApplicationRunner(AsyncRadarRunner):
         evaluation_cutoff: datetime,
     ) -> AsyncRunResult:
         now = utc_now()
+        if self.entitlements is not None:
+            decision = await self.entitlements.resolve_capability(
+                workspace_id,
+                CAP_RADAR_RUN,
+                at=now,
+            )
+            if not decision.allowed:
+                raise EntitlementDeniedError(f"{CAP_RADAR_RUN} denied: {decision.reason}")
         run = await self.runs.get_or_create_run(
             workspace_id=workspace_id,
             radar_id=radar_id,

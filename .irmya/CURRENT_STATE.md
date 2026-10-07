@@ -52,7 +52,7 @@ TC-P005 — Customer Application = CLOSED / PASS
 
 ACTIVE_PACK = TC-P006
 PACK_NAME = Entitlements and Metering
-PACK_STATUS = OPEN / NONCOMMERCIAL IMPLEMENTATION
+PACK_STATUS = LOCAL_VALIDATED / HOSTED_SCHEMA_READY / REMOTE_CHECKPOINT_PENDING
 
 ## TC-P004 closure evidence
 
@@ -133,10 +133,42 @@ The Supabase Advisor may still report RLS disabled for trendcite tables. In the 
 - Dodo Payments TEST MODE: FROZEN / NO ACTIONS
 - Dodo Payments LIVE MODE: FROZEN / NO ACTIONS
 
+## TC-P006 validation evidence
+
+- existing idempotent metering ledger reused: trendcite.cloud_usage_event
+- canonical entitlement capabilities: IMPLEMENTED
+- noncommercial plans: nonprod_limited / nonprod_full
+- monthly UTC usage aggregation: IMPLEMENTED
+- fail-closed missing entitlement: IMPLEMENTED
+- radar_run enforcement occurs before run creation: IMPLEMENTED
+- customer entitlement API: IMPLEMENTED
+- customer usage API: IMPLEMENTED
+- Plan & Usage UI: IMPLEMENTED
+- cross-tenant entitlement access: 404 / NO EXISTENCE LEAKAGE
+- migration 0006_entitlements_metering: APPLIED HOSTED NONPROD
+- Supabase migration history: hg_trendcite_nonprod_0006_entitlements_metering
+- hosted plans seeded: commercial=0 only
+- all 4 existing synthetic/nonprod workspaces assigned nonprod_full
+- enabled scheduled workspace irmya-nonprod-ws has nonprod_full entitlement
+- TRENDCITE_ENTITLEMENTS=nonprod-enabled: LOCAL CONFIG READY / NOT YET DEPLOYED
+- focused TC-P006 tests: PASS
+- full pytest suite: PASS
+- Ruff format/check: PASS
+- mypy: PASS (74 source files)
+- frontend tests/build: PASS
+- canonical local preflight: PASS
+- Cloudflare packaging source proof: PASS / 16 required modules
+- pywrangler dry-run: PASS / 219 modules / ASSETS + entitlement binding present
+- production activation: NO
+- billing/checkout/customer charges: NO
+- persistent outbound delivery: DISABLED
+- Dodo Payments TEST MODE: FROZEN / NO ACTIONS
+- Dodo Payments LIVE MODE: FROZEN / NO ACTIONS
+
 ## Current Human Gate
 
 NEXT_REAL_HUMAN_GATE = NONE_CURRENTLY_IDENTIFIED
 
 ## Next automatic action
 
-Execute TC-P006 Entitlements and Metering in noncommercial mode. Implement plan capability boundaries, usage metering, quota/accounting semantics, enforcement tests and observability without any real billing, checkout, PSP activation or Dodo Payments action. Keep production activation, persistent outbound delivery, commercialization, Dodo TEST MODE and Dodo LIVE MODE disabled.
+Create one logical GitHub checkpoint for TC-P006, run remote CI once, merge if green, then deploy only the already-authorized persistent nonprod runtime and validate entitlement/usage APIs plus tenant isolation. Keep production, billing, checkout, persistent outbound delivery, commercialization, Dodo TEST MODE and Dodo LIVE MODE disabled.

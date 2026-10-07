@@ -32,6 +32,7 @@ from trendcite.cloud.customer_api import (
 from trendcite.cloud.db.postgres import AsyncpgHyperdriveConnector, PostgresRuntimeStore
 from trendcite.cloud.db.postgres_customer import PostgresCustomerStore
 from trendcite.cloud.db.postgres_delivery import PostgresDeliveryStore
+from trendcite.cloud.db.postgres_entitlements import PostgresEntitlementStore
 from trendcite.cloud.db.postgres_execution import PostgresExecutionStore
 from trendcite.cloud.domain.alerts import DELIVERY_PENDING
 from trendcite.config import Config
@@ -62,6 +63,18 @@ def _store(env: Any) -> PostgresRuntimeStore:
     return PostgresRuntimeStore(_connector(env), runtime_role=_runtime_role(env))
 
 
+def _entitlements_enabled(env: Any) -> bool:
+    flag = str(getattr(env, "TRENDCITE_ENTITLEMENTS", "") or "").strip()
+    return flag == "nonprod-enabled" and "nonprod" in _runtime_role(env)
+
+
+def _entitlement_store(env: Any) -> PostgresEntitlementStore:
+    return PostgresEntitlementStore(
+        _connector(env),
+        runtime_role=_runtime_role(env),
+    )
+
+
 def _runner(env: Any) -> AsyncCloudApplicationRunner:
     execution_store = PostgresExecutionStore(
         _connector(env),
@@ -72,7 +85,8 @@ def _runner(env: Any) -> AsyncCloudApplicationRunner:
         config=Config(),
     )
     pipeline = AsyncExecutionPipelineImpl(execution_store, source_service)
-    return AsyncCloudApplicationRunner(execution_store, pipeline)
+    gate = _entitlement_store(env) if _entitlements_enabled(env) else None
+    return AsyncCloudApplicationRunner(execution_store, pipeline, gate)
 
 
 def _coordinator(env: Any) -> AsyncScheduledCoordinator:
@@ -128,6 +142,7 @@ async def _customer_api_response(env: Any, request: Any) -> Any:
             _auth_service(env),
             _customer_store(env),
             mutations_enabled=mutations_enabled(env),
+            entitlement_store=_entitlement_store(env),
             log=_log_event,
         )
     except RuntimeError as exc:

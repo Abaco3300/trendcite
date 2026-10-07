@@ -50,6 +50,16 @@ class Authenticator(Protocol):
     async def authenticate(self, authorization: str | None) -> AuthPrincipal: ...
 
 
+class EntitlementStore(Protocol):
+    async def summary_for_principal(
+        self,
+        principal_id: str,
+        workspace_id: str,
+        *,
+        at: datetime,
+    ) -> Any: ...
+
+
 class CustomerStore(Protocol):
     async def list_workspaces(self, principal_id: str) -> tuple[AuthorizedWorkspace, ...]: ...
     async def get_workspace(
@@ -133,6 +143,8 @@ ROUTES: tuple[_Route, ...] = (
     _route("GET", "/api/v1/session", "session"),
     _route("GET", "/api/v1/workspaces", "workspaces"),
     _route("GET", _WS, "workspace"),
+    _route("GET", _WS + "/entitlements", "entitlements"),
+    _route("GET", _WS + "/usage", "usage"),
     _route("GET", _WS + "/watchlists", "list_watchlists"),
     _route("POST", _WS + "/watchlists", "create_watchlist", mutation=True),
     _route("GET", _WS + "/watchlists/{watchlist_id}", "get_watchlist"),
@@ -175,11 +187,13 @@ class CustomerApi:
         store: CustomerStore,
         *,
         mutations_enabled: bool,
+        entitlement_store: EntitlementStore | None = None,
         clock: Callable[[], datetime] | None = None,
         log: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self._auth = auth
         self._store = store
+        self._entitlement_store = entitlement_store
         self._mutations_enabled = mutations_enabled
         self._clock = clock or (lambda: datetime.now(UTC).replace(microsecond=0))
         self._log = log or (lambda _event: None)
@@ -260,6 +274,26 @@ class CustomerApi:
         if workspace is None:
             raise NotFoundError("workspace not found")
         return {"workspace": workspace.to_dict()}
+
+    async def _h_entitlements(self, ctx: _Context) -> dict[str, Any]:
+        if self._entitlement_store is None:
+            raise _HttpError(503, "entitlements_unavailable")
+        p, ws = _scope(ctx)
+        summary = await self._entitlement_store.summary_for_principal(p, ws, at=self._clock())
+        return {"entitlements": summary.to_dict()}
+
+    async def _h_usage(self, ctx: _Context) -> dict[str, Any]:
+        if self._entitlement_store is None:
+            raise _HttpError(503, "entitlements_unavailable")
+        p, ws = _scope(ctx)
+        summary = await self._entitlement_store.summary_for_principal(p, ws, at=self._clock())
+        payload = summary.to_dict()
+        return {
+            "workspace_id": ws,
+            "plan_key": payload["plan_key"],
+            "quotas": payload["quotas"],
+            "usage": payload["usage"],
+        }
 
     async def _h_list_watchlists(self, ctx: _Context) -> dict[str, Any]:
         p, ws = _scope(ctx)

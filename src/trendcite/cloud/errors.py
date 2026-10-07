@@ -57,6 +57,10 @@ class ExecutionError(CloudError):
     """Signal execution failed. The run is recorded FAILED with a safe message."""
 
 
+class EntitlementDeniedError(CloudError):
+    """A server-side capability or quota decision denied the requested work."""
+
+
 def safe_error(exc: BaseException) -> tuple[str, str]:
     """Reduce an exception to a stored ``(code, detail)`` pair.
 
