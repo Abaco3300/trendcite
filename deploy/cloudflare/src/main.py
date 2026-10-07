@@ -245,7 +245,6 @@ def _delivery_service(env: Any) -> AsyncDeliveryService | None:
     return AsyncDeliveryService(store, port)
 
 
-
 VECTURL_SMOKE_PATH = "/api/internal/vecturl-runtime-smoke"
 VECTURL_SMOKE_URL = "https://example.com/"
 
@@ -343,6 +342,7 @@ async def _vecturl_smoke_response(env: Any) -> Any:
             "actual_cost_micro_usd": cost.get("actualMicroUsd"),
         }
     )
+
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request: Any) -> Any:
