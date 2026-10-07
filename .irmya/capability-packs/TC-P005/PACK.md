@@ -1,6 +1,6 @@
 # TC-P005 — Customer Application
 
-Status: LOCAL_VALIDATED / REMOTE_CHECKPOINT_PENDING
+Status: CLOSED / PASS
 
 ## Outcome
 
@@ -108,3 +108,27 @@ Stop only for a genuine authority boundary such as:
 - destructive or hard-to-reverse operation;
 - non-remediable P0;
 - material change to product objective/scope.
+
+
+## Closure
+
+TC-P005 is CLOSED / PASS.
+
+Closure evidence:
+- PR #30 merged to main.
+- PR #31 runtime routing repair merged to main.
+- Remote CI PASS.
+- Canonical local preflight PASS.
+- Persistent nonprod Worker deployed.
+- Current nonprod Worker Version ID: b30cbdac-b1ef-4a7a-a90c-bd3e71461b80.
+- /health = 200.
+- frontend / = 200 and serves TrendCite Pro.
+- /api/v1/session without bearer = 401.
+- /api/v1/session invalid bearer = 401.
+- Positive TC-P005 E2E was operator-confirmed completed.
+- Local JSON result artifact was not recovered and is not treated as machine evidence.
+- Production activation = NO.
+- Billing/checkout = NO.
+- Persistent outbound delivery = DISABLED.
+- Dodo Payments TEST MODE = FROZEN / NO ACTIONS.
+- Dodo Payments LIVE MODE = FROZEN / NO ACTIONS.
