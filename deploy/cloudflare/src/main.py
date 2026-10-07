@@ -122,7 +122,7 @@ async def _customer_api_response(env: Any, request: Any) -> Any:
     body = b""
     if method in {"POST", "PUT", "PATCH"}:
         body = str(await request.text()).encode("utf-8")
-    parsed = urlparse(str(request.url))
+    parsed = urlparse(request.url)
     try:
         api = CustomerApi(
             _auth_service(env),
@@ -180,13 +180,16 @@ def _delivery_service(env: Any) -> AsyncDeliveryService | None:
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request: Any) -> Any:
-        path = urlparse(str(request.url)).path
+        path = urlparse(request.url).path
         if path == "/health":
             ok = await _store(self.env).healthcheck()
             return Response.json({"ok": ok})
 
         if is_customer_api_path(path):
             return await _customer_api_response(self.env, request)
+
+        if hasattr(self.env, "ASSETS"):
+            return await self.env.ASSETS.fetch(request)
 
         return Response.json({"ok": False, "error": "not_found"}, status=404)
 

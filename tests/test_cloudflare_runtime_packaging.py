@@ -103,6 +103,9 @@ def test_worker_exposes_authenticated_workspace_api_boundary() -> None:
     assert 'request.headers.get("Authorization")' in text
     assert "mutations_enabled(env)" in text
     assert "PostgresCustomerStore" in text
+    assert "urlparse(request.url)" in text
+    assert "str(request.url)" not in text
+    assert "self.env.ASSETS.fetch(request)" in text
 
 
 def test_nonprod_wrangler_config_uses_persistent_resources() -> None:
@@ -111,6 +114,7 @@ def test_nonprod_wrangler_config_uses_persistent_resources() -> None:
     assert '"TRENDCITE_RUNTIME_ROLE": "trendcite_nonprod_runtime"' in text
     assert '"SUPABASE_URL": "https://yntcafxmjgfjrdinwdmo.supabase.co"' in text
     assert '"SUPABASE_PUBLISHABLE_KEY": "sb_publishable_' in text
+    assert '"binding": "ASSETS"' in text
     assert '"id": "403038608f454b4b8172d9609f6a7383"' in text
     assert '"queue": "trendcite-nonprod-queue"' in text
     assert '"dead_letter_queue": "trendcite-nonprod-dlq"' in text
