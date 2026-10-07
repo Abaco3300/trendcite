@@ -250,6 +250,7 @@ def test_migration_upgrade_from_0001_to_0002(tmp_path: Path) -> None:
             "0005_queue_delivery_idempotency.sql",
             "0006_entitlements_metering.sql",
             "0007_full_automation_readiness.sql",
+        "0008_vecturl_linked_content_enrichment.sql",
         ]
         columns = {row[1] for row in conn.execute("PRAGMA table_info(cloud_watchlist_version)")}
         assert {"entities", "domains"} <= columns
