@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
-import pytest
+import asyncio
 
 from trendcite.cloud.vecturl_enrichment import enrich_report_linked_content
 from trendcite.models import Report
@@ -44,8 +42,7 @@ class _FakeVectURL:
         )
 
 
-@pytest.mark.asyncio
-async def test_linked_content_runs_after_scoring_and_cannot_mutate_scores() -> None:
+def test_linked_content_runs_after_scoring_and_cannot_mutate_scores() -> None:
     report = run_demo(top=5)
     before = [
         (
@@ -62,7 +59,7 @@ async def test_linked_content_runs_after_scoring_and_cannot_mutate_scores() -> N
     ]
 
     client = _FakeVectURL()
-    linked = await enrich_report_linked_content(report, client, limit=3)
+    linked = asyncio.run(enrich_report_linked_content(report, client, limit=3))
 
     after = [
         (
@@ -85,12 +82,11 @@ async def test_linked_content_runs_after_scoring_and_cannot_mutate_scores() -> N
     assert all(row.actual_cost_micro_usd == 0 for row in linked)
 
 
-@pytest.mark.asyncio
-async def test_linked_content_failure_is_fail_open_and_separate() -> None:
+def test_linked_content_failure_is_fail_open_and_separate() -> None:
     report: Report = run_demo(top=3)
     before = [brief.score.total for brief in report.briefs]
 
-    linked = await enrich_report_linked_content(report, _FakeVectURL(fail=True), limit=1)
+    linked = asyncio.run(enrich_report_linked_content(report, _FakeVectURL(fail=True), limit=1))
 
     assert [brief.score.total for brief in report.briefs] == before
     assert len(linked) == 1
