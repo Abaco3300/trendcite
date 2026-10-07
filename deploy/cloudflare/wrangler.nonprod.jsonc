@@ -2,7 +2,9 @@
   "name": "trendcite-nonprod-runtime",
   "main": "src/main.py",
   "compatibility_date": "2026-09-23",
-  "compatibility_flags": ["python_workers"],
+  "compatibility_flags": [
+    "python_workers"
+  ],
   "vars": {
     "TRENDCITE_RUNTIME_ROLE": "trendcite_nonprod_runtime",
     "SUPABASE_URL": "https://yntcafxmjgfjrdinwdmo.supabase.co",
@@ -13,13 +15,18 @@
     "TRENDCITE_AUTOMATION_STALE_SECONDS": "120",
     "TRENDCITE_AUTOMATION_RECOVERY_AFTER": "2026-10-07T21:30:00+00:00",
     "TRENDCITE_SCHEDULER_STALE_SECONDS": "600",
-    "TRENDCITE_QUEUE_MAX_ATTEMPTS": "3"
+    "TRENDCITE_QUEUE_MAX_ATTEMPTS": "3",
+    "VECTURL_BASE_URL": "https://vecturl.getistriade.com",
+    "VECTURL_CONSUMER_ID": "trendcite-nonprod"
   },
   "assets": {
     "directory": "../../web/dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/health"]
+    "run_worker_first": [
+      "/api/*",
+      "/health"
+    ]
   },
   "hyperdrive": [
     {
@@ -45,6 +52,8 @@
     ]
   },
   "triggers": {
-    "crons": ["*/5 * * * *"]
+    "crons": [
+      "*/5 * * * *"
+    ]
   }
 }
