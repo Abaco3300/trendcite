@@ -72,6 +72,10 @@ class LinkedContentEnrichment:
     text_fragments: tuple[str, ...] = ()
     provenance_json: str = "[]"
     quality_overall: float | None = None
+    quality_completeness: float | None = None
+    quality_provenance_coverage: float | None = None
+    fulfilled_capabilities: tuple[str, ...] = ()
+    missing_capabilities: tuple[str, ...] = ()
     actual_cost_micro_usd: int = 0
     error_code: str = ""
 
