@@ -299,3 +299,80 @@ Boundary preserved:
 - no production, customer traffic, commercialization, billing, IRCL, Dodo or customer charge occurred.
 
 `NEXT_REAL_HUMAN_GATE_VECTURL = HG-TRENDCITE-VECTURL-NONPROD-RUNTIME-ENRICHMENT-ACTIVATION-001`
+
+
+## HG-TRENDCITE-VECTURL-NONPROD-RUNTIME-ENRICHMENT-ACTIVATION-001 — 2026-10-07
+
+`RESULT = PASS / ACTIVE`
+`TRENDCITE_VECTURL_RUNTIME_ENRICHMENT = ACTIVE / NONPROD ONLY`
+`TRENDCITE_VECTURL_CONSUMER_ID = trendcite-nonprod`
+`TRENDCITE_VECTURL_MAX_COST_MICRO_USD = 0`
+`TRENDCITE_VECTURL_POLICY = best_effort`
+`TRENDCITE_VECTURL_MAX_ENRICHMENTS_PER_RUN = 3`
+`TRENDCITE_SCORING_IMPACT = NONE_BY_ARCHITECTURE + RUNTIME_VALIDATED`
+`PRODUCTION_ACTIVATION = NO`
+`DODO_TEST_AND_LIVE_FREEZE = ACTIVE_USER_ORDER`
+
+Code:
+- PR #38 merged as `4c65d9ce45eb88b18475cac25f4e6368e61535ca`;
+- PR #38 exact-head CI #102 = PASS;
+- enrichment executes only after `build_report()` has completed Signal Engine scoring;
+- VectURL output is represented as `LinkedContentEnrichment`, never `EvidenceItem`;
+- fail-open: VectURL errors are recorded as supplemental failure rows and do not fail the radar run;
+- maximum 3 unique linked URLs per run;
+- zero-cost VectURL contract remains enforced.
+
+Canonical persistence reconciliation:
+- PR #40 merged as `52dbca2f599d3ea172390216d5d75ca7a0b0cc9d`;
+- PR #40 exact-head CI #104 = PASS;
+- canonical table = `trendcite.cloud_run_linked_content`;
+- transient `cloud_linked_content_evidence` removed by forward-only migration 0009;
+- persisted metadata includes bundle, text fragments, provenance, quality completeness/coverage, fulfilled/missing capabilities and actual cost;
+- table access hardened to `trendcite_nonprod_runtime`; no anon/authenticated grants.
+
+Hosted nonprod:
+- canonical linked-content table present;
+- transient table absent;
+- runtime-role SELECT/INSERT/UPDATE/DELETE verified;
+- Worker packaging proof = PASS;
+- wheel SHA-256 = `f8b4c1c2f821c6a9542d7748a35945ae77a33f5db9336d2d8a3a6d747aca341c`;
+- required Cloudflare modules = 20;
+- deployed Worker version = `3dea3f21-286e-4b80-8ed9-bcc3fd610108`;
+- `TRENDCITE_VECTURL_ENRICHMENT=nonprod-enabled`.
+
+Controlled runtime validation:
+- first validation run on the normal narrow HN radar succeeded with zero signals and correctly made zero VectURL calls;
+- second validation used a temporary nonprod radar with existing supported collectors only: HN + GitHub + RSS + Reddit;
+- run `3a05f62f775724ffc5028b4457f5c33a` = SUCCEEDED / coverage COMPLETE / 5 signals / 0 errors;
+- exactly 3 linked-content enrichments persisted, proving the per-run cap;
+- bundles:
+  - `veb_97e5a4c1e78f96d3b4a9f8ed`
+  - `veb_5325a372754bb2adfda306b2`
+  - `veb_495add2a4ce6ff0af61ecd79`
+- each enrichment quality_overall = 0.9, completeness = 1.0, provenance coverage = 1.0;
+- all actual_cost_micro_usd = 0.
+
+Scoring isolation evidence:
+- the 5 canonical signal snapshots remained in `cloud_signal_evaluation` with their original score/component values;
+- linked content persisted only in `cloud_run_linked_content`, which carries no scoring component fields;
+- enrichment cap 3 < signal_count 5, confirming linked content is supplemental rather than a new scored evidence corpus;
+- focused invariance tests prove recency, engagement, corroboration, relevance, diversity and EvidenceItem identity remain unchanged before/after enrichment.
+
+VectURL durable telemetry after runtime validation:
+- `content_get / 2xx / request_count 4 / total cost 0`;
+- `ingestion_create / 2xx / request_count 4 / total cost 0`;
+- `ingestion_status / 2xx / request_count 28 / total cost 0`;
+- delta versus onboarding baseline = +3 create, +3 content_get and bounded polling for three real enrichments.
+
+Cleanup:
+- temporary validation radar removed;
+- both validation ticks removed;
+- both validation radar runs removed;
+- temporary linked-content rows removed by cascade;
+- final synthetic residue = 0;
+- durable aggregate VectURL telemetry retained as operational audit evidence.
+
+Boundary:
+- normal TrendCite nonprod runs may now enrich eligible scored briefs through VectURL;
+- production remains inactive;
+- no billing, checkout, IRCL, Dodo or customer charge action occurred.
