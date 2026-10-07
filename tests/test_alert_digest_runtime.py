@@ -583,6 +583,7 @@ def test_migration_0003_bootstrap_repeat_and_schema(tmp_path: Path) -> None:
         "0003_alert_digest_delivery.sql",
         "0004_scheduled_radar_orchestration.sql",
         "0005_queue_delivery_idempotency.sql",
+        "0006_entitlements_metering.sql",
     ]
     assert second == first
     conn = connect(db)

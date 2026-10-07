@@ -114,6 +114,7 @@ def test_nonprod_wrangler_config_uses_persistent_resources() -> None:
     assert '"TRENDCITE_RUNTIME_ROLE": "trendcite_nonprod_runtime"' in text
     assert '"SUPABASE_URL": "https://yntcafxmjgfjrdinwdmo.supabase.co"' in text
     assert '"SUPABASE_PUBLISHABLE_KEY": "sb_publishable_' in text
+    assert '"TRENDCITE_ENTITLEMENTS": "nonprod-enabled"' in text
     assert '"binding": "ASSETS"' in text
     assert '"id": "403038608f454b4b8172d9609f6a7383"' in text
     assert '"queue": "trendcite-nonprod-queue"' in text

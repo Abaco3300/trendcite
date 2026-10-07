@@ -43,6 +43,7 @@ REQUIRED_MEMBERS = {
     "trendcite/cloud/async_application.py",
     "trendcite/cloud/auth.py",
     "trendcite/cloud/customer_api.py",
+    "trendcite/cloud/domain/entitlements.py",
     "trendcite/cloud/async_delivery.py",
     "trendcite/cloud/async_delivery_service.py",
     "trendcite/cloud/async_execution.py",
@@ -52,6 +53,7 @@ REQUIRED_MEMBERS = {
     "trendcite/cloud/db/postgres.py",
     "trendcite/cloud/db/postgres_access.py",
     "trendcite/cloud/db/postgres_customer.py",
+    "trendcite/cloud/db/postgres_entitlements.py",
     "trendcite/cloud/db/postgres_delivery.py",
     "trendcite/cloud/db/postgres_execution.py",
 }

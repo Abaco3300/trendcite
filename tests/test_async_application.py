@@ -4,12 +4,14 @@ from datetime import UTC, datetime
 from typing import Any
 
 from trendcite.cloud.async_application import AsyncCloudApplicationRunner
+from trendcite.cloud.domain.entitlements import CAP_RADAR_RUN, EntitlementDecision
 from trendcite.cloud.domain.radar import (
     RUN_COVERAGE_COMPLETE,
     RUN_FAILED,
     RUN_SUCCEEDED,
     RadarRun,
 )
+from trendcite.cloud.errors import EntitlementDeniedError
 
 NOW = datetime(2026, 9, 29, 12, 0, tzinfo=UTC)
 
@@ -194,3 +196,70 @@ def test_pipeline_cannot_swap_logical_run_identity() -> None:
         assert "different logical run" in str(exc)
     else:
         raise AssertionError("identity swap must be rejected")
+
+
+class FakeEntitlementGate:
+    def __init__(self, allowed: bool, reason: str = "allowed") -> None:
+        self.allowed = allowed
+        self.reason = reason
+        self.calls: list[tuple[str, str]] = []
+
+    async def resolve_capability(
+        self,
+        workspace_id: str,
+        capability_key: str,
+        *,
+        at: datetime,
+    ) -> EntitlementDecision:
+        self.calls.append((workspace_id, capability_key))
+        return EntitlementDecision(
+            workspace_id=workspace_id,
+            plan_key="nonprod_limited",
+            capability_key=capability_key,
+            allowed=self.allowed,
+            reason=self.reason,
+            quota_kind="radar_run",
+            quota_limit=10,
+            used=10 if not self.allowed else 2,
+            remaining=0 if not self.allowed else 8,
+        )
+
+
+def test_entitlement_denial_happens_before_run_creation() -> None:
+    runs = FakeRuns()
+    pipeline = FakePipeline(["success"])
+    gate = FakeEntitlementGate(False, "quota_exhausted")
+    runner = AsyncCloudApplicationRunner(runs, pipeline, gate)
+
+    try:
+        _run(
+            runner.run_radar(
+                workspace_id="ws-1",
+                radar_id="radar-1",
+                evaluation_cutoff=NOW,
+            )
+        )
+    except EntitlementDeniedError as exc:
+        assert "quota_exhausted" in str(exc)
+    else:
+        raise AssertionError("quota exhaustion must deny execution")
+
+    assert runs.run is None
+    assert pipeline.calls == []
+    assert gate.calls == [("ws-1", CAP_RADAR_RUN)]
+
+
+def test_entitlement_allow_reaches_execution() -> None:
+    runs = FakeRuns()
+    pipeline = FakePipeline(["success"])
+    gate = FakeEntitlementGate(True)
+    runner = AsyncCloudApplicationRunner(runs, pipeline, gate)
+    result = _run(
+        runner.run_radar(
+            workspace_id="ws-1",
+            radar_id="radar-1",
+            evaluation_cutoff=NOW,
+        )
+    )
+    assert result.status == RUN_SUCCEEDED
+    assert gate.calls == [("ws-1", CAP_RADAR_RUN)]

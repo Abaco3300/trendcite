@@ -14,6 +14,7 @@ from trendcite.cloud.customer_api import (
     mutations_enabled,
 )
 from trendcite.cloud.db.postgres_access import AuthorizedWorkspace
+from trendcite.cloud.domain.entitlements import EntitlementSummary
 from trendcite.cloud.errors import NotFoundError, PermissionDeniedError
 
 NOW = datetime(2026, 10, 5, 12, 0, tzinfo=UTC)
@@ -137,6 +138,26 @@ class FakeStore:
         return {"digest_id": digest_id}
 
 
+class FakeEntitlementStore:
+    async def summary_for_principal(
+        self,
+        principal_id: str,
+        workspace_id: str,
+        *,
+        at: datetime,
+    ) -> EntitlementSummary:
+        if principal_id not in {"user-a", "user-v"} or workspace_id != "ws-a":
+            raise NotFoundError("workspace not found")
+        return EntitlementSummary(
+            workspace_id="ws-a",
+            plan_key="nonprod_limited",
+            display_name="Nonprod Limited",
+            capabilities={"radar_run": True},
+            quotas={"radar_run": {"kind": "radar_run", "limit": 10}},
+            usage={"radar_run": 3},
+        )
+
+
 def _run(coro: Any) -> Any:
     try:
         coro.send(None)
@@ -164,7 +185,11 @@ def request(
 def make(*, mutations: bool = True, auth: Any = None) -> tuple[CustomerApi, FakeStore]:
     store = FakeStore()
     return CustomerApi(
-        auth or FakeAuth(), store, mutations_enabled=mutations, clock=lambda: NOW
+        auth or FakeAuth(),
+        store,
+        mutations_enabled=mutations,
+        entitlement_store=FakeEntitlementStore(),
+        clock=lambda: NOW,
     ), store
 
 
@@ -273,3 +298,15 @@ def test_mutation_enablement_requires_exact_nonprod_flag() -> None:
 def test_customer_api_path_predicate() -> None:
     assert is_customer_api_path("/api/v1/session")
     assert not is_customer_api_path("/api/v10/x")
+
+
+def test_entitlement_and_usage_endpoints_are_membership_scoped() -> None:
+    api, _ = make()
+    entitlement = request(api, "GET", "/api/v1/workspaces/ws-a/entitlements")
+    usage = request(api, "GET", "/api/v1/workspaces/ws-a/usage")
+    foreign = request(api, "GET", "/api/v1/workspaces/ws-b/entitlements")
+    assert entitlement.status == 200
+    assert entitlement.payload["entitlements"]["plan_key"] == "nonprod_limited"
+    assert entitlement.payload["entitlements"]["usage"]["radar_run"] == 3
+    assert usage.payload["usage"]["radar_run"] == 3
+    assert foreign.status == 404

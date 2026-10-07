@@ -416,4 +416,4 @@ def test_alert_policy_defaults_and_migration_0003(tmp_path: Path) -> None:
     assert policy.max_delivery_attempts == 3
 
     names = SQLiteUnitOfWorkFactory(db).bootstrap()
-    assert names[-1] == "0005_queue_delivery_idempotency.sql"
+    assert names[-1] == "0006_entitlements_metering.sql"
