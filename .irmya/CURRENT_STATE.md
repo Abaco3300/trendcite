@@ -165,9 +165,33 @@ The Supabase Advisor may still report RLS disabled for trendcite tables. In the 
 - Dodo Payments TEST MODE: FROZEN / NO ACTIONS
 - Dodo Payments LIVE MODE: FROZEN / NO ACTIONS
 
+## VectURL linked-content readiness — 2026-10-07
+
+`TRENDCITE_VECTURL_LINKED_CONTENT_READINESS = READY_FOR_NONPROD_CREDENTIAL_GATE`
+`TRENDCITE_VECTURL_CLIENT_MAIN = 3e7bae30dae3063ce13af9e3074c55048b19d6ca`
+`TRENDCITE_VECTURL_INTENDED_CONSUMER_ID = trendcite-nonprod`
+`TRENDCITE_VECTURL_CREDENTIAL = NOT_ISSUED`
+`TRENDCITE_VECTURL_RUNTIME = DORMANT`
+`TRENDCITE_SCORING_IMPACT = NONE_BY_DESIGN`
+
+Architecture:
+- existing Hacker News / GitHub / Reddit / RSS / Dev.to adapters remain authoritative for source-native evidence and engagement metrics;
+- VectURL linked content is represented as a separate `LinkedContentEvidence` object;
+- VectURL output does not become an `EvidenceItem`;
+- therefore VectURL cannot change recency, engagement, corroboration, relevance, diversity, source count or publisher count;
+- the client is canonical-host pinned, server-side authenticated, zero-cost and best-effort;
+- returned text/provenance is bounded before use;
+- no credential, hosted runtime change or external VectURL request occurred in this readiness work.
+
+Validation:
+- PR #33 first CI run: mypy PASS / pytest PASS / Ruff formatting failed only;
+- canonical Ruff formatter applied;
+- exact-head CI run #81 = PASS;
+- PR #33 merged as `3e7bae30dae3063ce13af9e3074c55048b19d6ca`.
+
 ## Current Human Gate
 
-NEXT_REAL_HUMAN_GATE = NONE_CURRENTLY_IDENTIFIED
+NEXT_REAL_HUMAN_GATE = HG-TRENDCITE-VECTURL-NONPROD-INTERNAL-CONSUMER-ONBOARDING-001
 
 ## Next automatic action
 
