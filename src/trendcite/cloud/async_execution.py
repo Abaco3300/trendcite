@@ -13,7 +13,7 @@ from typing import Protocol, TypeVar
 
 from ..models import SourceStatus
 from .alert_runtime import counterevidence_from
-from .application import ExecutionBatch
+from .application import ExecutionBatch, LinkedContentEnrichment
 from .domain import (
     COVERAGE_FAILED,
     COVERAGE_OK,
@@ -135,6 +135,7 @@ class ExecutionPersistenceBundle:
     coverage: tuple[Coverage, ...]
     usage_events: tuple[UsageEvent, ...]
     alert_candidates: tuple[AlertCandidate, ...]
+    linked_content: tuple[LinkedContentEnrichment, ...] = ()
 
 
 class AsyncExecutionPipelineImpl:
@@ -377,6 +378,7 @@ class AsyncExecutionPipelineImpl:
             coverage=tuple(coverage),
             usage_events=usage,
             alert_candidates=_dedupe_by_id(candidates, "candidate_id"),
+            linked_content=batch.linked_content,
         )
         persisted = await self.store.persist_execution(bundle)
         if persisted.run_id != run.run_id or persisted.status != RUN_SUCCEEDED:

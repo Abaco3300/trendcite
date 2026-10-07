@@ -20,6 +20,7 @@ from .application import ExecutionBatch
 from .async_execution import AsyncSignalExecutionService
 from .async_http import AsyncHTTPTransport, fetch_bytes_async, fetch_json_async
 from .domain.radar import RadarVersion
+from .vecturl_enrichment import AsyncVectURLClient, enrich_report_linked_content
 
 log = logging.getLogger("trendcite.cloud.async_sources")
 
@@ -227,8 +228,10 @@ class AsyncSourceExecutionServiceImpl(AsyncSignalExecutionService):
         transport: AsyncHTTPTransport,
         *,
         config: Config | None = None,
+        vecturl_client: AsyncVectURLClient | None = None,
     ) -> None:
         self.collectors = AsyncCollectorSet(transport, config or Config())
+        self.vecturl_client = vecturl_client
 
     async def execute(
         self,
@@ -249,7 +252,13 @@ class AsyncSourceExecutionServiceImpl(AsyncSignalExecutionService):
             source_status=statuses,
         )
         signals = tuple(brief.signal for brief in report.briefs if brief.signal is not None)
+        linked_content = (
+            await enrich_report_linked_content(report, self.vecturl_client)
+            if self.vecturl_client is not None
+            else ()
+        )
         return ExecutionBatch(
             signals=signals,
             source_status=tuple(statuses),
+            linked_content=linked_content,
         )

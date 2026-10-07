@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from collections.abc import AsyncIterator
@@ -513,6 +514,48 @@ class PostgresExecutionStore:
                     candidate.created_at.isoformat(),
                 )
 
+            for linked in bundle.linked_content:
+                enrichment_id = _linked_content_id(
+                    bundle.run.run_id,
+                    linked.signal_id,
+                    linked.source_url,
+                )
+                await conn.execute(
+                    """
+                    INSERT INTO trendcite.cloud_linked_content_evidence
+                        (enrichment_id, workspace_id, run_id, signal_id, source_url,
+                         status, bundle_id, text_fragments_json, provenance_json,
+                         quality_overall, actual_cost_micro_usd, error_code, created_at)
+                    VALUES
+                        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+                    ON CONFLICT (workspace_id, run_id, signal_id, source_url)
+                    DO UPDATE SET
+                        status=EXCLUDED.status,
+                        bundle_id=EXCLUDED.bundle_id,
+                        text_fragments_json=EXCLUDED.text_fragments_json,
+                        provenance_json=EXCLUDED.provenance_json,
+                        quality_overall=EXCLUDED.quality_overall,
+                        actual_cost_micro_usd=EXCLUDED.actual_cost_micro_usd,
+                        error_code=EXCLUDED.error_code,
+                        created_at=EXCLUDED.created_at
+                    """,
+                    enrichment_id,
+                    bundle.run.workspace_id,
+                    bundle.run.run_id,
+                    linked.signal_id,
+                    linked.source_url,
+                    linked.status,
+                    linked.bundle_id,
+                    _json(linked.text_fragments),
+                    linked.provenance_json,
+                    linked.quality_overall,
+                    linked.actual_cost_micro_usd,
+                    linked.error_code,
+                    bundle.run.finished_at.isoformat()
+                    if bundle.run.finished_at is not None
+                    else bundle.run.started_at.isoformat(),
+                )
+
             for event in bundle.usage_events:
                 await conn.execute(
                     """
@@ -550,6 +593,11 @@ class PostgresExecutionStore:
             if status.endswith(" 0"):
                 raise RuntimeError("succeeded radar run update matched no row")
             return bundle.run
+
+
+def _linked_content_id(run_id: str, signal_id: str, source_url: str) -> str:
+    material = f"{run_id}|{signal_id}|{source_url}"
+    return "lce_" + hashlib.sha256(material.encode()).hexdigest()[:24]
 
 
 def _json(value: Any) -> str:

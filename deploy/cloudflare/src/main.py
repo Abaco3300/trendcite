@@ -15,7 +15,11 @@ from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlparse
 
-from http_transport import CloudflareFetchTransport, CloudflarePostTransport
+from http_transport import (
+    CloudflareFetchTransport,
+    CloudflarePostTransport,
+    CloudflareVectURLTransport,
+)
 from workers import Response, WorkerEntrypoint, fetch
 
 from trendcite.cloud.async_application import AsyncCloudApplicationRunner
@@ -39,6 +43,7 @@ from trendcite.cloud.db.postgres_delivery import PostgresDeliveryStore
 from trendcite.cloud.db.postgres_entitlements import PostgresEntitlementStore
 from trendcite.cloud.db.postgres_execution import PostgresExecutionStore
 from trendcite.cloud.domain.alerts import DELIVERY_PENDING
+from trendcite.cloud.vecturl_enrichment import AsyncVectURLClient
 from trendcite.config import Config
 
 
@@ -125,9 +130,24 @@ def _runner(env: Any) -> AsyncCloudApplicationRunner:
         _connector(env),
         runtime_role=_runtime_role(env),
     )
+    vecturl_client = None
+    vecturl_flag = str(getattr(env, "TRENDCITE_VECTURL_ENRICHMENT", "") or "").strip()
+    if vecturl_flag == "nonprod-enabled" and "nonprod" in _runtime_role(env):
+        token = str(getattr(env, "VECTURL_CONSUMER_TOKEN", "") or "").strip()
+        base_url = str(getattr(env, "VECTURL_BASE_URL", "") or "").strip()
+        consumer_id = str(getattr(env, "VECTURL_CONSUMER_ID", "") or "").strip()
+        if token and base_url and consumer_id:
+            vecturl_client = AsyncVectURLClient(
+                transport=CloudflareVectURLTransport(),
+                consumer_id=consumer_id,
+                token=token,
+                base_url=base_url,
+                sleep=asyncio.sleep,
+            )
     source_service = AsyncSourceExecutionServiceImpl(
         CloudflareFetchTransport(),
         config=Config(),
+        vecturl_client=vecturl_client,
     )
     pipeline = AsyncExecutionPipelineImpl(execution_store, source_service)
     gate = _entitlement_store(env) if _entitlements_enabled(env) else None

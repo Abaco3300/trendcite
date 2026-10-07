@@ -52,6 +52,7 @@ REQUIRED_MEMBERS = {
     "trendcite/cloud/async_http.py",
     "trendcite/cloud/async_scheduler.py",
     "trendcite/cloud/async_sources.py",
+    "trendcite/cloud/vecturl_enrichment.py",
     "trendcite/cloud/db/postgres.py",
     "trendcite/cloud/db/postgres_access.py",
     "trendcite/cloud/db/postgres_automation.py",
