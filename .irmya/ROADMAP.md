@@ -55,3 +55,13 @@ M8 — Production Readiness
 - Intended first identity: `trendcite-nonprod`.
 - No credential issued and no VectURL traffic activated yet.
 - Next authority boundary: `HG-TRENDCITE-VECTURL-NONPROD-INTERNAL-CONSUMER-ONBOARDING-001` for one dedicated nonprod credential plus one synthetic zero-cost smoke.
+
+
+## VectURL nonprod onboarding
+
+- `HG-TRENDCITE-VECTURL-NONPROD-INTERNAL-CONSUMER-ONBOARDING-001` — PASS / CLOSED;
+- dedicated `trendcite-nonprod` credential — ACTIVE;
+- one synthetic zero-cost smoke — PASS / CLOSED;
+- durable VectURL telemetry — 3 successful 2xx operations / cost 0;
+- linked-content enrichment in normal TrendCite nonprod runs — NOT ACTIVATED;
+- next authority boundary: `HG-TRENDCITE-VECTURL-NONPROD-RUNTIME-ENRICHMENT-ACTIVATION-001`.
