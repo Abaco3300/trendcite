@@ -1,11 +1,21 @@
 from __future__ import annotations
 
-import asyncio
+from collections.abc import Coroutine
+from typing import Any
 
 from trendcite.cloud.vecturl_enrichment import enrich_report_linked_content
 from trendcite.models import Report
 from trendcite.pipeline import run_demo
 from trendcite.vecturl import LinkedContentEvidence, LinkedContentProvenance
+
+
+def _run_immediate(coro: Coroutine[Any, Any, Any]) -> Any:
+    """Drive a coroutine that must not suspend; keeps offline tests socket-free."""
+    try:
+        coro.send(None)
+    except StopIteration as finished:
+        return finished.value
+    raise AssertionError("test coroutine unexpectedly suspended")
 
 
 class _FakeVectURL:
@@ -59,7 +69,7 @@ def test_linked_content_runs_after_scoring_and_cannot_mutate_scores() -> None:
     ]
 
     client = _FakeVectURL()
-    linked = asyncio.run(enrich_report_linked_content(report, client, limit=3))
+    linked = _run_immediate(enrich_report_linked_content(report, client, limit=3))
 
     after = [
         (
@@ -86,7 +96,7 @@ def test_linked_content_failure_is_fail_open_and_separate() -> None:
     report: Report = run_demo(top=3)
     before = [brief.score.total for brief in report.briefs]
 
-    linked = asyncio.run(enrich_report_linked_content(report, _FakeVectURL(fail=True), limit=1))
+    linked = _run_immediate(enrich_report_linked_content(report, _FakeVectURL(fail=True), limit=1))
 
     assert [brief.score.total for brief in report.briefs] == before
     assert len(linked) == 1
@@ -97,8 +107,8 @@ def test_linked_content_failure_is_fail_open_and_separate() -> None:
 
 
 def test_nonprod_runtime_flag_is_scoped_and_zero_cost_contract_is_static() -> None:
-    from pathlib import Path
     import json
+    from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
     config = json.loads(
