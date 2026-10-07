@@ -585,6 +585,7 @@ def test_migration_0003_bootstrap_repeat_and_schema(tmp_path: Path) -> None:
         "0005_queue_delivery_idempotency.sql",
         "0006_entitlements_metering.sql",
         "0007_full_automation_readiness.sql",
+        "0008_vecturl_linked_content_enrichment.sql",
     ]
     assert second == first
     conn = connect(db)
