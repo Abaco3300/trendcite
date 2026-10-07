@@ -27,7 +27,3 @@ CREATE INDEX IF NOT EXISTS ix_linked_content_bundle
     ON cloud_linked_content_evidence (bundle_id)
     WHERE bundle_id <> '';
 
-REVOKE ALL ON TABLE cloud_linked_content_evidence FROM anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON TABLE cloud_linked_content_evidence
-    TO trendcite_nonprod_runtime;
