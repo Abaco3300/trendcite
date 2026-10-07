@@ -492,6 +492,8 @@ class ScheduleTick:
             return True
         if self.status == TICK_FAILED:
             return self.retryable
+        if self.status == TICK_RUNNING and self.attempt >= self.max_attempts:
+            return False
         return not self.lease_held_at(moment)
 
     # -------------------------------------------------------------------- transitions
@@ -505,6 +507,8 @@ class ScheduleTick:
             raise ValidationError("a settled tick cannot be claimed")
         if self.status == TICK_FAILED and not self.retryable:
             raise ValidationError("a tick with no attempts left cannot be claimed")
+        if self.status == TICK_RUNNING and self.attempt >= self.max_attempts:
+            raise ValidationError("a running tick on its final attempt cannot be reclaimed")
         if self.lease_held_at(moment) and self.lease_owner != owner:
             raise ValidationError("another worker holds an unexpired lease on this tick")
         return replace(
