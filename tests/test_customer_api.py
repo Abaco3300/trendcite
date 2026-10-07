@@ -14,6 +14,7 @@ from trendcite.cloud.customer_api import (
     mutations_enabled,
 )
 from trendcite.cloud.db.postgres_access import AuthorizedWorkspace
+from trendcite.cloud.domain.automation import AutomationSummary
 from trendcite.cloud.domain.entitlements import EntitlementSummary
 from trendcite.cloud.errors import NotFoundError, PermissionDeniedError
 
@@ -158,6 +159,34 @@ class FakeEntitlementStore:
         )
 
 
+class FakeAutomationStore:
+    async def summary_for_principal(
+        self,
+        principal_id: str,
+        workspace_id: str,
+        *,
+        now: datetime,
+        stale_seconds: int,
+        scheduler_stale_seconds: int,
+    ) -> AutomationSummary:
+        if principal_id not in {"user-a", "user-v"} or workspace_id != "ws-a":
+            raise NotFoundError("workspace not found")
+        return AutomationSummary(
+            workspace_id="ws-a",
+            scheduler_last_seen_at=NOW,
+            scheduler_stale=False,
+            enabled_schedules=1,
+            overdue_schedules=0,
+            pending_stale_ticks=0,
+            expired_running_ticks=0,
+            retryable_failed_ticks=1,
+            exhausted_failed_ticks=0,
+            recovery_actions_24h=2,
+            queue_failures_24h=1,
+            queue_failures_at_retry_limit_24h=0,
+        )
+
+
 def _run(coro: Any) -> Any:
     try:
         coro.send(None)
@@ -189,6 +218,7 @@ def make(*, mutations: bool = True, auth: Any = None) -> tuple[CustomerApi, Fake
         store,
         mutations_enabled=mutations,
         entitlement_store=FakeEntitlementStore(),
+        automation_store=FakeAutomationStore(),
         clock=lambda: NOW,
     ), store
 
@@ -309,4 +339,15 @@ def test_entitlement_and_usage_endpoints_are_membership_scoped() -> None:
     assert entitlement.payload["entitlements"]["plan_key"] == "nonprod_limited"
     assert entitlement.payload["entitlements"]["usage"]["radar_run"] == 3
     assert usage.payload["usage"]["radar_run"] == 3
+    assert foreign.status == 404
+
+
+def test_operations_endpoint_is_membership_scoped() -> None:
+    api, _ = make()
+    response = request(api, "GET", "/api/v1/workspaces/ws-a/operations")
+    foreign = request(api, "GET", "/api/v1/workspaces/ws-b/operations")
+    assert response.status == 200
+    assert response.payload["operations"]["scheduler_stale"] is False
+    assert response.payload["operations"]["retryable_failed_ticks"] == 1
+    assert response.payload["operations"]["recovery_actions_24h"] == 2
     assert foreign.status == 404

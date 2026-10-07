@@ -392,6 +392,7 @@ class PostgresRuntimeStore:
                     OR (status='failed' AND attempt<max_attempts)
                     OR (
                         status='running'
+                        AND attempt<max_attempts
                         AND (lease_expires_at IS NULL OR lease_expires_at<=$3)
                     )
                   )

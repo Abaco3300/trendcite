@@ -17,6 +17,7 @@ from http_transport import CloudflareFetchTransport, CloudflarePostTransport
 from workers import Response, WorkerEntrypoint
 
 from trendcite.cloud.async_application import AsyncCloudApplicationRunner
+from trendcite.cloud.async_automation import AsyncAutomationReconciler
 from trendcite.cloud.async_delivery import PostmarkConfig, PostmarkDeliveryAdapter
 from trendcite.cloud.async_delivery_service import AsyncDeliveryService
 from trendcite.cloud.async_execution import AsyncExecutionPipelineImpl
@@ -30,6 +31,7 @@ from trendcite.cloud.customer_api import (
     mutations_enabled,
 )
 from trendcite.cloud.db.postgres import AsyncpgHyperdriveConnector, PostgresRuntimeStore
+from trendcite.cloud.db.postgres_automation import PostgresAutomationStore
 from trendcite.cloud.db.postgres_customer import PostgresCustomerStore
 from trendcite.cloud.db.postgres_delivery import PostgresDeliveryStore
 from trendcite.cloud.db.postgres_entitlements import PostgresEntitlementStore
@@ -72,6 +74,47 @@ def _entitlement_store(env: Any) -> PostgresEntitlementStore:
     return PostgresEntitlementStore(
         _connector(env),
         runtime_role=_runtime_role(env),
+    )
+
+
+def _automation_store(env: Any) -> PostgresAutomationStore:
+    return PostgresAutomationStore(
+        _connector(env),
+        runtime_role=_runtime_role(env),
+    )
+
+
+def _automation_enabled(env: Any) -> bool:
+    flag = str(getattr(env, "TRENDCITE_AUTOMATION", "") or "").strip()
+    return flag == "nonprod-enabled" and "nonprod" in _runtime_role(env)
+
+
+def _env_positive_int(env: Any, name: str, default: int) -> int:
+    raw = str(getattr(env, name, "") or "").strip()
+    if not raw:
+        return default
+    value = int(raw)
+    if value < 1:
+        raise RuntimeError(f"{name} must be positive")
+    return value
+
+
+def _env_datetime(env: Any, name: str) -> datetime:
+    raw = str(getattr(env, name, "") or "").strip()
+    if not raw:
+        raise RuntimeError(f"{name} is required")
+    parsed = datetime.fromisoformat(raw)
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise RuntimeError(f"{name} must be timezone-aware")
+    return parsed.astimezone(UTC)
+
+
+def _automation_reconciler(env: Any) -> AsyncAutomationReconciler:
+    return AsyncAutomationReconciler(
+        _automation_store(env),
+        _CloudflareQueuePublisher(env.TREND_QUEUE),
+        stale_seconds=_env_positive_int(env, "TRENDCITE_AUTOMATION_STALE_SECONDS", 120),
+        recovery_after=_env_datetime(env, "TRENDCITE_AUTOMATION_RECOVERY_AFTER"),
     )
 
 
@@ -143,6 +186,13 @@ async def _customer_api_response(env: Any, request: Any) -> Any:
             _customer_store(env),
             mutations_enabled=mutations_enabled(env),
             entitlement_store=_entitlement_store(env),
+            automation_store=_automation_store(env),
+            automation_stale_seconds=_env_positive_int(
+                env, "TRENDCITE_AUTOMATION_STALE_SECONDS", 120
+            ),
+            scheduler_stale_seconds=_env_positive_int(
+                env, "TRENDCITE_SCHEDULER_STALE_SECONDS", 600
+            ),
             log=_log_event,
         )
     except RuntimeError as exc:
@@ -212,6 +262,7 @@ class Default(WorkerEntrypoint):
         runtime_env = env if env is not None else self.env
         store = _store(runtime_env)
         for message in batch.messages:
+            payload: dict[str, Any] = {}
             try:
                 payload = json.loads(str(message.body))
                 required = ("workspace_id", "logical_id", "kind")
@@ -368,12 +419,37 @@ class Default(WorkerEntrypoint):
                 )
                 message.ack()
             except Exception as exc:
+                if payload.get("workspace_id") and payload.get("logical_id"):
+                    try:
+                        await _automation_store(runtime_env).record_queue_failure(
+                            workspace_id=str(payload["workspace_id"]),
+                            logical_id=str(payload["logical_id"]),
+                            kind=str(payload.get("kind") or "unknown"),
+                            queue_message_id=str(getattr(message, "id", "") or ""),
+                            attempt=int(getattr(message, "attempts", 1) or 1),
+                            max_attempts=_env_positive_int(
+                                runtime_env, "TRENDCITE_QUEUE_MAX_ATTEMPTS", 3
+                            ),
+                            error_type=type(exc).__name__,
+                            observed_at=datetime.now(UTC).replace(microsecond=0),
+                        )
+                    except Exception as audit_exc:
+                        print(
+                            json.dumps(
+                                {
+                                    "event": "trendcite.queue.failure_audit_error",
+                                    "error_type": type(audit_exc).__name__,
+                                },
+                                sort_keys=True,
+                            )
+                        )
                 print(
                     json.dumps(
                         {
                             "event": "trendcite.queue.delivery",
                             "status": "retry",
                             "error_type": type(exc).__name__,
+                            "attempt": int(getattr(message, "attempts", 1) or 1),
                         },
                         sort_keys=True,
                     )
@@ -382,8 +458,34 @@ class Default(WorkerEntrypoint):
 
     async def scheduled(self, controller: Any, env: Any, ctx: Any) -> None:
         runtime_env = env if env is not None else self.env
-        result = await _coordinator(runtime_env).plan_and_enqueue(
-            now=datetime.now(UTC).replace(microsecond=0)
+        now = datetime.now(UTC).replace(microsecond=0)
+        result = await _coordinator(runtime_env).plan_and_enqueue(now=now)
+
+        recovery_candidates = 0
+        recovery_requeued = 0
+        recovery_terminalized = 0
+        recovery_already_recorded = 0
+        if _automation_enabled(runtime_env):
+            recovery = await _automation_reconciler(runtime_env).reconcile(now=now)
+            recovery_candidates = recovery.candidates
+            recovery_requeued = recovery.requeued
+            recovery_terminalized = recovery.terminalized
+            recovery_already_recorded = recovery.already_recorded
+
+        heartbeat_detail = {
+            "cron": str(getattr(controller, "cron", "")),
+            "schedules": len(result.schedules),
+            "enqueued": result.enqueued,
+            "automation_enabled": _automation_enabled(runtime_env),
+            "recovery_candidates": recovery_candidates,
+            "recovery_requeued": recovery_requeued,
+            "recovery_terminalized": recovery_terminalized,
+            "recovery_already_recorded": recovery_already_recorded,
+        }
+        await _automation_store(runtime_env).record_heartbeat(
+            "scheduler",
+            observed_at=now,
+            detail=heartbeat_detail,
         )
         print(
             json.dumps(
@@ -394,6 +496,11 @@ class Default(WorkerEntrypoint):
                     "schedules": len(result.schedules),
                     "enqueued": result.enqueued,
                     "execution_runner": "async_sources_configured",
+                    "automation_enabled": _automation_enabled(runtime_env),
+                    "recovery_candidates": recovery_candidates,
+                    "recovery_requeued": recovery_requeued,
+                    "recovery_terminalized": recovery_terminalized,
+                    "recovery_already_recorded": recovery_already_recorded,
                 },
                 sort_keys=True,
             )

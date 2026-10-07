@@ -17,7 +17,7 @@ HOSTED_PRODUCT = NONPROD_ONLY
 CUSTOMER_AUTH = REAL_NONPROD_VALIDATED
 CUSTOMER_FRONTEND = REAL_NONPROD_VALIDATED
 DELIVERY_INTEGRATION = REAL_NONPROD_VALIDATED / PERSISTENT_DELIVERY_DISABLED
-BILLING_ENTITLEMENTS = TC-P006 OPEN / NONCOMMERCIAL
+BILLING_ENTITLEMENTS = TC-P006 CLOSED / NONCOMMERCIAL PASS
 PRODUCTION_READY = NO
 COMMERCIALIZATION_READY = NO
 
@@ -47,11 +47,12 @@ TC-P002 — Persistent Runtime E2E Hardening = CLOSED / PASS
 TC-P003 — Transactional Delivery / Postmark = CLOSED / PASS
 TC-P004 — Authentication and Tenant Access = CLOSED / PASS
 TC-P005 — Customer Application = CLOSED / PASS
+TC-P006 — Entitlements and Metering = CLOSED / PASS
 
 ## Active internal Pack
 
-ACTIVE_PACK = TC-P006
-PACK_NAME = Entitlements and Metering
+ACTIVE_PACK = TC-P007
+PACK_NAME = Full Automation Readiness
 PACK_STATUS = LOCAL_VALIDATED / HOSTED_SCHEMA_READY / REMOTE_CHECKPOINT_PENDING
 
 ## TC-P004 closure evidence
@@ -150,7 +151,24 @@ The Supabase Advisor may still report RLS disabled for trendcite tables. In the 
 - hosted plans seeded: commercial=0 only
 - all 4 existing synthetic/nonprod workspaces assigned nonprod_full
 - enabled scheduled workspace irmya-nonprod-ws has nonprod_full entitlement
-- TRENDCITE_ENTITLEMENTS=nonprod-enabled: LOCAL CONFIG READY / NOT YET DEPLOYED
+- TRENDCITE_ENTITLEMENTS=nonprod-enabled: DEPLOYED NONPROD
+- PR #32 merged to main: PASS
+- main CI after merge: PASS
+- persistent nonprod deploy: PASS
+- Worker Version ID: 6178a90b-9e25-4182-b649-e158c5d08979
+- positive TC-P006 E2E JSON: PASS
+- auth session: 200
+- authorized workspace A visible: YES
+- unauthorized workspace B visible: NO
+- entitlement endpoint: 200
+- effective plan: nonprod_full
+- usage endpoint: 200
+- cross-tenant entitlement access: 404
+- token persisted: NO
+- password persisted: NO
+- billing touched: NO
+- production touched: NO
+- Dodo touched: NO
 - focused TC-P006 tests: PASS
 - full pytest suite: PASS
 - Ruff format/check: PASS
@@ -162,6 +180,38 @@ The Supabase Advisor may still report RLS disabled for trendcite tables. In the 
 - production activation: NO
 - billing/checkout/customer charges: NO
 - persistent outbound delivery: DISABLED
+- Dodo Payments TEST MODE: FROZEN / NO ACTIONS
+- Dodo Payments LIVE MODE: FROZEN / NO ACTIONS
+
+## TC-P007 validation evidence
+
+- durable scheduler heartbeat: IMPLEMENTED
+- stale pending / retryable failed / expired lease detection: IMPLEMENTED
+- expired final-attempt terminalization: IMPLEMENTED
+- recovery audit ledger: IMPLEMENTED
+- Queue failure ledger with total-attempt semantics: IMPLEMENTED
+- Cloudflare Queue max_retries=2 mapped to max_attempts=3: VERIFIED
+- authenticated /operations summary: IMPLEMENTED / MEMBERSHIP-SCOPED
+- scheduler liveness and overdue schedule observability: IMPLEMENTED
+- claim_tick cannot exceed max_attempts: VERIFIED
+- migration 0007_full_automation_readiness: APPLIED HOSTED NONPROD
+- Supabase migration history: hg_trendcite_nonprod_0007_full_automation_readiness
+- runtime role privileges on new tables: VERIFIED
+- legacy stale records identified as TC-P002 synthetic fixtures
+- TRENDCITE_AUTOMATION_RECOVERY_AFTER=2026-10-07T21:30:00+00:00
+- stale recovery candidates after activation watermark: 0
+- legacy pre-watermark fixtures remain observable but are not auto-replayed
+- focused TC-P007 tests: PASS (37/37)
+- full pytest suite: PASS
+- Ruff format/check: PASS
+- mypy: PASS (77 source files)
+- frontend tests/build: PASS
+- canonical local preflight: PASS
+- Cloudflare packaging source proof: PASS / 19 required modules
+- pywrangler dry-run: PASS / 223 modules
+- production activation: NO
+- billing/checkout/customer charges: NO
+- persistent outbound delivery activation: NO
 - Dodo Payments TEST MODE: FROZEN / NO ACTIONS
 - Dodo Payments LIVE MODE: FROZEN / NO ACTIONS
 
@@ -195,4 +245,4 @@ NEXT_REAL_HUMAN_GATE = HG-TRENDCITE-VECTURL-NONPROD-INTERNAL-CONSUMER-ONBOARDING
 
 ## Next automatic action
 
-Create one logical GitHub checkpoint for TC-P006, run remote CI once, merge if green, then deploy only the already-authorized persistent nonprod runtime and validate entitlement/usage APIs plus tenant isolation. Keep production, billing, checkout, persistent outbound delivery, commercialization, Dodo TEST MODE and Dodo LIVE MODE disabled.
+Create one logical GitHub checkpoint for TC-P007, run remote CI once, merge if green, then deploy only persistent nonprod and validate heartbeat plus the authenticated /operations surface. Keep production activation, billing, checkout, persistent outbound delivery, commercialization, Dodo TEST MODE and Dodo LIVE MODE disabled.

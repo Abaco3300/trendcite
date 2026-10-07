@@ -60,6 +60,18 @@ class EntitlementStore(Protocol):
     ) -> Any: ...
 
 
+class AutomationStore(Protocol):
+    async def summary_for_principal(
+        self,
+        principal_id: str,
+        workspace_id: str,
+        *,
+        now: datetime,
+        stale_seconds: int,
+        scheduler_stale_seconds: int,
+    ) -> Any: ...
+
+
 class CustomerStore(Protocol):
     async def list_workspaces(self, principal_id: str) -> tuple[AuthorizedWorkspace, ...]: ...
     async def get_workspace(
@@ -145,6 +157,7 @@ ROUTES: tuple[_Route, ...] = (
     _route("GET", _WS, "workspace"),
     _route("GET", _WS + "/entitlements", "entitlements"),
     _route("GET", _WS + "/usage", "usage"),
+    _route("GET", _WS + "/operations", "operations"),
     _route("GET", _WS + "/watchlists", "list_watchlists"),
     _route("POST", _WS + "/watchlists", "create_watchlist", mutation=True),
     _route("GET", _WS + "/watchlists/{watchlist_id}", "get_watchlist"),
@@ -188,12 +201,18 @@ class CustomerApi:
         *,
         mutations_enabled: bool,
         entitlement_store: EntitlementStore | None = None,
+        automation_store: AutomationStore | None = None,
+        automation_stale_seconds: int = 120,
+        scheduler_stale_seconds: int = 600,
         clock: Callable[[], datetime] | None = None,
         log: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         self._auth = auth
         self._store = store
         self._entitlement_store = entitlement_store
+        self._automation_store = automation_store
+        self._automation_stale_seconds = automation_stale_seconds
+        self._scheduler_stale_seconds = scheduler_stale_seconds
         self._mutations_enabled = mutations_enabled
         self._clock = clock or (lambda: datetime.now(UTC).replace(microsecond=0))
         self._log = log or (lambda _event: None)
@@ -294,6 +313,19 @@ class CustomerApi:
             "quotas": payload["quotas"],
             "usage": payload["usage"],
         }
+
+    async def _h_operations(self, ctx: _Context) -> dict[str, Any]:
+        if self._automation_store is None:
+            raise _HttpError(503, "automation_unavailable")
+        p, ws = _scope(ctx)
+        summary = await self._automation_store.summary_for_principal(
+            p,
+            ws,
+            now=self._clock(),
+            stale_seconds=self._automation_stale_seconds,
+            scheduler_stale_seconds=self._scheduler_stale_seconds,
+        )
+        return {"operations": summary.to_dict()}
 
     async def _h_list_watchlists(self, ctx: _Context) -> dict[str, Any]:
         p, ws = _scope(ctx)
