@@ -46,3 +46,12 @@ M8 — Production Readiness
 - security/reliability/operational review
 - production configuration
 - production activation remains a Human Gate
+
+
+## Shared VectURL capability
+
+- Dormant linked-content client: MERGED / TESTED.
+- TrendCite source-native scoring remains unchanged.
+- Intended first identity: `trendcite-nonprod`.
+- No credential issued and no VectURL traffic activated yet.
+- Next authority boundary: `HG-TRENDCITE-VECTURL-NONPROD-INTERNAL-CONSUMER-ONBOARDING-001` for one dedicated nonprod credential plus one synthetic zero-cost smoke.
