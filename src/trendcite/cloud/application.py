@@ -62,11 +62,27 @@ class AlertingHook(Protocol):
 
 
 @dataclass(frozen=True)
+class LinkedContentEnrichment:
+    """Supplemental linked-content context that is never part of Signal Engine scoring."""
+
+    signal_id: str
+    source_url: str
+    status: str
+    bundle_id: str = ""
+    text_fragments: tuple[str, ...] = ()
+    provenance_json: str = "[]"
+    quality_overall: float | None = None
+    actual_cost_micro_usd: int = 0
+    error_code: str = ""
+
+
+@dataclass(frozen=True)
 class ExecutionBatch:
     """One deterministic Signal Engine result plus explicit source coverage."""
 
     signals: tuple[SignalBrief, ...]
     source_status: tuple[SourceStatus, ...]
+    linked_content: tuple[LinkedContentEnrichment, ...] = ()
 
 
 Clock = Callable[[], datetime]
