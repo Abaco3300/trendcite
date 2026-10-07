@@ -1,6 +1,6 @@
 # TrendCite — Current IRMYA State
 
-Updated: 2026-10-05
+Updated: 2026-10-07
 Status: ACTIVE
 
 ## Canonical checkpoint
@@ -15,9 +15,9 @@ RUNTIME_CORE_READY = YES
 PERSISTENT_NONPROD = YES
 HOSTED_PRODUCT = NONPROD_ONLY
 CUSTOMER_AUTH = REAL_NONPROD_VALIDATED
-CUSTOMER_FRONTEND = LOCAL_VALIDATED / REMOTE_CHECKPOINT_PENDING
+CUSTOMER_FRONTEND = REAL_NONPROD_VALIDATED
 DELIVERY_INTEGRATION = REAL_NONPROD_VALIDATED / PERSISTENT_DELIVERY_DISABLED
-BILLING_ENTITLEMENTS = NO
+BILLING_ENTITLEMENTS = TC-P006 OPEN / NONCOMMERCIAL
 PRODUCTION_READY = NO
 COMMERCIALIZATION_READY = NO
 
@@ -33,7 +33,7 @@ Queue ID: 752b703ee758448d81be0bc3639abfdf
 DLQ: trendcite-nonprod-dlq
 DLQ ID: a5c3d474d01c45e085b5152575f4408e
 Worker: trendcite-nonprod-runtime
-Worker version: e96fd573-45dc-42e9-97fa-1572a0f699ee
+Worker version: b30cbdac-b1ef-4a7a-a90c-bd3e71461b80
 Worker URL: https://trendcite-nonprod-runtime.istriadegroupllc.workers.dev
 Cron: */5 * * * *
 Runtime role binding: TRENDCITE_RUNTIME_ROLE=trendcite_nonprod_runtime
@@ -46,12 +46,13 @@ TC-P001 — Persistent Nonprod Foundation = CLOSED / PASS
 TC-P002 — Persistent Runtime E2E Hardening = CLOSED / PASS
 TC-P003 — Transactional Delivery / Postmark = CLOSED / PASS
 TC-P004 — Authentication and Tenant Access = CLOSED / PASS
+TC-P005 — Customer Application = CLOSED / PASS
 
 ## Active internal Pack
 
-ACTIVE_PACK = TC-P005
-PACK_NAME = Customer Application
-PACK_STATUS = LOCAL_VALIDATED / REMOTE_CHECKPOINT_PENDING
+ACTIVE_PACK = TC-P006
+PACK_NAME = Entitlements and Metering
+PACK_STATUS = OPEN / NONCOMMERCIAL IMPLEMENTATION
 
 ## TC-P004 closure evidence
 
@@ -93,7 +94,7 @@ Verification established that trendcite was already absent from the remote Data 
 
 The Supabase Advisor may still report RLS disabled for trendcite tables. In the current architecture those tables are not exposed through PostgREST/Data API; Hyperdrive reaches PostgreSQL directly through the controlled runtime role. RLS remains available as defense-in-depth work if the architecture later exposes these tables through Supabase client/Data API access.
 
-## TC-P005 local validation evidence
+## TC-P005 closure evidence
 
 - authenticated customer API router: IMPLEMENTED
 - same-transaction membership authorization: IMPLEMENTED
@@ -112,7 +113,20 @@ The Supabase Advisor may still report RLS disabled for trendcite tables. In the 
 - mypy strict: PASS
 - offline demo: PASS
 - wheel build/install/import in isolated venv: PASS
-- canonical local preflight: PASS (47.1s)
+- canonical local preflight: PASS
+- PR #30 merged to main: PASS
+- PR #31 runtime routing repair merged to main: PASS
+- main CI after merge: PASS
+- persistent nonprod deploy: PASS
+- Worker Version ID: b30cbdac-b1ef-4a7a-a90c-bd3e71461b80
+- frontend root /: 200 / TrendCite Pro asset shell served
+- /health: 200 / {"ok": true}
+- /api/v1/session without bearer: 401 / unauthorized
+- /api/v1/session invalid bearer: 401 / unauthorized
+- positive TC-P005 E2E: OPERATOR_CONFIRMED_COMPLETED
+- positive E2E JSON artifact: NOT RECOVERED FROM LOCAL TEMP PATH; do not treat as machine evidence
+- P0 = 0
+- P1 = 0
 - production activation: NO
 - live billing / IRCL live: NO
 - persistent outbound delivery: DISABLED
@@ -125,4 +139,4 @@ NEXT_REAL_HUMAN_GATE = NONE_CURRENTLY_IDENTIFIED
 
 ## Next automatic action
 
-Create one logical GitHub checkpoint for TC-P005, run remote CI once, merge if green, then perform the already-authorized safe persistent-nonprod deploy and browser/API E2E validation. Keep production, billing, persistent outbound delivery, commercialization and all Dodo Payments actions disabled.
+Execute TC-P006 Entitlements and Metering in noncommercial mode. Implement plan capability boundaries, usage metering, quota/accounting semantics, enforcement tests and observability without any real billing, checkout, PSP activation or Dodo Payments action. Keep production activation, persistent outbound delivery, commercialization, Dodo TEST MODE and Dodo LIVE MODE disabled.
