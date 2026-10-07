@@ -8,7 +8,11 @@
     "SUPABASE_URL": "https://yntcafxmjgfjrdinwdmo.supabase.co",
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_HvHnOaQ77fNrD0vnZaN-aQ_lB7NNHrU",
     "TRENDCITE_CUSTOMER_MUTATIONS": "nonprod-enabled",
-    "TRENDCITE_ENTITLEMENTS": "nonprod-enabled"
+    "TRENDCITE_ENTITLEMENTS": "nonprod-enabled",
+    "TRENDCITE_AUTOMATION": "nonprod-enabled",
+    "TRENDCITE_AUTOMATION_STALE_SECONDS": "120",
+    "TRENDCITE_SCHEDULER_STALE_SECONDS": "600",
+    "TRENDCITE_QUEUE_MAX_ATTEMPTS": "3"
   },
   "assets": {
     "directory": "../../web/dist",
