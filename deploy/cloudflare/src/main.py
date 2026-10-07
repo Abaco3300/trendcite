@@ -43,8 +43,8 @@ from trendcite.cloud.db.postgres_delivery import PostgresDeliveryStore
 from trendcite.cloud.db.postgres_entitlements import PostgresEntitlementStore
 from trendcite.cloud.db.postgres_execution import PostgresExecutionStore
 from trendcite.cloud.domain.alerts import DELIVERY_PENDING
-from trendcite.config import Config
 from trendcite.cloud.vecturl_enrichment import AsyncVectURLClient
+from trendcite.config import Config
 
 
 class _CloudflareQueuePublisher:

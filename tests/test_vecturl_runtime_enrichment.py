@@ -111,9 +111,7 @@ def test_nonprod_runtime_flag_is_scoped_and_zero_cost_contract_is_static() -> No
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    config = json.loads(
-        (root / "deploy" / "cloudflare" / "wrangler.nonprod.jsonc").read_text()
-    )
+    config = json.loads((root / "deploy" / "cloudflare" / "wrangler.nonprod.jsonc").read_text())
     assert config["name"] == "trendcite-nonprod-runtime"
     assert config["vars"]["TRENDCITE_VECTURL_ENRICHMENT"] == "nonprod-enabled"
 

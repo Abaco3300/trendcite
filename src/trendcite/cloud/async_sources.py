@@ -18,9 +18,9 @@ from ..sources.reddit import FEED as REDDIT_FEED
 from ..sources.rss import parse_feed
 from .application import ExecutionBatch
 from .async_execution import AsyncSignalExecutionService
-from .vecturl_enrichment import AsyncVectURLClient, enrich_report_linked_content
 from .async_http import AsyncHTTPTransport, fetch_bytes_async, fetch_json_async
 from .domain.radar import RadarVersion
+from .vecturl_enrichment import AsyncVectURLClient, enrich_report_linked_content
 
 log = logging.getLogger("trendcite.cloud.async_sources")
 
