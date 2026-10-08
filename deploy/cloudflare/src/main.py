@@ -68,6 +68,14 @@ def _runtime_role(env: Any) -> str:
     return role
 
 
+def _production_foundation_only(env: Any) -> bool:
+    role = _runtime_role(env)
+    if "prod" not in role or "nonprod" in role:
+        return False
+    activation = str(getattr(env, "TRENDCITE_PRODUCTION_ACTIVATION", "") or "").strip()
+    return activation == "foundation-only"
+
+
 def _store(env: Any) -> PostgresRuntimeStore:
     return PostgresRuntimeStore(_connector(env), runtime_role=_runtime_role(env))
 
@@ -366,6 +374,9 @@ async def _vecturl_smoke_response(env: Any) -> Any:
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request: Any) -> Any:
+        if _production_foundation_only(self.env):
+            return Response.json({"ok": False, "error": "not_found"}, status=404)
+
         path = urlparse(request.url).path
         if path == "/health":
             ok = await _store(self.env).healthcheck()
@@ -395,6 +406,8 @@ class Default(WorkerEntrypoint):
 
     async def queue(self, batch: Any, env: Any = None, ctx: Any = None) -> None:
         runtime_env = env if env is not None else self.env
+        if _production_foundation_only(runtime_env):
+            raise RuntimeError("production foundation is dark")
         store = _store(runtime_env)
         for message in batch.messages:
             payload: dict[str, Any] = {}
@@ -593,6 +606,14 @@ class Default(WorkerEntrypoint):
 
     async def scheduled(self, controller: Any, env: Any, ctx: Any) -> None:
         runtime_env = env if env is not None else self.env
+        if _production_foundation_only(runtime_env):
+            print(
+                json.dumps(
+                    {"event": "trendcite.production_foundation.dark"},
+                    sort_keys=True,
+                )
+            )
+            return
         now = datetime.now(UTC).replace(microsecond=0)
         result = await _coordinator(runtime_env).plan_and_enqueue(now=now)
 

@@ -128,3 +128,36 @@ def test_nonprod_wrangler_config_uses_persistent_resources() -> None:
     assert '"id": "403038608f454b4b8172d9609f6a7383"' in text
     assert '"queue": "trendcite-nonprod-queue"' in text
     assert '"dead_letter_queue": "trendcite-nonprod-dlq"' in text
+
+
+def test_production_foundation_config_is_dark_and_unbound() -> None:
+    text = (WORKER / "wrangler.prod.foundation.jsonc").read_text(encoding="utf-8")
+    assert '"name": "trendcite-prod-runtime"' in text
+    assert '"workers_dev": false' in text
+    assert '"TRENDCITE_RUNTIME_ROLE": "trendcite_prod_runtime"' in text
+    assert '"TRENDCITE_PRODUCTION_ACTIVATION": "foundation-only"' in text
+    assert '"hyperdrive"' not in text
+    assert '"queues"' not in text
+    assert '"triggers"' not in text
+    assert '"routes"' not in text
+
+
+def test_production_foundation_runtime_is_fail_closed() -> None:
+    text = (WORKER / "src" / "main.py").read_text(encoding="utf-8")
+    assert "def _production_foundation_only" in text
+    assert 'activation == "foundation-only"' in text
+    assert 'return Response.json({"ok": False, "error": "not_found"}, status=404)' in text
+    assert 'raise RuntimeError("production foundation is dark")' in text
+    assert '"event": "trendcite.production_foundation.dark"' in text
+
+
+def test_production_readiness_checker_reports_current_blockers() -> None:
+    from scripts.check_production_readiness import report
+
+    result = report(ROOT)
+    assert result["schema"] == "trendcite.production_readiness.v1"
+    assert result["ready"] is False
+    codes = {row["code"] for row in result["findings"] if row["status"] == "BLOCKER"}
+    assert "PROD_CANONICAL_CONFIG_PLACEHOLDERS" in codes
+    assert "PROD_HYPERDRIVE_UNBOUND" in codes
+    assert "PROD_FEATURES_NOT_AUTHORIZED" in codes
