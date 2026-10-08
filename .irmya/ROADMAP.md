@@ -65,3 +65,16 @@ M8 — Production Readiness
 - durable VectURL telemetry — 3 successful 2xx operations / cost 0;
 - linked-content enrichment in normal TrendCite nonprod runs — NOT ACTIVATED;
 - next authority boundary: `HG-TRENDCITE-VECTURL-NONPROD-RUNTIME-ENRICHMENT-ACTIVATION-001`.
+
+
+## VectURL nonprod runtime enrichment
+
+- `HG-TRENDCITE-VECTURL-NONPROD-RUNTIME-ENRICHMENT-ACTIVATION-001` — PASS / ACTIVE_NONPROD;
+- post-score linked-content enrichment — ACTIVE;
+- max 3 unique URLs per run;
+- zero-cost VectURL contract — ENFORCED;
+- canonical separate persistence — `cloud_run_linked_content`;
+- real hosted validation — PASS: 5 signals / 3 linked-content rows / cost 0;
+- scoring isolation — VERIFIED by architecture, tests and separate hosted persistence;
+- validation harness removed and synthetic radar restored;
+- production activation remains a separate Human Gate.
