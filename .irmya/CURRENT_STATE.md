@@ -299,3 +299,75 @@ Boundary preserved:
 - no production, customer traffic, commercialization, billing, IRCL, Dodo or customer charge occurred.
 
 `NEXT_REAL_HUMAN_GATE_VECTURL = HG-TRENDCITE-VECTURL-NONPROD-RUNTIME-ENRICHMENT-ACTIVATION-001`
+
+
+## HG-TRENDCITE-VECTURL-NONPROD-RUNTIME-ENRICHMENT-ACTIVATION-001 — 2026-10-07
+
+`RESULT = PASS / ACTIVE_NONPROD`
+`TRENDCITE_VECTURL_ENRICHMENT = nonprod-enabled`
+`TRENDCITE_VECTURL_CONSUMER = trendcite-nonprod`
+`MAX_ENRICHMENTS_PER_RUN = 3`
+`VECTURL_MAX_COST_MICRO_USD = 0`
+`SCORING_IMPACT = NONE_BY_ARCHITECTURE_AND_VALIDATION`
+`PRODUCTION_ACTIVATION = NO`
+`DODO_TEST_AND_LIVE_FREEZE = ACTIVE_USER_ORDER`
+
+Implementation:
+- PR #38 implemented post-score VectURL linked-content enrichment and merged as `4c65d9ce45eb88b18475cac25f4e6368e61535ca`;
+- PR #40 reconciled the linked-content persistence schema forward-only; canonical main after reconciliation = `52dbca2f599d3ea172390216d5d75ca7a0b0cc9d`;
+- canonical persistence table = `trendcite.cloud_run_linked_content`;
+- transient duplicate `cloud_linked_content_evidence` removed by migration 0009;
+- runtime role `trendcite_nonprod_runtime` has SELECT/INSERT/UPDATE/DELETE on the canonical table;
+- anon/authenticated have no grants;
+- hosted migration history records the 0008 and 0009 VectURL migrations/reconciliation.
+
+Runtime semantics:
+- TrendCite source-native adapters execute first;
+- Signal Engine scoring completes before VectURL enrichment;
+- VectURL can enrich at most 3 unique linked URLs per radar run;
+- enrichment uses `best_effort` + `maxCostMicroUsd=0`;
+- VectURL failures are fail-open and cannot fail the radar run;
+- linked content persists separately from `EvidenceItem`, signal snapshots and score components.
+
+Hosted validation:
+- temporary multi-source radar version: `irmya-nonprod-radar-v4-vecturl-runtime-validation`;
+- sources: hackernews + github + rss + reddit;
+- local live precheck: 115 items / 5 briefs;
+- hosted validation run: `9a653c9597105560b73c3c9a96b97ba3`;
+- run status: succeeded;
+- signal_count: 5;
+- coverage: complete;
+- source coverage: GitHub 30 / Hacker News 30 / Reddit 50 / RSS 45;
+- canonical score snapshots persisted for all 5 signals with normal score/component fields;
+- linked-content rows: 3 for 3 distinct signals;
+- linked-content aggregate cost: 0 micro-USD;
+- VectURL bundle quality on all 3 persisted rows: overall 0.9 / completeness 1 / provenance coverage 1.
+
+Scoring-invariance evidence:
+- score data remained in `cloud_signal_evaluation` / `cloud_run_signal`;
+- VectURL data persisted only in `cloud_run_linked_content`;
+- the enrichment path receives an already-built/scored Report and never creates `EvidenceItem`;
+- test suite explicitly compares score totals/components/evidence IDs before and after enrichment;
+- hosted run persisted scoring and linked-content independently.
+
+Validation runtime lifecycle:
+- temporary validation route deployed only to nonprod;
+- one controlled invocation executed through the real `AsyncCloudApplicationRunner`;
+- temporary route removed by redeploying canonical main;
+- no temporary validation secret was installed;
+- final Worker version: `9a9ce619-a80b-414b-bca6-4989279163a5`;
+- final secret list: `POSTMARK_SERVER_TOKEN`, `VECTURL_CONSUMER_TOKEN` only;
+- health: HTTP 200 / ok true;
+- canonical repository contains no validation-route code.
+
+Synthetic radar restoration:
+- validation version v4 was append-only;
+- canonical behavior restored with `irmya-nonprod-radar-v5-restore-after-vecturl-validation`;
+- restored sources = hackernews;
+- restored niche = ai + agents.
+
+Boundary:
+- enrichment is active only in TrendCite nonprod;
+- no customer production traffic, commercialization, billing, IRCL, Dodo or customer charge occurred.
+
+`NEXT_REAL_HUMAN_GATE_VECTURL = TRENDCITE_PRODUCTION_VECTURL_ENRICHMENT_ACTIVATION_IF_EVER_DESIRED`
