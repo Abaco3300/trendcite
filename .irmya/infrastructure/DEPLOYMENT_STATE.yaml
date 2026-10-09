@@ -19,7 +19,15 @@ nonprod:
   auth_positive_validation: HUMAN_GATE_PENDING
 
 production:
-  configured: false
+  configured: true
+  foundation_status: DEPLOYED_DARK
+  worker_name: trendcite-prod-runtime
+  worker_version: b495ea31-8cb5-4c31-a9b9-0e94ca045c7b
+  foundation_only: true
+  public_routes: false
+  workers_dev: false
+  queues_bound: false
+  hyperdrive_bound: false
   ready: false
   active: false
   activation_authorized: false
