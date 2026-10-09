@@ -161,3 +161,16 @@ def test_production_readiness_checker_reports_current_blockers() -> None:
     assert "PROD_CANONICAL_CONFIG_PLACEHOLDERS" in codes
     assert "PROD_HYPERDRIVE_UNBOUND" in codes
     assert "PROD_FEATURES_NOT_AUTHORIZED" in codes
+
+
+def test_production_foundation_uses_minimal_dark_worker() -> None:
+    config = (WORKER / "wrangler.prod.foundation.jsonc").read_text(encoding="utf-8")
+    runtime = (WORKER / "foundation-dark.js").read_text(encoding="utf-8")
+    assert '"main": "foundation-dark.js"' in config
+    assert '"workers_dev": false' in config
+    assert '"hyperdrive"' not in config
+    assert '"queues"' not in config
+    assert '"triggers"' not in config
+    assert '"routes"' not in config
+    assert 'status: 404' in runtime
+    assert 'production foundation is dark' in runtime
