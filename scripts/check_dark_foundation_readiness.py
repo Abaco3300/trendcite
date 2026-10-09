@@ -1,14 +1,27 @@
-"""Static, offline checks for the deliberately disconnected production foundation.
-
-This does not attest to remote Cloudflare state and never enables production.
-"""
+"""Offline checks for the disconnected production foundation, not commercial readiness."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-import yaml
+
+def _production_state(path: Path) -> dict[str, str]:
+    """Read only flat production scalar fields, with no external YAML dependency."""
+    content = path.read_text(encoding="utf-8")
+    lines = content.splitlines()
+    try:
+        start = lines.index("production:")
+    except ValueError:
+        return {}
+    state: dict[str, str] = {}
+    for line in lines[start + 1 :]:
+        if line and not line[0].isspace():
+            break
+        if line.startswith("  ") and ":" in line:
+            key, value = line.strip().split(":", 1)
+            state[key] = value.strip()
+    return state
 
 
 def report(root: Path) -> dict:
@@ -17,7 +30,7 @@ def report(root: Path) -> dict:
     state_path = root / ".irmya/infrastructure/DEPLOYMENT_STATE.yaml"
     config = json.loads(config_path.read_text(encoding="utf-8"))
     source = worker_path.read_text(encoding="utf-8")
-    state = yaml.safe_load(state_path.read_text(encoding="utf-8"))["production"]
+    state = _production_state(state_path)
     checks = {
         "foundation_entrypoint": config.get("main") == "foundation-dark.js",
         "production_name": config.get("name") == "trendcite-prod-runtime",
@@ -34,12 +47,12 @@ def report(root: Path) -> dict:
         "queue_rejects": 'throw new Error("production foundation is dark")' in source,
         "schedule_noop": "async scheduled()" in source and "return;" in source,
         "state_is_dark": state.get("foundation_status") == "DEPLOYED_DARK"
-        and state.get("foundation_only") is True,
-        "state_not_active": state.get("active") is False
-        and state.get("activation_authorized") is False
-        and state.get("ready") is False,
-        "state_unbound": state.get("queues_bound") is False
-        and state.get("hyperdrive_bound") is False,
+        and state.get("foundation_only") == "true",
+        "state_not_active": state.get("active") == "false"
+        and state.get("activation_authorized") == "false"
+        and state.get("ready") == "false",
+        "state_unbound": state.get("queues_bound") == "false"
+        and state.get("hyperdrive_bound") == "false",
     }
     return {
         "schema": "trendcite.dark_foundation_readiness.v1",
