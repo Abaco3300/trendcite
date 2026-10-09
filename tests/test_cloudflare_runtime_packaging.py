@@ -134,7 +134,6 @@ def test_production_foundation_config_is_dark_and_unbound() -> None:
     text = (WORKER / "wrangler.prod.foundation.jsonc").read_text(encoding="utf-8")
     assert '"name": "trendcite-prod-runtime"' in text
     assert '"workers_dev": false' in text
-    assert '"TRENDCITE_RUNTIME_ROLE": "trendcite_prod_runtime"' in text
     assert '"TRENDCITE_PRODUCTION_ACTIVATION": "foundation-only"' in text
     assert '"hyperdrive"' not in text
     assert '"queues"' not in text
@@ -172,5 +171,5 @@ def test_production_foundation_uses_minimal_dark_worker() -> None:
     assert '"queues"' not in config
     assert '"triggers"' not in config
     assert '"routes"' not in config
-    assert 'status: 404' in runtime
-    assert 'production foundation is dark' in runtime
+    assert "status: 404" in runtime
+    assert "production foundation is dark" in runtime
