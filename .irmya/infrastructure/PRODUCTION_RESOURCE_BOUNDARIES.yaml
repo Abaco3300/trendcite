@@ -1,0 +1,41 @@
+# Non-sensitive inventory only; do not put any credential values here.
+identity:
+  legal_entity_code: ISTRIADE_GROUP_LLC
+  brand_code: TRENDCITE_PRO
+  project_id: trendcite-pro
+provider:
+  name: DODO
+  brand_id: null
+  review_status: PENDING
+  live_commercial_status: BLOCKED
+  test_changes: FROZEN
+  live_changes: FROZEN
+production:
+  worker:
+    name: trendcite-prod-runtime
+    existence: EXISTS
+    mode: DARK
+    public_routes: false
+    customer_runtime_connected: false
+  queue:
+    name: trendcite-prod-queue
+    id: 007435e8e7d64f1fb949368f1031e439
+    existence: EXISTS
+    connected: false
+    authorized: false
+  dlq:
+    name: trendcite-prod-dlq
+    id: 8892608637364e92a7e06ca3f7153e19
+    existence: EXISTS
+    connected: false
+    authorized: false
+  hyperdrive:
+    name: trendcite-prod-hyperdrive
+    existence: NOT_CREATED
+    connected: false
+    authorized: false
+    credential_reference_only: trendcite_prod_hyperdrive_login
+  public_customer_access:
+    authorized: false
+  payment_activation:
+    authorized: false
