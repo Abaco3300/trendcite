@@ -1,6 +1,6 @@
 # TC-P008 — Production Readiness / Foundation Provisioning
 
-Status: FOUNDATION_PARTIAL / FAIL-CLOSED
+Status: FOUNDATION_DEPLOYED_DARK / REMOTE_VERIFIED / INTEGRATION_BLOCKED
 
 ## Authorized gate
 
@@ -34,6 +34,15 @@ charges, Dodo actions, commercialization or production VectURL activation.
 - no Hyperdrive binding.
 - production activation flag = foundation-only.
 - runtime dark guard = implemented for HTTP / Queue / scheduled handlers.
+
+## October 10 verified technical and remote checkpoint
+
+- GitHub PR #51 MERGED / main CI PASS.
+- Local canonical PostgreSQL adapters for runs, durable Queue idempotency and schedule leases: PASS with concurrent synthetic tenants and transaction rollback.
+- The Cloudflare dark Worker has been read-only verified in the account: one activation-flag-only binding, subdomain disabled, cron 0, custom domains 0, routes 0 across eight account zones.
+- Prod Queue and DLQ producers=0/consumers=0; production Hyperdrive not created.
+- See REMOTE-DARK-ATTESTATION-2026-10-10.md and the historical JSON snapshot.
+- These results do NOT authorize public runtime or billing. The next privileged credential step is governed separately under HUMAN-GATE-SECURE-CREDENTIAL-PATH.md.
 
 ## Remaining foundation blocker
 

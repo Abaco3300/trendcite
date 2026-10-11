@@ -1,6 +1,6 @@
 # TrendCite — Current IRMYA State
 
-Updated: 2026-10-07
+Updated: 2026-10-10
 Status: ACTIVE
 
 ## Canonical checkpoint
@@ -21,6 +21,23 @@ BILLING_ENTITLEMENTS = TC-P006 CLOSED / NONCOMMERCIAL PASS
 PRODUCTION_READY = NO
 COMMERCIALIZATION_READY = NO
 
+## Current TC-P008 checkpoint (2026-10-10)
+
+- Previous TC-P001 through TC-P007 historical evidence below is retained as an audit record; `ACTIVE_PACK` now denotes TC-P008.
+- Canonical main: PR #51 merged / commit b5b482ab44c33e58344a436591632f8a34505e7b / PR CI PASS / post-merge main CI PASS.
+- Real local PostgreSQL 17 adapter/Queue-ledger: PASS, 24 concurrent run attempts and 24 Queue claims, tenant separation, idempotent replay, unrelated delivery identity collision fail-closed.
+- Real local schedule lease/settlement: PASS, 12 competing claims, expired lease reclaim, stale owner denial, terminal attempt limit.
+- Postgres schema migrations used for isolated tests: 0001 / 0004 / 0005. No live database migrations.
+- Production Worker trendcite-prod-runtime: DEPLOYED_DARK / read-only Cloudflare verification PASS / version b495ea31-8cb5-4c31-a9b9-0e94ca045c7b.
+- Prod Worker: no workers.dev, no preview, no cron, no script route across all 8 account zones, no custom domain, no Queue or Hyperdrive bindings.
+- Prod Queue and DLQ: 0 producers / 0 consumers. Production Hyperdrive: NOT_CREATED.
+- Nonprod runtime latest verified Worker version: 9a9ce619-a80b-414b-bca6-4989279163a5 (some old records below retain historical versions).
+- Integration gaps: real Cloudflare Queue ACK/redelivery under new code NOT_VERIFIED; remote production credential transport BLOCKED.
+- Dodo TEST/LIVE = FROZEN; production customer runtime, VectURL and commercial activation = BLOCKED.
+- Remote dark snapshot evidence: .irmya/evidence/TC-P008-CLOUDFLARE-DARK-SNAPSHOT-2026-10-10.json (historical, not live monitoring).
+- Proposed genuine Human Gate: HG-TRENDCITE-P008-PROD-HYPERDRIVE-SECURE-CREDENTIAL-PATH-001, currently NOT_APPROVED.
+
+
 ## Persistent nonprod state
 
 Supabase schema: trendcite
@@ -33,7 +50,7 @@ Queue ID: 752b703ee758448d81be0bc3639abfdf
 DLQ: trendcite-nonprod-dlq
 DLQ ID: a5c3d474d01c45e085b5152575f4408e
 Worker: trendcite-nonprod-runtime
-Worker version: b30cbdac-b1ef-4a7a-a90c-bd3e71461b80
+Worker version: 9a9ce619-a80b-414b-bca6-4989279163a5 (remote verified 2026-10-10; older historical references retained below)
 Worker URL: https://trendcite-nonprod-runtime.istriadegroupllc.workers.dev
 Cron: */5 * * * *
 Runtime role binding: TRENDCITE_RUNTIME_ROLE=trendcite_nonprod_runtime
@@ -51,9 +68,9 @@ TC-P006 — Entitlements and Metering = CLOSED / PASS
 
 ## Active internal Pack
 
-ACTIVE_PACK = TC-P007
-PACK_NAME = Full Automation Readiness
-PACK_STATUS = LOCAL_VALIDATED / HOSTED_SCHEMA_READY / REMOTE_CHECKPOINT_PENDING
+ACTIVE_PACK = TC-P008
+PACK_NAME = Production Readiness / Dark Foundation & Integration
+PACK_STATUS = FOUNDATION_DARK_REMOTE_VERIFIED / LOCAL_REAL_POSTGRES_E2E_PASS / CUSTOMER_ACTIVATION_BLOCKED
 
 ## TC-P004 closure evidence
 

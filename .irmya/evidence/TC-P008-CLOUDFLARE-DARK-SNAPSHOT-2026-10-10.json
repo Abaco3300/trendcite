@@ -1,0 +1,41 @@
+{
+  "schema": "trendcite.tc_p008.cloudflare_dark_snapshot.v1",
+  "observed_local_date": "2026-10-10",
+  "scope": "READ_ONLY_HISTORICAL_SNAPSHOT",
+  "account_id": "a4c8274fca447382525edd54ee20fd74",
+  "worker": {
+    "name": "trendcite-prod-runtime",
+    "version_id": "b495ea31-8cb5-4c31-a9b9-0e94ca045c7b",
+    "deployed_at": "2026-10-09T17:12:57.023815Z",
+    "subdomain_enabled": false,
+    "previews_enabled": false,
+    "cron_count": 0,
+    "bindings": [
+      {
+        "name": "TRENDCITE_PRODUCTION_ACTIVATION",
+        "type": "plain_text"
+      }
+    ],
+    "workers_domains_count": 0,
+    "zones_checked": 8,
+    "zones_total": 8,
+    "zone_routes_count": 0
+  },
+  "queue": {
+    "name": "trendcite-prod-queue",
+    "id": "007435e8e7d64f1fb949368f1031e439",
+    "producers": 0,
+    "consumers": 0
+  },
+  "dlq": {
+    "name": "trendcite-prod-dlq",
+    "id": "8892608637364e92a7e06ca3f7153e19",
+    "producers": 0,
+    "consumers": 0
+  },
+  "hyperdrive": {
+    "prod_name_match_count": 0
+  },
+  "commercial_activation_authorized": false,
+  "customer_activation_authorized": false
+}
