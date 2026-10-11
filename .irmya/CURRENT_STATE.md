@@ -35,7 +35,9 @@ COMMERCIALIZATION_READY = NO
 - Integration gaps: real Cloudflare Queue ACK/redelivery under new code NOT_VERIFIED; remote production credential transport BLOCKED.
 - Dodo TEST/LIVE = FROZEN; production customer runtime, VectURL and commercial activation = BLOCKED.
 - Remote dark snapshot evidence: .irmya/evidence/TC-P008-CLOUDFLARE-DARK-SNAPSHOT-2026-10-10.json (historical, not live monitoring).
-- Proposed genuine Human Gate: HG-TRENDCITE-P008-PROD-HYPERDRIVE-SECURE-CREDENTIAL-PATH-001, currently NOT_APPROVED.
+- Secure credential path research approved; Supabase read-only restricted role verification PASS; Cloudflare ordinary Postgres Hyperdrive requires write-only password; managed integration available only for PlanetScale, not Supabase.
+- HG-TRENDCITE-P008-PROD-HYPERDRIVE-SECURE-CREDENTIAL-PATH-001 = PROCEDURE_RESEARCH_COMPLETE / OPERATOR_NATIVE_ENTRY_PENDING; no credentials transmitted or Hyperdrive created.
+- Procedure and no-secret human action boundary: .irmya/capability-packs/TC-P008/PROD-HYPERDRIVE-SECURE-PATH-VERIFICATION.md.
 
 
 ## Persistent nonprod state
