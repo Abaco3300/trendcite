@@ -171,7 +171,7 @@ class PostgresRuntimeStore:
                      started_at, finished_at)
                 VALUES
                     ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-                ON CONFLICT (workspace_id, idempotency_key) DO NOTHING
+                ON CONFLICT DO NOTHING
                 """,
                 candidate.run_id,
                 candidate.workspace_id,
@@ -263,7 +263,7 @@ class PostgresRuntimeStore:
                 INSERT INTO trendcite.cloud_queue_delivery
                     (delivery_id, workspace_id, logical_id, kind, first_seen_at)
                 VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (workspace_id, logical_id) DO NOTHING
+                ON CONFLICT DO NOTHING
                 RETURNING delivery_id
                 """,
                 delivery_id,
@@ -272,7 +272,22 @@ class PostgresRuntimeStore:
                 kind,
                 first_seen_at.isoformat(),
             )
-            return row is not None
+            if row is not None:
+                return True
+            # A conflict may be on delivery_id (primary key) rather than on
+            # the tenant/logical identity. Do not silently drop a different job.
+            duplicate = await conn.fetchrow(
+                """
+                SELECT delivery_id
+                FROM trendcite.cloud_queue_delivery
+                WHERE workspace_id=$1 AND logical_id=$2
+                """,
+                workspace_id,
+                logical_id,
+            )
+            if duplicate is None:
+                raise RuntimeError("queue delivery identity collision")
+            return False
 
     async def list_enabled_schedules(self) -> tuple[RadarSchedule, ...]:
         async with self._transaction() as conn:
