@@ -7,7 +7,7 @@ nonprod:
   dlq: ACTIVE
   worker: ACTIVE
   worker_name: trendcite-nonprod-runtime
-  worker_version: e96fd573-45dc-42e9-97fa-1572a0f699ee
+  worker_version: 9a9ce619-a80b-414b-bca6-4989279163a5
   cron: ACTIVE
   cron_schedule: "*/5 * * * *"
   health: PASS
