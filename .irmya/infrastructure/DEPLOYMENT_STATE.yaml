@@ -28,6 +28,17 @@ production:
   workers_dev: false
   queues_bound: false
   hyperdrive_bound: false
+  hyperdrive_status: CREATED_UNBOUND
+  hyperdrive_name: trendcite-prod-hyperdrive
+  hyperdrive_id: dae4dcf39acb4b6482bdebbd77fe94d1
+  hyperdrive_origin_host: db.yntcafxmjgfjrdinwdmo.supabase.co
+  hyperdrive_origin_port: 5432
+  hyperdrive_origin_database: postgres
+  hyperdrive_origin_user: trendcite_prod_hyperdrive_login
+  hyperdrive_sslmode: verify-full
+  hyperdrive_ca_certificate_id: 42488d5e-25c1-42dc-971e-b44cfefca64f
+  hyperdrive_caching_disabled: true
+  hyperdrive_origin_connection_limit: 5
   ready: false
   active: false
   activation_authorized: false

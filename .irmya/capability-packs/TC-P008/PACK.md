@@ -44,13 +44,11 @@ charges, Dodo actions, commercialization or production VectURL activation.
 - See REMOTE-DARK-ATTESTATION-2026-10-10.md and the historical JSON snapshot.
 - These results do NOT authorize public runtime or billing. The next privileged credential step is governed separately under HUMAN-GATE-SECURE-CREDENTIAL-PATH.md.
 
-## Remaining foundation blocker
+## Foundation Hyperdrive checkpoint (2026-10-12)
 
-Production Hyperdrive cannot yet be created because the platform blocks automated transport
-of a database credential between the Supabase and Cloudflare tool boundaries. The production
-login role exists, but no password is transported or exposed.
+Production Hyperdrive `trendcite-prod-hyperdrive` has been CREATED_UNBOUND using operator-controlled protected credential entry. Cloudflare read-only API verified config ID `dae4dcf39acb4b6482bdebbd77fe94d1`, PostgreSQL restricted login identity, TLS `verify-full` + Supabase CA, disabled cache and origin connection limit 5. Worker remains DARK with no Hyperdrive/Queue binding, cron, workers.dev, or Queue/DLQ producers/consumers. See `PROD-HYPERDRIVE-CREATION-VERIFICATION-2026-10-12.md`.
 
-No security control was bypassed.
+Credential transport limitation resolved by operator-native entry; no password, verifier or connection string passed through connected tools. Real Worker-to-Postgres SQL / Queue E2E and production customer activation remain NOT_VERIFIED / BLOCKED; no security boundary bypassed.
 
 ## Boundaries preserved
 

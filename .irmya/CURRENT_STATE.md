@@ -30,7 +30,7 @@ COMMERCIALIZATION_READY = NO
 - Postgres schema migrations used for isolated tests: 0001 / 0004 / 0005. No live database migrations.
 - Production Worker trendcite-prod-runtime: DEPLOYED_DARK / read-only Cloudflare verification PASS / version b495ea31-8cb5-4c31-a9b9-0e94ca045c7b.
 - Prod Worker: no workers.dev, no preview, no cron, no script route across all 8 account zones, no custom domain, no Queue or Hyperdrive bindings.
-- Prod Queue and DLQ: 0 producers / 0 consumers. Production Hyperdrive: NOT_CREATED.
+- Historical Oct 10 snapshot: Prod Queue and DLQ 0 producers / 0 consumers; production Hyperdrive was NOT_CREATED at that time.
 - Nonprod runtime latest verified Worker version: 9a9ce619-a80b-414b-bca6-4989279163a5 (some old records below retain historical versions).
 - Integration gaps: real Cloudflare Queue ACK/redelivery under new code NOT_VERIFIED; remote production credential transport BLOCKED.
 - Dodo TEST/LIVE = FROZEN; production customer runtime, VectURL and commercial activation = BLOCKED.
@@ -39,6 +39,16 @@ COMMERCIALIZATION_READY = NO
 - HG-TRENDCITE-P008-PROD-HYPERDRIVE-SECURE-CREDENTIAL-PATH-001 = PROCEDURE_RESEARCH_COMPLETE / OPERATOR_NATIVE_ENTRY_PENDING; no credentials transmitted or Hyperdrive created.
 - Procedure and no-secret human action boundary: .irmya/capability-packs/TC-P008/PROD-HYPERDRIVE-SECURE-PATH-VERIFICATION.md.
 
+
+## TC-P008 current remote checkpoint — 2026-10-12
+
+- HG-TRENDCITE-P008-PROD-HYPERDRIVE-SECURE-CREDENTIAL-PATH-001: OPERATOR_NATIVE_ENTRY_COMPLETED / REMOTE_METADATA_PASS. No password, verifier or connection string retrieved or stored by executor.
+- Hyperdrive `trendcite-prod-hyperdrive` ID `dae4dcf39acb4b6482bdebbd77fe94d1`: CREATED_UNBOUND; origin `db.yntcafxmjgfjrdinwdmo.supabase.co:5432`, database `postgres`, username `trendcite_prod_hyperdrive_login`.
+- Cloudflare read-only GET: TLS `verify-full` with CA `42488d5e-25c1-42dc-971e-b44cfefca64f`; caching disabled; maximum origin connections 5.
+- Dark controls reverified: production Worker binding only `TRENDCITE_PRODUCTION_ACTIVATION` (plain text), Queue/DLQ zero producers and zero consumers, cron zero, workers.dev disabled. Cloudflare read-only checks HTTP 200.
+- This is metadata verification, **not** proof of a live Worker-to-Postgres SQL query, a Queue ACK delivery, or customer readiness.
+- Production Worker/Queue/cron/routes, customer traffic, billing, Dodo TEST/LIVE, VectURL production remain blocked. Do not confuse isolated infrastructure availability with authorization to activate it.
+- Evidence: `.irmya/capability-packs/TC-P008/PROD-HYPERDRIVE-CREATION-VERIFICATION-2026-10-12.md`.
 
 ## Persistent nonprod state
 
