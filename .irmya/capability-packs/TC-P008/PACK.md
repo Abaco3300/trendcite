@@ -50,6 +50,10 @@ Production Hyperdrive `trendcite-prod-hyperdrive` has been CREATED_UNBOUND using
 
 Credential transport limitation resolved by operator-native entry; no password, verifier or connection string passed through connected tools. Real Worker-to-Postgres SQL / Queue E2E and production customer activation remain NOT_VERIFIED / BLOCKED; no security boundary bypassed.
 
+## October 12 real read-only Hyperdrive SQL diagnostic
+
+User-approved temporary Wrangler remote-development diagnostic PASS: `SELECT 1 AS probe_ok` returned HTTP 200 / `{ "ok": true }` through production Hyperdrive. The diagnostic process and files were removed; Cloudflare reports no persistent diagnostic Worker, and the dark Worker and Queues are unchanged. Evidence: `REAL-PROD-HYPERDRIVE-SQL-E2E-2026-10-12.md`. This does not authorize or verify production application/customer/Queue runtime.
+
 ## Boundaries preserved
 
 PUBLIC_PRODUCTION_TRAFFIC = NO
