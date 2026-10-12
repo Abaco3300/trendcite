@@ -50,6 +50,14 @@ COMMERCIALIZATION_READY = NO
 - Production Worker/Queue/cron/routes, customer traffic, billing, Dodo TEST/LIVE, VectURL production remain blocked. Do not confuse isolated infrastructure availability with authorization to activate it.
 - Evidence: `.irmya/capability-packs/TC-P008/PROD-HYPERDRIVE-CREATION-VERIFICATION-2026-10-12.md`.
 
+## TC-P008 diagnostic read-only SQL checkpoint — 2026-10-12
+
+- Operator-approved temporary, isolated Wrangler remote-development Worker bound to production Hyperdrive executed `SELECT 1 AS probe_ok` successfully, HTTP 200 / `{ "ok": true }`.
+- Diagnostic process stopped and temporary local directory removed; Cloudflare Worker script listing confirms no persistent diagnostic script.
+- Production `trendcite-prod-runtime` unchanged (only dark activation flag); Queue/DLQ 0 producers/consumers. No customer access, cron, public routes, Dodo or billing.
+- Real Hyperdrive SQL diagnostic PASS is not full production runtime, authentication, tenant-isolation or Queue E2E proof.
+- Evidence: `.irmya/capability-packs/TC-P008/REAL-PROD-HYPERDRIVE-SQL-E2E-2026-10-12.md`.
+
 ## Persistent nonprod state
 
 Supabase schema: trendcite
