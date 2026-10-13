@@ -54,6 +54,10 @@ Credential transport limitation resolved by operator-native entry; no password, 
 
 User-approved temporary Wrangler remote-development diagnostic PASS: `SELECT 1 AS probe_ok` returned HTTP 200 / `{ "ok": true }` through production Hyperdrive. The diagnostic process and files were removed; Cloudflare reports no persistent diagnostic Worker, and the dark Worker and Queues are unchanged. Evidence: `REAL-PROD-HYPERDRIVE-SQL-E2E-2026-10-12.md`. This does not authorize or verify production application/customer/Queue runtime.
 
+## October 13 permanent DARK binding
+
+Explicit HG-F approval for one permanent Hyperdrive binding in foundation-only mode executed: Cloudflare Worker `trendcite-prod-runtime` version `0293abca-2382-4f6c-891a-643caf5fe758`, binding `TRENDCITE_PROD_DB` to `dae4dcf39acb4b6482bdebbd77fe94d1`. Cloudflare read-only API confirmed only that binding plus the original `foundation-only` flag; no cron, workers.dev, Queue producers/consumers. No targets deployed. Production customer/Queue/cron/commercial activation remains blocked. Evidence `PROD-HYPERDRIVE-DARK-BINDING-2026-10-13.md`.
+
 ## Boundaries preserved
 
 PUBLIC_PRODUCTION_TRAFFIC = NO

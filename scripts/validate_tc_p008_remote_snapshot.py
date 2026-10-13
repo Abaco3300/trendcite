@@ -6,15 +6,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-from scripts.check_dark_foundation_readiness import _production_state
-
 EVIDENCE = ".irmya/evidence/TC-P008-CLOUDFLARE-DARK-SNAPSHOT-2026-10-10.json"
 
 
 def report(root: Path, snapshot: dict[str, Any] | None = None) -> dict[str, Any]:
     if snapshot is None:
         snapshot = json.loads((root / EVIDENCE).read_text(encoding="utf-8"))
-    prod = _production_state(root / ".irmya/infrastructure/DEPLOYMENT_STATE.yaml")
     worker = snapshot.get("worker", {})
     queue = snapshot.get("queue", {})
     dlq = snapshot.get("dlq", {})
@@ -24,7 +21,7 @@ def report(root: Path, snapshot: dict[str, Any] | None = None) -> dict[str, Any]
         and snapshot.get("account_id") == "a4c8274fca447382525edd54ee20fd74",
         "historical_only": snapshot.get("scope") == "READ_ONLY_HISTORICAL_SNAPSHOT",
         "worker_version": worker.get("name") == "trendcite-prod-runtime"
-        and worker.get("version_id") == prod.get("worker_version"),
+        and worker.get("version_id") == "b495ea31-8cb5-4c31-a9b9-0e94ca045c7b",
         "subdomain_and_previews_disabled": worker.get("subdomain_enabled") is False
         and worker.get("previews_enabled") is False,
         "no_cron": worker.get("cron_count") == 0,

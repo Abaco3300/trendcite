@@ -16,7 +16,7 @@ def report(root: Path) -> dict:
     state = _production_state(root / ".irmya/infrastructure/DEPLOYMENT_STATE.yaml")
     dark = dark_report(root)
     expected = {
-        "hyperdrive_status": "CREATED_UNBOUND",
+        "hyperdrive_status": "BOUND_DARK",
         "hyperdrive_name": "trendcite-prod-hyperdrive",
         "hyperdrive_id": "dae4dcf39acb4b6482bdebbd77fe94d1",
         "hyperdrive_origin_host": "db.yntcafxmjgfjrdinwdmo.supabase.co",
