@@ -1,6 +1,8 @@
 # TC-P008 — Production Readiness / Foundation Provisioning
 
-Status: FOUNDATION_DEPLOYED_DARK / REMOTE_VERIFIED / INTEGRATION_BLOCKED
+Status: PYTHON_RUNTIME_DEPLOYED_DARK / REMOTE_VERIFIED / CUSTOMER_AND_ASYNC_ACTIVATION_BLOCKED
+
+Latest 2026-10-13 checkpoint: PR #64 merged (`2b0a9a0e85e9f287806c8feb9fbb6c975ff03512`), post-merge main CI SUCCESS (run `38442366336`); read-only Cloudflare verified Python Worker version `0b9b3c85-463d-4259-b778-998178abffba`, DARK activation binding, Hyperdrive, no subdomain/previews/cron, prod Queue/DLQ 0 producers and 0 consumers. Portfolio-wide Dodo freeze lifted under Global Governance v1.15.0, while TrendCite-specific commercial readiness/authority remains closed. Historical Dodo freeze and unbound Hyperdrive notes below are superseded; no customer E2E or production activation is claimed.
 
 ## Authorized gate
 
