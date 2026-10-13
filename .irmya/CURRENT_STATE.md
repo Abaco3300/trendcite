@@ -1,7 +1,18 @@
 # TrendCite — Current IRMYA State
 
-Updated: 2026-10-10
+Updated: 2026-10-13
 Status: ACTIVE
+
+## Latest verified TC-P008 checkpoint — 2026-10-13
+
+- PR #64 merged to `main` as `2b0a9a0e85e9f287806c8feb9fbb6c975ff03512`; post-merge GitHub Actions run `38442366336` SUCCESS.
+- Cloudflare read-only API revalidated `trendcite-prod-runtime` deployment version `0b9b3c85-463d-4259-b778-998178abffba` (100%), `workers.dev=false`, previews disabled, cron 0, only Hyperdrive `TRENDCITE_PROD_DB` (`dae4dcf39acb4b6482bdebbd77fe94d1`) plus DARK activation and restricted runtime-role bindings.
+- Prod Queue `007435e8e7d64f1fb949368f1031e439` and DLQ `8892608637364e92a7e06ca3f7153e19`: Cloudflare API 200; each has 0 producers and 0 consumers.
+- Fresh clean worktree at PR #64 merge commit: local static Python DARK validator PASS (`dark_ready=true`, `production_activated=false`); full canonical local CI preflight PASS after frontend npm dependencies installed; no production E2E claimed.
+- Global governance v1.15.0 supersedes historical portfolio Dodo freeze claims: Dodo is operational portfolio-wide; TrendCite-specific commercial activation remains unapproved and readiness unproven.
+- Actual TC-P008 external-impact activation boundaries remain closed: no customer routes, Queue processing, cron, paid delivery, VectURL prod or IRCL checkout activation.
+
+The older checkpoint statements below are historical and must not override this latest verified state.
 
 ## Canonical checkpoint
 

@@ -7,10 +7,12 @@ import re
 from pathlib import Path
 
 from scripts.check_dark_foundation_readiness import report as dark_report
+from scripts.check_python_runtime_dark import report as python_dark_report
 
 
 def report(root: Path) -> dict:
     dark = dark_report(root)
+    python_dark = python_dark_report(root)
     state = (root / ".irmya/infrastructure/PRODUCTION_RESOURCE_BOUNDARIES.yaml").read_text(
         encoding="utf-8"
     )
@@ -30,11 +32,15 @@ def report(root: Path) -> dict:
             "reason": "Production queue and DLQ intentionally unbound",
         },
         {
-            "code": "HYPERDRIVE_CONNECTION",
-            "status": "BLOCKED"
-            if isolated("hyperdrive") and "existence: NOT_CREATED" in state
-            else "NOT_VERIFIED",
-            "reason": "Credential custody and secure provisioning not authorized",
+            "code": "HYPERDRIVE_DARK_BINDING_CONFIG",
+            "status": "PASS"
+            if python_dark["checks"]["only_prod_hyperdrive"]
+            and python_dark["checks"]["state_inactive"]
+            else "BLOCKED",
+            "reason": (
+                "Static DARK configuration and canonical state only; actual Hyperdrive "
+                "credentials and SQL connectivity require independent remote evidence"
+            ),
         },
         {
             "code": "RETRY_AND_IDEMPOTENCY_EVIDENCE",
@@ -54,7 +60,10 @@ def report(root: Path) -> dict:
         {
             "code": "DODO_COMMERCIAL",
             "status": "BLOCKED",
-            "reason": "Dodo TEST/LIVE frozen; IRCL required",
+            "reason": (
+                "Portfolio Dodo freeze lifted; project-specific commercial readiness "
+                "and IRCL activation remain unverified and separately gated"
+            ),
         },
     ]
     return {
