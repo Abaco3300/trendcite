@@ -58,9 +58,13 @@ User-approved temporary Wrangler remote-development diagnostic PASS: `SELECT 1 A
 
 Explicit HG-F approval for one permanent Hyperdrive binding in foundation-only mode executed: Cloudflare Worker `trendcite-prod-runtime` version `0293abca-2382-4f6c-891a-643caf5fe758`, binding `TRENDCITE_PROD_DB` to `dae4dcf39acb4b6482bdebbd77fe94d1`. Cloudflare read-only API confirmed only that binding plus the original `foundation-only` flag; no cron, workers.dev, Queue producers/consumers. No targets deployed. Production customer/Queue/cron/commercial activation remains blocked. Evidence `PROD-HYPERDRIVE-DARK-BINDING-2026-10-13.md`.
 
-## Prepared decision contract for future production runtime
+## Historical decision contract for production runtime
 
-`PRODUCTION-RUNTIME-EXPANSION-DECISION-2026-10-13.md` defines the non-executed production runtime expansion boundary, pre-deployment safeguards and rollback acceptance criteria. It does not grant permission to replace the current DARK Worker. Relevant real IRMYA categories HG-A and HG-H require assessment before such an operation.
+`PRODUCTION-RUNTIME-EXPANSION-DECISION-2026-10-13.md` records the pre-authorization decision boundary, safeguards and rollback acceptance criteria. The subsequent explicit HG-A/HG-H authorization and DARK deployment are documented below. The historical decision document is not by itself an approval for future activation.
+
+## October 13 authorized persistent runtime in DARK mode
+
+Explicit operator HG-A/HG-H authorization exercised: Python runtime `src/main.py` deployed under `wrangler.prod.runtime.dark.jsonc`, Cloudflare version `0b9b3c85-463d-4259-b778-998178abffba`. `foundation-only` role guard and read-only Cloudflare metadata verify no routes, no cron, no workers.dev or Queue producers/consumers. No customer/application runtime E2E claimed. Prior DARK version retained for rollback. See `PRODUCTION-RUNTIME-DARK-DEPLOY-2026-10-13.md`.
 
 ## Boundaries preserved
 

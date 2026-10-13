@@ -66,6 +66,15 @@ COMMERCIALIZATION_READY = NO
 - Hyperdrive remains TLS verify-full, cache disabled, maximum origin connections 5. No customer runtime or commercial activation authorized; main Worker retains 404/queue-reject/scheduled-noop source.
 - Evidence: `.irmya/capability-packs/TC-P008/PROD-HYPERDRIVE-DARK-BINDING-2026-10-13.md`.
 
+## TC-P008 permanent Python runtime DARK deployment — 2026-10-13
+
+- Explicit HG-A/HG-H authorization exercised: replaced minimal DARK Worker deployment with persistent TrendCite Python runtime, without customer or asynchronous activation.
+- New Cloudflare Worker version `0b9b3c85-463d-4259-b778-998178abffba`; `wrangler.prod.runtime.dark.jsonc`, entrypoint `src/main.py`, Python Workers package 227 modules; packaging source proof and Wrangler dry-run PASS.
+- Independent Cloudflare read-back: Hyperdrive `TRENDCITE_PROD_DB`, runtime role `trendcite_prod_runtime`, `TRENDCITE_PRODUCTION_ACTIVATION=foundation-only`, workers.dev false, cron 0, Queue/DLQ 0 producers and consumers.
+- `No targets deployed`; no customer access, Dodo, billing, VectURL production, Queue processing, cron or delivery enabled. This is deployment confirmation, not production application E2E.
+- Rollback candidate: prior verified `foundation-dark.js` Worker version `0293abca-2382-4f6c-891a-643caf5fe758`.
+- Evidence: `.irmya/capability-packs/TC-P008/PRODUCTION-RUNTIME-DARK-DEPLOY-2026-10-13.md`.
+
 ## Persistent nonprod state
 
 Supabase schema: trendcite
