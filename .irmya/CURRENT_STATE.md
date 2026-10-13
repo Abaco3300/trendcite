@@ -58,6 +58,14 @@ COMMERCIALIZATION_READY = NO
 - Real Hyperdrive SQL diagnostic PASS is not full production runtime, authentication, tenant-isolation or Queue E2E proof.
 - Evidence: `.irmya/capability-packs/TC-P008/REAL-PROD-HYPERDRIVE-SQL-E2E-2026-10-12.md`.
 
+## TC-P008 permanent dark Hyperdrive binding — 2026-10-13
+
+- Explicit operator authorization: HG-F, permanent Hyperdrive binding exclusively DARK/foundation-only, without public routes, customers, Queue, cron, Dodo, billing or new spend.
+- Wrangler deployed `trendcite-prod-runtime` version `0293abca-2382-4f6c-891a-643caf5fe758`; binding `TRENDCITE_PROD_DB` maps only to Hyperdrive `dae4dcf39acb4b6482bdebbd77fe94d1`.
+- Cloudflare independent GET verified only that Hyperdrive binding and `TRENDCITE_PRODUCTION_ACTIVATION=foundation-only`; cron 0; workers.dev false; Queue and DLQ producers 0 / consumers 0.
+- Hyperdrive remains TLS verify-full, cache disabled, maximum origin connections 5. No customer runtime or commercial activation authorized; main Worker retains 404/queue-reject/scheduled-noop source.
+- Evidence: `.irmya/capability-packs/TC-P008/PROD-HYPERDRIVE-DARK-BINDING-2026-10-13.md`.
+
 ## Persistent nonprod state
 
 Supabase schema: trendcite

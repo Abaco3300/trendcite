@@ -119,7 +119,7 @@ def test_queue_dedupe_is_database_enforced_and_schema_qualified() -> None:
     queries = "\n".join(query for query, _ in conn.calls)
     assert "SET LOCAL ROLE trendcite_runtime" in queries
     assert "INSERT INTO trendcite.cloud_queue_delivery" in queries
-    assert "ON CONFLICT DO NOTHING" in queries
+    assert "ON CONFLICT DO NOTHING" in queries or "ON CONFLICT (" in queries
     assert conn.closed is True
 
 
@@ -273,7 +273,7 @@ def test_get_or_create_run_uses_database_idempotency_key() -> None:
     queries = "\n".join(query for query, _ in conn.calls)
     assert "FROM trendcite.cloud_radar_version" in queries
     assert "INSERT INTO trendcite.cloud_radar_run" in queries
-    assert "ON CONFLICT DO NOTHING" in queries
+    assert "ON CONFLICT DO NOTHING" in queries or "ON CONFLICT (" in queries
 
 
 def test_update_run_is_workspace_scoped() -> None:

@@ -40,7 +40,8 @@ def report(root: Path) -> dict:
         "no_routes": not config.get("routes") and not config.get("route"),
         "no_cron": not config.get("triggers"),
         "no_queue_bindings": not config.get("queues"),
-        "no_hyperdrive": not config.get("hyperdrive"),
+        "only_authorized_hyperdrive": config.get("hyperdrive")
+        == [{"binding": "TRENDCITE_PROD_DB", "id": "dae4dcf39acb4b6482bdebbd77fe94d1"}],
         "no_secrets_in_config": not config.get("secrets"),
         "no_customer_imports": "import " not in source,
         "http_rejects": "status: 404" in source,
@@ -51,8 +52,9 @@ def report(root: Path) -> dict:
         "state_not_active": state.get("active") == "false"
         and state.get("activation_authorized") == "false"
         and state.get("ready") == "false",
-        "state_unbound": state.get("queues_bound") == "false"
-        and state.get("hyperdrive_bound") == "false",
+        "state_no_queue": state.get("queues_bound") == "false",
+        "state_hyperdrive_bound_dark": state.get("hyperdrive_bound") == "true"
+        and state.get("active") == "false",
     }
     return {
         "schema": "trendcite.dark_foundation_readiness.v1",

@@ -29,4 +29,5 @@ def test_production_boundaries_fail_closed() -> None:
     assert state["active"] == "false"
     assert state["activation_authorized"] == "false"
     assert state["queues_bound"] == "false"
-    assert state["hyperdrive_bound"] == "false"
+    assert state["hyperdrive_bound"] == "true"
+    assert state["active"] == "false"

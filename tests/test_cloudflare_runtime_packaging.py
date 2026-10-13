@@ -135,7 +135,8 @@ def test_production_foundation_config_is_dark_and_unbound() -> None:
     assert '"name": "trendcite-prod-runtime"' in text
     assert '"workers_dev": false' in text
     assert '"TRENDCITE_PRODUCTION_ACTIVATION": "foundation-only"' in text
-    assert '"hyperdrive"' not in text
+    assert '"binding": "TRENDCITE_PROD_DB"' in text
+    assert '"id": "dae4dcf39acb4b6482bdebbd77fe94d1"' in text
     assert '"queues"' not in text
     assert '"triggers"' not in text
     assert '"routes"' not in text
@@ -158,7 +159,7 @@ def test_production_readiness_checker_reports_current_blockers() -> None:
     assert result["ready"] is False
     codes = {row["code"] for row in result["findings"] if row["status"] == "BLOCKER"}
     assert "PROD_CANONICAL_CONFIG_PLACEHOLDERS" in codes
-    assert "PROD_HYPERDRIVE_UNBOUND" in codes
+    assert "PROD_HYPERDRIVE_UNBOUND" not in codes
     assert "PROD_FEATURES_NOT_AUTHORIZED" in codes
 
 
@@ -167,7 +168,7 @@ def test_production_foundation_uses_minimal_dark_worker() -> None:
     runtime = (WORKER / "foundation-dark.js").read_text(encoding="utf-8")
     assert '"main": "foundation-dark.js"' in config
     assert '"workers_dev": false' in config
-    assert '"hyperdrive"' not in config
+    assert '"binding": "TRENDCITE_PROD_DB"' in config
     assert '"queues"' not in config
     assert '"triggers"' not in config
     assert '"routes"' not in config
