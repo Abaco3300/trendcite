@@ -3,6 +3,13 @@
 Updated: 2026-10-13
 Status: ACTIVE
 
+## Latest real nonprod Queue checkpoint — 2026-10-13
+
+- PR #66 merged into `main` as `e30dddeef5f3388aacffa4e94f33545266de90f2`; post-merge GitHub Actions run `38483549165` SUCCESS. Isolated actual Python Queue handler ACK/retry/DARK tests PASS; not real broker-induced retry proof.
+- One fixed synthetic message sent via Cloudflare nonprod Queue API: HTTP 200; PostgreSQL ledger insert observed in `trendcite.cloud_queue_delivery` at 2026-10-13T23:21:35+00:00. Identical payload sent a second time: HTTP 200; ledger remained exactly one row, failure events zero, Queue backlog returned zero (best-effort metric).
+- This is real nonprod delivery and duplicate-payload deduplication; **not** real lost-ACK redelivery or poison-message DLQ proof. DLQ `http_pull` currently disabled; no poison message or cleanup attempted. Production remains DARK.
+- Evidence: `.irmya/capability-packs/TC-P008/NONPROD-REAL-QUEUE-DELIVERY-2026-10-13.md`.
+
 ## Latest verified TC-P008 checkpoint — 2026-10-13
 
 - PR #64 merged to `main` as `2b0a9a0e85e9f287806c8feb9fbb6c975ff03512`; post-merge GitHub Actions run `38442366336` SUCCESS.

@@ -4,6 +4,10 @@ Status: PYTHON_RUNTIME_DEPLOYED_DARK / REMOTE_VERIFIED / CUSTOMER_AND_ASYNC_ACTI
 
 Latest 2026-10-13 checkpoint: PR #64 merged (`2b0a9a0e85e9f287806c8feb9fbb6c975ff03512`), post-merge main CI SUCCESS (run `38442366336`); read-only Cloudflare verified Python Worker version `0b9b3c85-463d-4259-b778-998178abffba`, DARK activation binding, Hyperdrive, no subdomain/previews/cron, prod Queue/DLQ 0 producers and 0 consumers. Portfolio-wide Dodo freeze lifted under Global Governance v1.15.0, while TrendCite-specific commercial readiness/authority remains closed. Historical Dodo freeze and unbound Hyperdrive notes below are superseded; no customer E2E or production activation is claimed.
 
+## Real nonprod Queue integration checkpoint (2026-10-13)
+
+Real Cloudflare Queue API accepted two identical synthetic record-only messages; actual hosted PostgreSQL ledger contains one row, no matching failure events, provider backlog observed zero. This validates nonprod delivery and ledger deduplication, **not** real broker retry, lost ACK or DLQ poison recovery. DLQ `http_pull` was disabled, so no poison message was sent. Production Queue/cron/customer and commercial activation remain blocked. Details: `NONPROD-REAL-QUEUE-DELIVERY-2026-10-13.md`. PR #66 merged, post-merge main CI SUCCESS.
+
 ## Authorized gate
 
 HG-TRENDCITE-PRODUCTION-FOUNDATION-PROVISIONING-001 = APPROVED
