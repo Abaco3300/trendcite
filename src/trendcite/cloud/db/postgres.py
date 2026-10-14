@@ -246,6 +246,37 @@ class PostgresRuntimeStore:
             if status.endswith(" 0"):
                 raise RuntimeError("radar run update matched no row")
 
+    async def record_synthetic_queue_attempt(
+        self,
+        *,
+        workspace_id: str,
+        logical_id: str,
+        queue_message_id: str,
+        attempt: int,
+        outcome: str,
+    ) -> None:
+        """Audit synthetic physical Queue attempts without saving a payload."""
+        if not logical_id.startswith("tc-p008-postcommit-"):
+            raise ValueError("synthetic identity required")
+        if not queue_message_id or attempt < 1:
+            raise ValueError("physical message identity and attempt required")
+        if outcome not in {"received", "duplicate_ack", "postcommit_retry"}:
+            raise ValueError("invalid outcome")
+        async with self._transaction() as conn:
+            await conn.execute(
+                """
+                INSERT INTO trendcite.cloud_queue_probe_attempt
+                    (workspace_id, logical_id, queue_message_id, attempt, outcome)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT DO NOTHING
+                """,
+                workspace_id,
+                logical_id,
+                queue_message_id,
+                attempt,
+                outcome,
+            )
+
     async def record_queue_once(
         self,
         *,

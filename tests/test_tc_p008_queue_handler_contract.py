@@ -381,3 +381,87 @@ def test_fault_hook_never_fires_without_nonprod_role_and_opt_in():
 
 async def _async_true(**kwargs):
     return True
+
+
+def test_enabled_nonprod_audits_physical_first_and_second_attempt_without_extra_effect():
+    handler, ns = _handler()
+    effects = set()
+    observations = []
+
+    class Store:
+        async def record_queue_once(self, **kw):
+            identity = (kw["workspace_id"], kw["logical_id"])
+            if identity in effects:
+                return False
+            effects.add(identity)
+            return True
+
+        async def record_synthetic_queue_attempt(self, **kw):
+            observations.append(kw)
+
+    ns.update(
+        {
+            "_store": lambda env: Store(),
+            "uuid": SimpleNamespace(uuid4=lambda: SimpleNamespace(hex="unused")),
+            "datetime": SimpleNamespace(
+                now=lambda utc: SimpleNamespace(replace=lambda **kw: "now")
+            ),
+            "UTC": object(),
+        }
+    )
+    payload = {
+        "workspace_id": "tenant",
+        "logical_id": "tc-p008-postcommit-audit-001",
+        "kind": "tc_p008_postcommit_retry_probe",
+        "delivery_id": "fixed",
+    }
+    env = SimpleNamespace(
+        dark=False,
+        TRENDCITE_RUNTIME_ROLE="trendcite_nonprod_runtime",
+        TRENDCITE_TC_P008_ATTEMPT_AUDIT="nonprod-enabled",
+    )
+    first, second = Message(payload), Message(payload)
+    second.attempts = 2
+    _run(handler(SimpleNamespace(messages=[first, second]), env))
+    assert first.actions == ["ack"] and second.actions == ["ack"]
+    assert len(effects) == 1
+    assert [(o["attempt"], o["outcome"], o["queue_message_id"]) for o in observations] == [
+        (1, "received", "synthetic-msg"),
+        (2, "duplicate_ack", "synthetic-msg"),
+    ]
+
+
+def test_attempt_audit_disabled_by_default_even_for_probe():
+    handler, ns = _handler()
+
+    class Store:
+        async def record_queue_once(self, **kw):
+            return True
+
+        async def record_synthetic_queue_attempt(self, **kw):
+            raise AssertionError("disabled audit invoked")
+
+    ns.update(
+        {
+            "_store": lambda env: Store(),
+            "uuid": SimpleNamespace(uuid4=lambda: SimpleNamespace(hex="unused")),
+            "datetime": SimpleNamespace(
+                now=lambda utc: SimpleNamespace(replace=lambda **kw: "now")
+            ),
+            "UTC": object(),
+        }
+    )
+    msg = Message(
+        {
+            "workspace_id": "tenant",
+            "logical_id": "tc-p008-postcommit-disabled",
+            "kind": "tc_p008_postcommit_retry_probe",
+        }
+    )
+    _run(
+        handler(
+            SimpleNamespace(messages=[msg]),
+            SimpleNamespace(dark=False, TRENDCITE_RUNTIME_ROLE="trendcite_nonprod_runtime"),
+        )
+    )
+    assert msg.actions == ["ack"]
