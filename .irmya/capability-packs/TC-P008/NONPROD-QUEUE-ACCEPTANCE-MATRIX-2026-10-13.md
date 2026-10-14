@@ -12,8 +12,12 @@ Scope: actual Cloudflare nonprod, hosted Postgres nonprod, and separately identi
 | Persistence failure must not ACK | Executed actual handler code with simulated store failure | PASS ISOLATED |
 | Failure audit failure and mixed batch isolation | Executed actual handler with fake dependencies; retry without ACK; unaffected valid message ACK | PASS ISOLATED |
 | Post-commit ACK exception + deduplicated replay | PR #71: actual handler with fake durable ledger, ACK exception requests retry and second delivery yields a single effect | PASS ISOLATED |
-| Actual lost ACK after successful durable commit | Requires controlled failure in real broker/Worker after commit, with observable true redelivery | NOT VERIFIED |
-| Cross-process crash and concurrent transactional deduplication | No remote concurrent-consumer crash campaign proven in this checkpoint | NOT VERIFIED |
+| Real broker redelivery after successful durable commit and injected application exception | PR #81: hosted attempt ledger records attempts 1 `received` and 2 `duplicate_ack` with the same physical message ID; one ledger effect | PASS NONPROD — simulated exception, not transport ACK loss |
+| Actual transport-level lost ACK or forced Worker termination | Requires actual process termination or transport-level lost ACK directly observed after durable commit; an application exception does not prove this | NOT VERIFIED |
+| Real overlapping Queue handler executions (different logical identities) | PR #84: 12 completed physical invocation spans; seven positive interval overlaps | PASS NONPROD |
+| Real overlapping Queue handler executions (same logical identity) | PR #85: 12 physical messages with the same logical ID; 12 completed spans, one positive overlap pair, exactly one durable effect | PASS NONPROD |
+| Concurrent PostgreSQL backend transaction overlap | Application-level overlapping spans do not establish simultaneous active DB transactions | NOT VERIFIED |
+| Cross-process crash and recovery | No actual Worker termination observed | NOT VERIFIED |
 | Production Queue, routes, cron, customer activation | Not within foundation-only approval; separate true HG-H required before material activation | BLOCKED |
 
 Evidence files: `NONPROD-REAL-QUEUE-DELIVERY-2026-10-13.md`, `NONPROD-REAL-POISON-DLQ-2026-10-13.md`, `NONPROD-REAL-BROKER-RETRY-2026-10-13.md`.
