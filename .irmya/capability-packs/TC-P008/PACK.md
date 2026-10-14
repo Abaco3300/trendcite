@@ -4,6 +4,10 @@ Status: PYTHON_RUNTIME_DEPLOYED_DARK / REMOTE_VERIFIED / CUSTOMER_AND_ASYNC_ACTI
 
 Latest 2026-10-13 checkpoint: PR #64 merged (`2b0a9a0e85e9f287806c8feb9fbb6c975ff03512`), post-merge main CI SUCCESS (run `38442366336`); read-only Cloudflare verified Python Worker version `0b9b3c85-463d-4259-b778-998178abffba`, DARK activation binding, Hyperdrive, no subdomain/previews/cron, prod Queue/DLQ 0 producers and 0 consumers. Portfolio-wide Dodo freeze lifted under Global Governance v1.15.0, while TrendCite-specific commercial readiness/authority remains closed. Historical Dodo freeze and unbound Hyperdrive notes below are superseded; no customer E2E or production activation is claimed.
 
+## Real hosted Queue consumer overlap verified (2026-10-14)
+
+Twelve actual Cloudflare nonprod synthetic Queue messages were accepted and completed; 12 server-timestamped durable invocation spans were recorded with 7 pairs overlapping in time, across a consumer that processes each batch sequentially. This proves hosted overlapping handler executions, not competing workers on the same logical ID. Temporary trace switch removed, source/DLQ both empty, production foundation-only. See `NONPROD-REAL-CONSUMER-OVERLAP-2026-10-14.md`.
+
 ## Hosted real postcommit redelivery directly attested (2026-10-14)
 
 PR #80 delivered opt-in durable synthetic attempt tracing. One nonprod Cloudflare Queue message was actually processed twice under the same physical broker message ID: attempt 1 `received`, attempt 2 `duplicate_ack` after a synthetic postcommit exception; hosted Postgres holds exactly one logical row, one failure audit and two physical attempt rows. Temporary switches restored OFF, Queue/DLQ backlog 0, prod foundation-only. Real process termination/transport ACK loss and independent consumer concurrency remain NOT_VERIFIED. See `NONPROD-REAL-POSTCOMMIT-REDELIVERY-ATTESTED-2026-10-14.md`.
