@@ -3,6 +3,12 @@
 Updated: 2026-10-13
 Status: ACTIVE
 
+## Latest real nonprod poison/DLQ checkpoint — 2026-10-13
+
+- Controlled malformed nonprod Queue message reached actual Cloudflare `trendcite-nonprod-dlq`, matched unique synthetic marker, then was removed using `messages/peek` + **targeted** `messages/purge` (HTTP 200); source Queue and DLQ postcheck: backlog 0, peek 0. Real poison-to-DLQ and safe targeted removal PASS; precise retry count and actual lost-ACK redelivery NOT_VERIFIED.
+- PR #68 merged as `7c065015f8fa780abc91481c226f046a926477d6`, post-merge main CI run `38495796075` SUCCESS. Five isolated Queue handler tests PASS, including audit failure and mixed-batch isolation.
+- Evidence: `.irmya/capability-packs/TC-P008/NONPROD-REAL-POISON-DLQ-2026-10-13.md`. No production integration authority or activation added.
+
 ## Latest real nonprod Queue checkpoint — 2026-10-13
 
 - PR #66 merged into `main` as `e30dddeef5f3388aacffa4e94f33545266de90f2`; post-merge GitHub Actions run `38483549165` SUCCESS. Isolated actual Python Queue handler ACK/retry/DARK tests PASS; not real broker-induced retry proof.

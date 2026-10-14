@@ -8,6 +8,10 @@ Latest 2026-10-13 checkpoint: PR #64 merged (`2b0a9a0e85e9f287806c8feb9fbb6c975f
 
 Real Cloudflare Queue API accepted two identical synthetic record-only messages; actual hosted PostgreSQL ledger contains one row, no matching failure events, provider backlog observed zero. This validates nonprod delivery and ledger deduplication, **not** real broker retry, lost ACK or DLQ poison recovery. DLQ `http_pull` was disabled, so no poison message was sent. Production Queue/cron/customer and commercial activation remain blocked. Details: `NONPROD-REAL-QUEUE-DELIVERY-2026-10-13.md`. PR #66 merged, post-merge main CI SUCCESS.
 
+## Real nonprod poison Queue / DLQ checkpoint (2026-10-13)
+
+Actual Cloudflare nonprod Queue consumed one malformed synthetic message; its body appeared in the nonprod DLQ and was safely removed through exact marker-matched `messages/peek` and `messages/purge`, with both queues empty afterward. Real poison-to-DLQ PASS; exact number of broker retries and real lost-ACK redelivery remain NOT_VERIFIED. See `NONPROD-REAL-POISON-DLQ-2026-10-13.md`. PR #68 merged, CI on `main` SUCCESS. Production stays DARK.
+
 ## Authorized gate
 
 HG-TRENDCITE-PRODUCTION-FOUNDATION-PROVISIONING-001 = APPROVED
