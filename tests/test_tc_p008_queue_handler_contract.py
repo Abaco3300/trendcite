@@ -182,3 +182,55 @@ def test_invalid_message_retries_and_does_not_block_following_valid_message():
     assert valid.actions == ["ack"]
     assert len(writes) == 1
     assert writes[0]["logical_id"] == "good"
+
+
+def test_ack_loss_after_commit_redelivery_is_deduplicated():
+    """Exercise real handler twice with fake durable ledger and first ACK exception.
+
+    This is a deterministic no-network test, NOT a broker-triggered E2E.
+    """
+    handler, ns = _handler()
+    committed = set()
+    effects = []
+
+    class Store:
+        async def record_queue_once(self, **kwargs):
+            identity = (kwargs["workspace_id"], kwargs["logical_id"])
+            if identity in committed:
+                return False
+            committed.add(identity)
+            effects.append(identity)
+            return True
+
+    ns.update(
+        {
+            "_store": lambda env: Store(),
+            "uuid": SimpleNamespace(uuid4=lambda: SimpleNamespace(hex="x")),
+            "datetime": SimpleNamespace(
+                now=lambda utc: SimpleNamespace(replace=lambda **kw: "now")
+            ),
+            "UTC": object(),
+        }
+    )
+    payload = {
+        "workspace_id": "tenant",
+        "logical_id": "committed-job",
+        "delivery_id": "transport-message",
+        "kind": "record",
+    }
+
+    class LostAckMessage(Message):
+        def ack(self):
+            self.actions.append("ack-lost")
+            raise RuntimeError("synthetic process termination after durable commit")
+
+    # The current handler catches the ACK exception, then requests retry.
+    # This is a synthetic lost-ACK exception, not a real process termination.
+    first = LostAckMessage(payload)
+    _run(handler(SimpleNamespace(messages=[first]), SimpleNamespace(dark=False)))
+
+    redelivered = Message(payload)
+    _run(handler(SimpleNamespace(messages=[redelivered]), SimpleNamespace(dark=False)))
+    assert first.actions == ["ack-lost", "retry"]
+    assert redelivered.actions == ["ack"]
+    assert effects == [("tenant", "committed-job")]
