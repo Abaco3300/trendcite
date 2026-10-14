@@ -28,6 +28,10 @@ Five simultaneous Cloudflare Queue nonprod publications with different delivery 
 
 Four simultaneously issued hosted nonprod SQL inserts against one workspace/logical identity yielded exactly one committed row, three conflict no-ops. Backend overlap, independent concurrent Workers and actual postcommit lost ACK are not proven. See `NONPROD-PARALLEL-POSTGRES-INSERT-2026-10-14.md`. Production DARK.
 
+## Real hosted nonprod postcommit fault probe (2026-10-14)
+
+Deployed PR #78 nonprod-only fault hook temporarily enabled, published one synthetic Cloudflare Queue message, observed one durable PostgreSQL row and a first-attempt RuntimeError failure audit. Nonprod flag was then removed and redeployed; source/DLQ backlog zero, prod foundation-only. A second broker delivery log, actual Worker process loss and independently concurrent consumers remain NOT_VERIFIED. See `NONPROD-REAL-POSTCOMMIT-RETRY-2026-10-14.md`.
+
 ## Authorized gate
 
 HG-TRENDCITE-PRODUCTION-FOUNDATION-PROVISIONING-001 = APPROVED
