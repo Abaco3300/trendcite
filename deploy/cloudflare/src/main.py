@@ -547,6 +547,35 @@ class Default(WorkerEntrypoint):
                         message.ack()
                     continue
 
+                if (
+                    kind == "tc_p008_concurrency_probe"
+                    and str(payload["logical_id"]).startswith("tc-p008-concurrency-")
+                    and str(getattr(runtime_env, "TRENDCITE_RUNTIME_ROLE", ""))
+                    == "trendcite_nonprod_runtime"
+                    and str(getattr(runtime_env, "TRENDCITE_TC_P008_CONCURRENCY_TRACE", ""))
+                    == "nonprod-enabled"
+                ):
+                    invocation_id = uuid.uuid4().hex
+                    await store.start_synthetic_queue_invocation(
+                        invocation_id=invocation_id,
+                        workspace_id=str(payload["workspace_id"]),
+                        logical_id=str(payload["logical_id"]),
+                        queue_message_id=str(message.id),
+                    )
+                    await asyncio.sleep(2)
+                    await store.record_queue_once(
+                        delivery_id=str(payload.get("delivery_id") or uuid.uuid4().hex),
+                        workspace_id=str(payload["workspace_id"]),
+                        logical_id=str(payload["logical_id"]),
+                        kind=kind,
+                        first_seen_at=datetime.now(UTC).replace(microsecond=0),
+                    )
+                    await store.finish_synthetic_queue_invocation(
+                        invocation_id=invocation_id,
+                    )
+                    message.ack()
+                    continue
+
                 inserted = await store.record_queue_once(
                     delivery_id=str(payload.get("delivery_id") or uuid.uuid4().hex),
                     workspace_id=str(payload["workspace_id"]),
