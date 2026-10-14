@@ -123,3 +123,62 @@ def test_nonprod_store_failure_never_acknowledged():
     msg = Message({"workspace_id": "tenant", "logical_id": "run", "kind": "record"})
     _run(handler(SimpleNamespace(messages=[msg]), SimpleNamespace(dark=False)))
     assert msg.actions == ["retry"]
+
+
+def test_failed_audit_still_retries_without_ack():
+    handler, ns = _handler()
+    observed = []
+
+    class Store:
+        async def record_queue_once(self, **kwargs):
+            raise RuntimeError("synthetic persistence outage")
+
+    class Audit:
+        async def record_queue_failure(self, **kwargs):
+            observed.append(kwargs)
+            raise RuntimeError("synthetic audit outage")
+
+    ns.update(
+        {
+            "_store": lambda env: Store(),
+            "_automation_store": lambda env: Audit(),
+            "_env_positive_int": lambda env, name, default: default,
+            "uuid": SimpleNamespace(uuid4=lambda: SimpleNamespace(hex="x")),
+            "datetime": SimpleNamespace(
+                now=lambda utc: SimpleNamespace(replace=lambda **kw: "now")
+            ),
+            "UTC": object(),
+        }
+    )
+    msg = Message({"workspace_id": "tenant", "logical_id": "bad", "kind": "record"})
+    _run(handler(SimpleNamespace(messages=[msg]), SimpleNamespace(dark=False)))
+    assert msg.actions == ["retry"]
+    assert len(observed) == 1
+
+
+def test_invalid_message_retries_and_does_not_block_following_valid_message():
+    handler, ns = _handler()
+    writes = []
+
+    class Store:
+        async def record_queue_once(self, **kwargs):
+            writes.append(kwargs)
+            return True
+
+    ns.update(
+        {
+            "_store": lambda env: Store(),
+            "uuid": SimpleNamespace(uuid4=lambda: SimpleNamespace(hex="x")),
+            "datetime": SimpleNamespace(
+                now=lambda utc: SimpleNamespace(replace=lambda **kw: "now")
+            ),
+            "UTC": object(),
+        }
+    )
+    invalid = Message({"workspace_id": "tenant", "kind": "record"})
+    valid = Message({"workspace_id": "tenant", "logical_id": "good", "kind": "record"})
+    _run(handler(SimpleNamespace(messages=[invalid, valid]), SimpleNamespace(dark=False)))
+    assert invalid.actions == ["retry"]
+    assert valid.actions == ["ack"]
+    assert len(writes) == 1
+    assert writes[0]["logical_id"] == "good"
