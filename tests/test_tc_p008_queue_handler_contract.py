@@ -234,3 +234,66 @@ def test_ack_loss_after_commit_redelivery_is_deduplicated():
     assert first.actions == ["ack-lost", "retry"]
     assert redelivered.actions == ["ack"]
     assert effects == [("tenant", "committed-job")]
+
+
+def test_postcommit_ack_exception_is_audited_then_replay_acknowledged():
+    """Actual handler, isolated durable fake and failure audit; no real broker."""
+    handler, ns = _handler()
+    committed = set()
+    audit_rows = []
+
+    class Store:
+        async def record_queue_once(self, **kwargs):
+            identity = (kwargs["workspace_id"], kwargs["logical_id"])
+            if identity in committed:
+                return False
+            committed.add(identity)
+            return True
+
+    class Audit:
+        async def record_queue_failure(self, **kwargs):
+            audit_rows.append(kwargs)
+
+    ns.update(
+        {
+            "_store": lambda env: Store(),
+            "_automation_store": lambda env: Audit(),
+            "_env_positive_int": lambda env, name, default: default,
+            "uuid": SimpleNamespace(uuid4=lambda: SimpleNamespace(hex="unused")),
+            "datetime": SimpleNamespace(
+                now=lambda utc: SimpleNamespace(replace=lambda **kwargs: "now")
+            ),
+            "UTC": object(),
+        }
+    )
+
+    payload = {
+        "workspace_id": "tenant",
+        "logical_id": "committed",
+        "delivery_id": "delivery-1",
+        "kind": "record",
+    }
+
+    class BrokenAck(Message):
+        def ack(self):
+            self.actions.append("ack-exception")
+            raise RuntimeError("synthetic ACK transport failure")
+
+    first = BrokenAck(payload)
+    first.id = "queue-physical-1"
+    first.attempts = 1
+    _run(handler(SimpleNamespace(messages=[first]), SimpleNamespace(dark=False)))
+
+    second = Message(payload)
+    second.id = "queue-physical-1"
+    second.attempts = 2
+    _run(handler(SimpleNamespace(messages=[second]), SimpleNamespace(dark=False)))
+
+    assert first.actions == ["ack-exception", "retry"]
+    assert second.actions == ["ack"]
+    assert len(committed) == 1
+    assert len(audit_rows) == 1
+    assert audit_rows[0]["error_type"] == "RuntimeError"
+    assert audit_rows[0]["attempt"] == 1
+    assert audit_rows[0]["queue_message_id"] == "queue-physical-1"
+    assert audit_rows[0]["logical_id"] == "committed"
