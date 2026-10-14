@@ -246,6 +246,40 @@ class PostgresRuntimeStore:
             if status.endswith(" 0"):
                 raise RuntimeError("radar run update matched no row")
 
+    async def start_synthetic_queue_invocation(
+        self,
+        *,
+        invocation_id: str,
+        workspace_id: str,
+        logical_id: str,
+        queue_message_id: str,
+    ) -> None:
+        if not logical_id.startswith("tc-p008-concurrency-"):
+            raise ValueError("nonprod synthetic concurrency identity required")
+        async with self._transaction() as conn:
+            await conn.execute(
+                """
+                INSERT INTO trendcite.cloud_queue_probe_invocation
+                  (invocation_id, workspace_id, logical_id, queue_message_id)
+                VALUES ($1, $2, $3, $4)
+                """,
+                invocation_id,
+                workspace_id,
+                logical_id,
+                queue_message_id,
+            )
+
+    async def finish_synthetic_queue_invocation(self, *, invocation_id: str) -> None:
+        async with self._transaction() as conn:
+            await conn.execute(
+                """
+                UPDATE trendcite.cloud_queue_probe_invocation
+                SET finished_at=clock_timestamp()
+                WHERE invocation_id=$1
+                """,
+                invocation_id,
+            )
+
     async def record_synthetic_queue_attempt(
         self,
         *,
