@@ -3,6 +3,10 @@
 Updated: 2026-10-13
 Status: ACTIVE
 
+## Five parallel real Cloudflare Queue publications — 2026-10-14
+
+- Five simultaneous synthetic nonprod Queue API sends (unique delivery IDs, one tenant/logical identity) all accepted HTTP 200; real hosted Postgres held exactly one logical row; zero related failure events; Queue and DLQ backlog/peeks both zero. This verifies concurrent **producer submissions**, not independent concurrent consumers or real lost-ACK/crash. Evidence: `.irmya/capability-packs/TC-P008/NONPROD-PARALLEL-PUBLISH-IDEMPOTENCY-2026-10-14.md`. No production activation.
+
 ## Consolidated TC-P008 Queue acceptance — 2026-10-13
 
 - PR #71 merged as `00ceef86ec447a22d4183b42dd94474f9ed9e4c2`; adds isolated ACK-exception after fake durable commit plus deduplicated replay. This is **not real broker lost-ACK E2E**.

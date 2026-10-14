@@ -20,6 +20,10 @@ Actual Cloudflare Queue delivered the same synthetic collision message three tim
 
 See `NONPROD-QUEUE-ACCEPTANCE-MATRIX-2026-10-13.md`: real Queue delivery/idempotency/retry/DLQ clearance PASS in nonprod; simulated postcommit ACK exception PASS isolated (#71); actual lost ACK after durable commit and crash/concurrent-consumer E2E NOT VERIFIED. Production remains DARK.
 
+## Parallel provider submissions verified (2026-10-14)
+
+Five simultaneous Cloudflare Queue nonprod publications with different delivery IDs and same logical identity were accepted; hosted PostgreSQL persisted one record without related failures, queues drained. Independent multi-consumer concurrency and actual durable-commit lost ACK remain unproven. See `NONPROD-PARALLEL-PUBLISH-IDEMPOTENCY-2026-10-14.md`.
+
 ## Authorized gate
 
 HG-TRENDCITE-PRODUCTION-FOUNDATION-PROVISIONING-001 = APPROVED
