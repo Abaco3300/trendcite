@@ -1,8 +1,8 @@
 -- TC-P008: nonprod synthetic physical Queue attempt audit, no customer payloads.
 -- Run only against approved nonprod schema via an explicit migration procedure.
-CREATE TABLE IF NOT EXISTS cloud_queue_probe_attempt (
+CREATE TABLE IF NOT EXISTS trendcite.cloud_queue_probe_attempt (
     attempt_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    workspace_id TEXT NOT NULL REFERENCES cloud_workspace(workspace_id) ON DELETE CASCADE,
+    workspace_id TEXT NOT NULL REFERENCES trendcite.cloud_workspace(workspace_id) ON DELETE CASCADE,
     logical_id TEXT NOT NULL,
     queue_message_id TEXT NOT NULL,
     attempt INTEGER NOT NULL CHECK (attempt >= 1),
@@ -12,4 +12,8 @@ CREATE TABLE IF NOT EXISTS cloud_queue_probe_attempt (
     CHECK (logical_id LIKE 'tc-p008-postcommit-%')
 );
 CREATE INDEX IF NOT EXISTS ix_cloud_queue_probe_attempt_identity
-    ON cloud_queue_probe_attempt(workspace_id, logical_id, attempt);
+    ON trendcite.cloud_queue_probe_attempt(workspace_id, logical_id, attempt);
+
+REVOKE ALL ON TABLE trendcite.cloud_queue_probe_attempt FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT ON TABLE trendcite.cloud_queue_probe_attempt TO trendcite_nonprod_runtime;
+GRANT USAGE ON SEQUENCE trendcite.cloud_queue_probe_attempt_attempt_id_seq TO trendcite_nonprod_runtime;
