@@ -3,6 +3,10 @@
 Updated: 2026-10-14
 Status: ACTIVE
 
+## Real hosted Queue multi-invocation overlap — 2026-10-14
+
+- Twelve synthetic nonprod Cloudflare Queue messages completed with 12 durable SQL invocation spans and seven pairwise time overlaps, proving concurrent hosted executions of the sequential message handler. No same-logical-identity hosted collision, Worker kill, or transport ACK loss claimed. Temporary flag removed; nonprod Queue/DLQ 0 and prod foundation-only. See `.irmya/capability-packs/TC-P008/NONPROD-REAL-CONSUMER-OVERLAP-2026-10-14.md`.
+
 ## Real hosted postcommit Queue redelivery — 2026-10-14
 
 - The new synthetic nonprod attempt ledger records two actual Cloudflare broker processing attempts of one physical Queue message: attempt 1 `received`, attempt 2 `duplicate_ack`; exactly one durable logical record and one first-attempt fault audit. Nonprod flags restored off and queues drained. This is real broker redelivery after injected postcommit application failure, NOT proof of a crashed Worker or lost transport ACK. See `.irmya/capability-packs/TC-P008/NONPROD-REAL-POSTCOMMIT-REDELIVERY-ATTESTED-2026-10-14.md`. Production remains DARK.
