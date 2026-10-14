@@ -106,3 +106,25 @@ def test_tenant_scoped_logical_idempotency():
     assert _record(_store(database), "d-a", "tenant-a", "job-1") is True
     assert _record(_store(database), "d-b", "tenant-b", "job-1") is True
     assert len(database.by_logical) == 2
+
+
+def test_same_delivery_and_logical_identity_is_duplicate():
+    database = DurableFake()
+    assert _record(_store(database), "same", "tenant-a", "job-1") is True
+    assert _record(_store(database), "same", "tenant-a", "job-1") is False
+    assert len(database.by_logical) == 1
+
+
+def test_delivery_id_shared_across_tenants_fails_closed():
+    database = DurableFake()
+    assert _record(_store(database), "shared", "tenant-a", "job") is True
+    with pytest.raises(RuntimeError, match="queue delivery identity collision"):
+        _record(_store(database), "shared", "tenant-b", "job")
+    assert len(database.by_logical) == 1
+
+
+def test_different_logical_jobs_in_same_workspace_remain_distinct():
+    database = DurableFake()
+    assert _record(_store(database), "first", "tenant-a", "job-a") is True
+    assert _record(_store(database), "second", "tenant-a", "job-b") is True
+    assert len(database.by_logical) == 2
