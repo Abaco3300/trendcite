@@ -565,6 +565,16 @@ class Default(WorkerEntrypoint):
                         sort_keys=True,
                     )
                 )
+                if (
+                    inserted
+                    and kind == "tc_p008_postcommit_retry_probe"
+                    and str(payload["logical_id"]).startswith("tc-p008-postcommit-")
+                    and str(getattr(runtime_env, "TRENDCITE_RUNTIME_ROLE", ""))
+                    == "trendcite_nonprod_runtime"
+                    and str(getattr(runtime_env, "TRENDCITE_TC_P008_FAULT_INJECTION", ""))
+                    == "nonprod-enabled"
+                ):
+                    raise RuntimeError("tc_p008_synthetic_postcommit_retry")
                 message.ack()
             except Exception as exc:
                 if payload.get("workspace_id") and payload.get("logical_id"):
