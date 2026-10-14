@@ -554,6 +554,21 @@ class Default(WorkerEntrypoint):
                     kind=kind,
                     first_seen_at=datetime.now(UTC).replace(microsecond=0),
                 )
+                if (
+                    kind == "tc_p008_postcommit_retry_probe"
+                    and str(payload["logical_id"]).startswith("tc-p008-postcommit-")
+                    and str(getattr(runtime_env, "TRENDCITE_RUNTIME_ROLE", ""))
+                    == "trendcite_nonprod_runtime"
+                    and str(getattr(runtime_env, "TRENDCITE_TC_P008_ATTEMPT_AUDIT", ""))
+                    == "nonprod-enabled"
+                ):
+                    await store.record_synthetic_queue_attempt(
+                        workspace_id=str(payload["workspace_id"]),
+                        logical_id=str(payload["logical_id"]),
+                        queue_message_id=str(message.id),
+                        attempt=int(message.attempts),
+                        outcome="received" if inserted else "duplicate_ack",
+                    )
                 print(
                     json.dumps(
                         {
