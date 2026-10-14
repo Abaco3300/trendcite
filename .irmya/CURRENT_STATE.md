@@ -3,6 +3,10 @@
 Updated: 2026-10-14
 Status: ACTIVE
 
+## Real hosted same-identity Queue contention — 2026-10-14
+
+- Twelve real nonprod Queue physical messages with one identical logical identity completed; two hosted invocation spans overlapped, only one ledger row committed, failure audit zero. Probe flag removed and Queue/DLQ zero. Does not claim actual database transaction overlap or Worker crash/transport ACK loss. See `.irmya/capability-packs/TC-P008/NONPROD-SAME-LOGICAL-CONSUMER-OVERLAP-2026-10-14.md`. Production DARK.
+
 ## Real hosted Queue multi-invocation overlap — 2026-10-14
 
 - Twelve synthetic nonprod Cloudflare Queue messages completed with 12 durable SQL invocation spans and seven pairwise time overlaps, proving concurrent hosted executions of the sequential message handler. No same-logical-identity hosted collision, Worker kill, or transport ACK loss claimed. Temporary flag removed; nonprod Queue/DLQ 0 and prod foundation-only. See `.irmya/capability-packs/TC-P008/NONPROD-REAL-CONSUMER-OVERLAP-2026-10-14.md`.
