@@ -12,6 +12,10 @@ Real Cloudflare Queue API accepted two identical synthetic record-only messages;
 
 Actual Cloudflare nonprod Queue consumed one malformed synthetic message; its body appeared in the nonprod DLQ and was safely removed through exact marker-matched `messages/peek` and `messages/purge`, with both queues empty afterward. Real poison-to-DLQ PASS; exact number of broker retries and real lost-ACK redelivery remain NOT_VERIFIED. See `NONPROD-REAL-POISON-DLQ-2026-10-13.md`. PR #68 merged, CI on `main` SUCCESS. Production stays DARK.
 
+## Real nonprod broker retry sequence (2026-10-13)
+
+Actual Cloudflare Queue delivered the same synthetic collision message three times (attempts 1, 2, 3 with `UniqueViolationError`) recorded under a single Queue message ID in hosted PostgreSQL. After the third failed attempt, the message appeared in the real DLQ; it was removed by exact marker and both queues were verified empty. This validates real retry-to-DLQ, not ACK loss after successful durable commit. Details: `NONPROD-REAL-BROKER-RETRY-2026-10-13.md`. Production DARK and commercialization blocks remain unchanged.
+
 ## Authorized gate
 
 HG-TRENDCITE-PRODUCTION-FOUNDATION-PROVISIONING-001 = APPROVED
