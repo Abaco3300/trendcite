@@ -297,3 +297,87 @@ def test_postcommit_ack_exception_is_audited_then_replay_acknowledged():
     assert audit_rows[0]["attempt"] == 1
     assert audit_rows[0]["queue_message_id"] == "queue-physical-1"
     assert audit_rows[0]["logical_id"] == "committed"
+
+
+def test_nonprod_opt_in_postcommit_retry_once_then_duplicate_ack():
+    """Explicit nonprod-only fault runs after durable ledger write, not in prod."""
+    handler, ns = _handler()
+    effects = set()
+    audits = []
+
+    class Store:
+        async def record_queue_once(self, **kw):
+            identity = (kw["workspace_id"], kw["logical_id"])
+            if identity in effects:
+                return False
+            effects.add(identity)
+            return True
+
+    class Audit:
+        async def record_queue_failure(self, **kw):
+            audits.append(kw)
+
+    ns.update(
+        {
+            "_store": lambda env: Store(),
+            "_automation_store": lambda env: Audit(),
+            "_env_positive_int": lambda env, name, default: default,
+            "uuid": SimpleNamespace(uuid4=lambda: SimpleNamespace(hex="unused")),
+            "datetime": SimpleNamespace(
+                now=lambda utc: SimpleNamespace(replace=lambda **kw: "now")
+            ),
+            "UTC": object(),
+        }
+    )
+    payload = {
+        "workspace_id": "tenant",
+        "logical_id": "tc-p008-postcommit-001",
+        "delivery_id": "delivery",
+        "kind": "tc_p008_postcommit_retry_probe",
+    }
+    env = SimpleNamespace(
+        dark=False,
+        TRENDCITE_RUNTIME_ROLE="trendcite_nonprod_runtime",
+        TRENDCITE_TC_P008_FAULT_INJECTION="nonprod-enabled",
+    )
+    first, second = Message(payload), Message(payload)
+    _run(handler(SimpleNamespace(messages=[first]), env))
+    _run(handler(SimpleNamespace(messages=[second]), env))
+    assert first.actions == ["retry"]
+    assert second.actions == ["ack"]
+    assert len(effects) == 1
+    assert len(audits) == 1
+    assert audits[0]["error_type"] == "RuntimeError"
+
+
+def test_fault_hook_never_fires_without_nonprod_role_and_opt_in():
+    handler, ns = _handler()
+    ns.update(
+        {
+            "_store": lambda env: SimpleNamespace(record_queue_once=_async_true),
+            "uuid": SimpleNamespace(uuid4=lambda: SimpleNamespace(hex="unused")),
+            "datetime": SimpleNamespace(
+                now=lambda utc: SimpleNamespace(replace=lambda **kw: "now")
+            ),
+            "UTC": object(),
+        }
+    )
+    payload = {
+        "workspace_id": "tenant",
+        "logical_id": "tc-p008-postcommit-002",
+        "kind": "tc_p008_postcommit_retry_probe",
+    }
+    for role, flag in [
+        ("trendcite_nonprod_runtime", ""),
+        ("trendcite_prod_runtime", "nonprod-enabled"),
+    ]:
+        msg = Message(payload)
+        env = SimpleNamespace(
+            dark=False, TRENDCITE_RUNTIME_ROLE=role, TRENDCITE_TC_P008_FAULT_INJECTION=flag
+        )
+        _run(handler(SimpleNamespace(messages=[msg]), env))
+        assert msg.actions == ["ack"]
+
+
+async def _async_true(**kwargs):
+    return True
