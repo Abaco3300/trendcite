@@ -1,23 +1,28 @@
-# TC-P008 — Consolidated Queue acceptance matrix (2026-10-13)
+# TC-P008 — Consolidated Queue acceptance matrix
 
-Scope: actual Cloudflare nonprod, hosted Postgres nonprod, and separately identified isolated tests. Production remains DARK.
+Updated: 2026-10-14. Authority: hosted evidence under TC-P008; production DARK.
 
-| Scenario | Evidence | Outcome |
+| Acceptance scenario | Direct source | Classification |
 | --- | --- | --- |
-| Real Queue delivery to Postgres | Two HTTP 200 sends with same unique synthetic logical identity; one ledger row; Queue backlog observed zero | PASS NONPROD |
-| Real repeated payload idempotency | Same logical identity delivered twice through actual provider, no duplicate ledger row | PASS NONPROD |
-| Poison message to DLQ | Malformed tagged nonprod message observed physically in Cloudflare DLQ | PASS NONPROD |
-| Targeted DLQ cleanup | Unique marker-matched `peek` plus `purge`; HTTP 200; source and DLQ empty afterward | PASS NONPROD |
-| Actual broker retries | Three hosted failure records for same message ID, attempts 1/2/3 `UniqueViolationError`, then message appeared in DLQ | PASS NONPROD |
-| Persistence failure must not ACK | Executed actual handler code with simulated store failure | PASS ISOLATED |
-| Failure audit failure and mixed batch isolation | Executed actual handler with fake dependencies; retry without ACK; unaffected valid message ACK | PASS ISOLATED |
-| Post-commit ACK exception + deduplicated replay | PR #71: actual handler with fake durable ledger, ACK exception requests retry and second delivery yields a single effect | PASS ISOLATED |
-| Actual lost ACK after successful durable commit | Requires controlled failure in real broker/Worker after commit, with observable true redelivery | NOT VERIFIED |
-| Cross-process crash and concurrent transactional deduplication | No remote concurrent-consumer crash campaign proven in this checkpoint | NOT VERIFIED |
-| Production Queue, routes, cron, customer activation | Not within foundation-only approval; separate true HG-H required before material activation | BLOCKED |
+| Real nonprod Queue delivery and unique logical persistence | #66 real Queue publishes and hosted SQL | PASS HOSTED |
+| Poison DLQ routing and safe targeted cleanup | #68 real Cloudflare DLQ evidence | PASS HOSTED |
+| Provider-attempt retry to DLQ | #70 failure events for attempts 1/2/3 | PASS HOSTED |
+| Postcommit application failure followed by actual broker redelivery of the **same physical message** | #80–81; `NONPROD-REAL-POSTCOMMIT-REDELIVERY-ATTESTED-2026-10-14.md`; message ID retained, attempt 1 received, attempt 2 duplicate_ack, logical row = 1 | PASS HOSTED |
+| Concurrent independent Queue handler processing | #83–84; `NONPROD-REAL-CONSUMER-OVERLAP-2026-10-14.md`; 12 complete server-timed spans, 7 overlapping pairs | PASS HOSTED |
+| Overlapping hosted Queue processing on one logical identity | #85; `NONPROD-SAME-LOGICAL-CONSUMER-OVERLAP-2026-10-14.md`; 12 physical messages, 1 overlap pair, 1 logical ledger record, 0 failures | PASS HOSTED |
+| Offline overlapping handler invocations | #82; real Python handler extracted under fake shared durable store | PASS ISOLATED, not provider |
+| SQLite/Postgres transactional overlap of concurrent backend transactions | Available hosted SQL parallel *submissions* do not establish backend overlap | NOT VERIFIED |
+| Actual platform-enforced Worker termination / crash after durable commit | Synthetic postcommit `RuntimeError` does not kill Worker process | NOT VERIFIED |
+| Transport-level lost ACK from Worker to broker | Real redelivery after app exception is not observed loss of transport ACK | NOT VERIFIED |
+| Production asynchronous/customer/commercial activation | Production `foundation-only`; distinct HG-H required | BLOCKED |
 
-Evidence files: `NONPROD-REAL-QUEUE-DELIVERY-2026-10-13.md`, `NONPROD-REAL-POISON-DLQ-2026-10-13.md`, `NONPROD-REAL-BROKER-RETRY-2026-10-13.md`.
+## Latest read-only revalidation
 
-IRMYA gates: an absence of evidence in ordinary nonprod tests is **not** a Human Gate. New prod Queue consumer integration/activation exceeding the authorized foundation is material HG-H. Do not interpret any nonprod PASS as activation authority.
+- Main `77803e7e9eb43abb384723e2dc3d7e024cbd2f41`, last GitHub Actions CI SUCCESS.
+- Current Cloudflare nonprod probe flags: none; source Queue 0, DLQ 0; production `TRENDCITE_PRODUCTION_ACTIVATION=foundation-only`.
+- Hosted SQL postcommit probe `tc-p008-postcommit-20261014-auditprobe-03`: one logical row, two physical attempt audit rows.
+- Hosted SQL distinct-message concurrency probe `tc-p008-concurrency-20261014-hosted-a-*`: 12 logical rows, 12 finished physical invocation spans.
 
-Security: the private Postgres schema is not established as publicly exposed simply because 33 tables have RLS off; before changing RLS, assess schema grants, data API publication, and workload breakage. No permissions, schema, secrets, provider controls or production systems were changed by this report.
+## Operating boundary
+
+No additional synthetic fault, producer load or active Queue probe is needed to reconfirm established PASS evidence. Any further test must target a *different*, explicitly unverified property (database backend transaction overlap; actual process crash or true transport ACK loss) and preserve nonprod-only scope, strict bounds, restoration and independent read-back. Worker runtime termination or transport interference must not be simulated and reported as an actual crash/lost ACK. Production, billing, customers and credentials are out of scope.
