@@ -3,6 +3,10 @@
 Updated: 2026-10-13
 Status: ACTIVE
 
+## Four parallel hosted PostgreSQL inserts — 2026-10-14
+
+- Four concurrent SQL submission requests with the same nonprod tenant/logical identity and distinct delivery IDs yielded one inserted row and three `ON CONFLICT DO NOTHING` results; a later SELECT confirmed exactly one row. This validates hosted database idempotency under parallel submissions, **not** independent Worker consumer execution or postcommit lost ACK. Evidence: `.irmya/capability-packs/TC-P008/NONPROD-PARALLEL-POSTGRES-INSERT-2026-10-14.md`. Production DARK.
+
 ## Five parallel real Cloudflare Queue publications — 2026-10-14
 
 - Five simultaneous synthetic nonprod Queue API sends (unique delivery IDs, one tenant/logical identity) all accepted HTTP 200; real hosted Postgres held exactly one logical row; zero related failure events; Queue and DLQ backlog/peeks both zero. This verifies concurrent **producer submissions**, not independent concurrent consumers or real lost-ACK/crash. Evidence: `.irmya/capability-packs/TC-P008/NONPROD-PARALLEL-PUBLISH-IDEMPOTENCY-2026-10-14.md`. No production activation.
