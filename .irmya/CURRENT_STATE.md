@@ -3,6 +3,11 @@
 Updated: 2026-10-13
 Status: ACTIVE
 
+## Latest real nonprod broker retries checkpoint — 2026-10-13
+
+- A synthetic PostgreSQL delivery-ID collision in the existing nonprod Cloudflare Queue yielded **three distinct actual failure attempts** (1, 2, 3; max 3; `UniqueViolationError`) persisted in `trendcite.cloud_queue_failure_event` under one real Queue message ID. The exact message then appeared in the real nonprod DLQ. Targeted purge HTTP 200; source Queue and DLQ were both empty afterward (metrics plus peeks). No production modification.
+- Real broker retry-to-DLQ PASS; missing-ACK after **successful** durable commit remains NOT_VERIFIED. Exact evidence: `.irmya/capability-packs/TC-P008/NONPROD-REAL-BROKER-RETRY-2026-10-13.md`.
+
 ## Latest real nonprod poison/DLQ checkpoint — 2026-10-13
 
 - Controlled malformed nonprod Queue message reached actual Cloudflare `trendcite-nonprod-dlq`, matched unique synthetic marker, then was removed using `messages/peek` + **targeted** `messages/purge` (HTTP 200); source Queue and DLQ postcheck: backlog 0, peek 0. Real poison-to-DLQ and safe targeted removal PASS; precise retry count and actual lost-ACK redelivery NOT_VERIFIED.
