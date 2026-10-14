@@ -24,6 +24,10 @@ See `NONPROD-QUEUE-ACCEPTANCE-MATRIX-2026-10-13.md`: real Queue delivery/idempot
 
 Five simultaneous Cloudflare Queue nonprod publications with different delivery IDs and same logical identity were accepted; hosted PostgreSQL persisted one record without related failures, queues drained. Independent multi-consumer concurrency and actual durable-commit lost ACK remain unproven. See `NONPROD-PARALLEL-PUBLISH-IDEMPOTENCY-2026-10-14.md`.
 
+## Hosted PostgreSQL parallel insert evidence (2026-10-14)
+
+Four simultaneously issued hosted nonprod SQL inserts against one workspace/logical identity yielded exactly one committed row, three conflict no-ops. Backend overlap, independent concurrent Workers and actual postcommit lost ACK are not proven. See `NONPROD-PARALLEL-POSTGRES-INSERT-2026-10-14.md`. Production DARK.
+
 ## Authorized gate
 
 HG-TRENDCITE-PRODUCTION-FOUNDATION-PROVISIONING-001 = APPROVED
