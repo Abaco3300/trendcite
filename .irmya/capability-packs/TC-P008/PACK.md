@@ -16,6 +16,10 @@ Actual Cloudflare nonprod Queue consumed one malformed synthetic message; its bo
 
 Actual Cloudflare Queue delivered the same synthetic collision message three times (attempts 1, 2, 3 with `UniqueViolationError`) recorded under a single Queue message ID in hosted PostgreSQL. After the third failed attempt, the message appeared in the real DLQ; it was removed by exact marker and both queues were verified empty. This validates real retry-to-DLQ, not ACK loss after successful durable commit. Details: `NONPROD-REAL-BROKER-RETRY-2026-10-13.md`. Production DARK and commercialization blocks remain unchanged.
 
+## Consolidated acceptance matrix (2026-10-13)
+
+See `NONPROD-QUEUE-ACCEPTANCE-MATRIX-2026-10-13.md`: real Queue delivery/idempotency/retry/DLQ clearance PASS in nonprod; simulated postcommit ACK exception PASS isolated (#71); actual lost ACK after durable commit and crash/concurrent-consumer E2E NOT VERIFIED. Production remains DARK.
+
 ## Authorized gate
 
 HG-TRENDCITE-PRODUCTION-FOUNDATION-PROVISIONING-001 = APPROVED

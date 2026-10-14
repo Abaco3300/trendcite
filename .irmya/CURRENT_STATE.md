@@ -3,6 +3,12 @@
 Updated: 2026-10-13
 Status: ACTIVE
 
+## Consolidated TC-P008 Queue acceptance — 2026-10-13
+
+- PR #71 merged as `00ceef86ec447a22d4183b42dd94474f9ed9e4c2`; adds isolated ACK-exception after fake durable commit plus deduplicated replay. This is **not real broker lost-ACK E2E**.
+- Single evidence matrix separates actual Cloudflare nonprod delivery, duplicate idempotency, three retry attempts and DLQ cleanup from isolated tests and still-unverified crash/concurrency/lost-ACK scenarios: `.irmya/capability-packs/TC-P008/NONPROD-QUEUE-ACCEPTANCE-MATRIX-2026-10-13.md`.
+- Production Queue remains DARK and material activation requires real HG-H, not an invented operational gate.
+
 ## Latest real nonprod broker retries checkpoint — 2026-10-13
 
 - A synthetic PostgreSQL delivery-ID collision in the existing nonprod Cloudflare Queue yielded **three distinct actual failure attempts** (1, 2, 3; max 3; `UniqueViolationError`) persisted in `trendcite.cloud_queue_failure_event` under one real Queue message ID. The exact message then appeared in the real nonprod DLQ. Targeted purge HTTP 200; source Queue and DLQ were both empty afterward (metrics plus peeks). No production modification.
