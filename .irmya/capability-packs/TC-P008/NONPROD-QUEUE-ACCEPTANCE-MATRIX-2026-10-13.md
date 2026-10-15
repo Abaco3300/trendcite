@@ -18,7 +18,9 @@ Updated: 2026-10-14. Authority: hosted evidence under TC-P008; production DARK.
 
 ## Latest read-only revalidation
 
-- Main `77803e7e9eb43abb384723e2dc3d7e024cbd2f41`, last GitHub Actions CI SUCCESS.
+- Main `d7a49e3eaa0f9b15aab86792865e3bc6a8cbbfab` (PR #87), post-merge GitHub Actions CI run `38626431951` SUCCESS; authorized DARK Hyperdrive validator repaired. This read-back updates the former `77803e7` snapshot without changing the hosted Queue acceptance classifications.
+- 2026-10-15 Cloudflare read-only metrics: nonprod source Queue backlog 0 and DLQ backlog 0; production activation `foundation-only`; no temporary TC-P008 nonprod probe bindings.
+- Regression coverage: `tests/test_tc_p008_state_validator_contract.py` checks allowed `BOUND_DARK` state and fails closed on unsafe production-state mutations. The separate canonical preflight and hosted evidence remain distinct.
 - Current Cloudflare nonprod probe flags: none; source Queue 0, DLQ 0; production `TRENDCITE_PRODUCTION_ACTIVATION=foundation-only`.
 - Hosted SQL postcommit probe `tc-p008-postcommit-20261014-auditprobe-03`: one logical row, two physical attempt audit rows.
 - Hosted SQL distinct-message concurrency probe `tc-p008-concurrency-20261014-hosted-a-*`: 12 logical rows, 12 finished physical invocation spans.
