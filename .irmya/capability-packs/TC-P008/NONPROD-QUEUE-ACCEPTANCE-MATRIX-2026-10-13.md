@@ -1,6 +1,6 @@
 # TC-P008 — Consolidated Queue acceptance matrix
 
-Updated: 2026-10-14. Authority: hosted evidence under TC-P008; production DARK.
+Updated: 2026-10-15. Authority: hosted evidence under TC-P008; production DARK. Local PostgreSQL backend overlap is a separate, lower-assurance result.
 
 | Acceptance scenario | Direct source | Classification |
 | --- | --- | --- |
@@ -11,14 +11,15 @@ Updated: 2026-10-14. Authority: hosted evidence under TC-P008; production DARK.
 | Concurrent independent Queue handler processing | #83–84; `NONPROD-REAL-CONSUMER-OVERLAP-2026-10-14.md`; 12 complete server-timed spans, 7 overlapping pairs | PASS HOSTED |
 | Overlapping hosted Queue processing on one logical identity | #85; `NONPROD-SAME-LOGICAL-CONSUMER-OVERLAP-2026-10-14.md`; 12 physical messages, 1 overlap pair, 1 logical ledger record, 0 failures | PASS HOSTED |
 | Offline overlapping handler invocations | #82; real Python handler extracted under fake shared durable store | PASS ISOLATED, not provider |
-| SQLite/Postgres transactional overlap of concurrent backend transactions | Available hosted SQL parallel *submissions* do not establish backend overlap | NOT VERIFIED |
+| Two independent local PostgreSQL backend sessions with overlapping server-clock intervals | #90 `scripts/tc_p008_local_backend_overlap.py`; isolated Docker PostgreSQL 17, PIDs 109/110, measured UTC intervals overlap | PASS LOCAL ONLY |
+| Hosted Supabase PostgreSQL transactional overlap of concurrent backend transactions | Sequential hosted SQL requests did not overlap; #90 local Docker sessions cannot establish hosted overlap | NOT VERIFIED |
 | Actual platform-enforced Worker termination / crash after durable commit | Synthetic postcommit `RuntimeError` does not kill Worker process | NOT VERIFIED |
 | Transport-level lost ACK from Worker to broker | Real redelivery after app exception is not observed loss of transport ACK | NOT VERIFIED |
 | Production asynchronous/customer/commercial activation | Production `foundation-only`; distinct HG-H required | BLOCKED |
 
 ## Latest read-only revalidation
 
-- Main `d7a49e3eaa0f9b15aab86792865e3bc6a8cbbfab` (PR #87), post-merge GitHub Actions CI run `38626431951` SUCCESS; authorized DARK Hyperdrive validator repaired. This read-back updates the former `77803e7` snapshot without changing the hosted Queue acceptance classifications.
+- Main `b6d4cd4be4899be196f75c2dcd338330ed71c30b` (PR #90), post-merge GitHub Actions CI run `38776775763` SUCCESS. PR #87 repaired the authorized DARK Hyperdrive validator; PR #88 added fail-closed regression coverage; PR #89 bounded disposable PostgreSQL startup retries; PR #90 added an isolated two-backend overlap attestation. The latter does not satisfy hosted transaction-overlap acceptance.
 - 2026-10-15 Cloudflare read-only metrics: nonprod source Queue backlog 0 and DLQ backlog 0; production activation `foundation-only`; no temporary TC-P008 nonprod probe bindings.
 - Regression coverage: `tests/test_tc_p008_state_validator_contract.py` checks allowed `BOUND_DARK` state and fails closed on unsafe production-state mutations. The separate canonical preflight and hosted evidence remain distinct.
 - Current Cloudflare nonprod probe flags: none; source Queue 0, DLQ 0; production `TRENDCITE_PRODUCTION_ACTIVATION=foundation-only`.
