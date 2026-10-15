@@ -64,11 +64,20 @@ def main() -> None:
         else:
             raise RuntimeError("local postgres not ready")
 
-        sql(
-            "CREATE TABLE synthetic_jobs "
-            "(tenant text NOT NULL, job text NOT NULL, effects int NOT NULL DEFAULT 1, "
-            "PRIMARY KEY (tenant, job));"
-        )
+        # pg_isready can succeed just before the first client connection is accepted.
+        # Retry only this disposable-container initialization, never the test writes.
+        for attempt in range(5):
+            try:
+                sql(
+                    "CREATE TABLE synthetic_jobs "
+                    "(tenant text NOT NULL, job text NOT NULL, effects int NOT NULL DEFAULT 1, "
+                    "PRIMARY KEY (tenant, job));"
+                )
+                break
+            except subprocess.CalledProcessError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.5)
         statement = (
             "INSERT INTO synthetic_jobs(tenant,job) VALUES ('tenant_a','job_1') "
             "ON CONFLICT (tenant,job) DO NOTHING RETURNING job;"
