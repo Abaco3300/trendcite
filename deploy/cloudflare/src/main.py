@@ -414,22 +414,29 @@ class Default(WorkerEntrypoint):
         if path == TC_P008_OVERLAP_PATH:
             if not _tc_p008_overlap_authorized(self.env, request):
                 return Response.json({"ok": False, "error": "not_found"}, status=404)
+            stage = "initialize"
             try:
                 from trendcite.cloud.tc_p008_hosted_backend_overlap import attest_hosted_overlap
 
                 connector = _connector(self.env)
+                stage = "backend_overlap"
                 result = await attest_hosted_overlap(connector)
                 from trendcite.cloud.tc_p008_transaction_contention import (
                     attest_transaction_lock_contention,
                 )
 
+                stage = "transaction_contention"
                 contention = await attest_transaction_lock_contention(connector)
                 return Response.json(
                     {"sql_backend_overlap": result, "transaction_lock_contention": contention}
                 )
             except Exception as exc:
                 _log_event(
-                    {"event": "trendcite.tc_p008.overlap_failed", "error_type": type(exc).__name__}
+                    {
+                        "event": "trendcite.tc_p008.overlap_failed",
+                        "stage": stage,
+                        "error_type": type(exc).__name__,
+                    }
                 )
                 return Response.json({"ok": False, "error": "overlap_probe_failed"}, status=502)
 
