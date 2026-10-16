@@ -417,8 +417,16 @@ class Default(WorkerEntrypoint):
             try:
                 from trendcite.cloud.tc_p008_hosted_backend_overlap import attest_hosted_overlap
 
-                result = await attest_hosted_overlap(_connector(self.env))
-                return Response.json(result)
+                connector = _connector(self.env)
+                result = await attest_hosted_overlap(connector)
+                from trendcite.cloud.tc_p008_transaction_contention import (
+                    attest_transaction_lock_contention,
+                )
+
+                contention = await attest_transaction_lock_contention(connector)
+                return Response.json(
+                    {"sql_backend_overlap": result, "transaction_lock_contention": contention}
+                )
             except Exception as exc:
                 _log_event(
                     {"event": "trendcite.tc_p008.overlap_failed", "error_type": type(exc).__name__}
