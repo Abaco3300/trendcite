@@ -5,6 +5,10 @@
   "compatibility_flags": [
     "python_workers"
   ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.01
+  },
   "vars": {
     "TRENDCITE_RUNTIME_ROLE": "trendcite_nonprod_runtime",
     "SUPABASE_URL": "https://yntcafxmjgfjrdinwdmo.supabase.co",
