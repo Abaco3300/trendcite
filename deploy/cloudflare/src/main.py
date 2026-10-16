@@ -273,7 +273,26 @@ def _delivery_service(env: Any) -> AsyncDeliveryService | None:
     return AsyncDeliveryService(store, port)
 
 
+TC_P008_OVERLAP_PATH = "/api/internal/tc-p008-backend-overlap"
 VECTURL_SMOKE_PATH = "/api/internal/vecturl-runtime-smoke"
+
+
+def _tc_p008_overlap_authorized(env: Any, request: Any) -> bool:
+    if str(getattr(env, "TRENDCITE_RUNTIME_ROLE", "")) != "trendcite_nonprod_runtime":
+        return False
+    if str(getattr(env, "TRENDCITE_TC_P008_BACKEND_OVERLAP", "")) != "nonprod-enabled":
+        return False
+    if str(getattr(request, "method", "")).upper() != "POST":
+        return False
+    expected = str(getattr(env, "TRENDCITE_TC_P008_OVERLAP_TOKEN", "") or "")
+    if len(expected) < 32:
+        return False
+    authorization = str(request.headers.get("Authorization") or "")
+    if not authorization.startswith("Bearer "):
+        return False
+    return hmac.compare_digest(expected, authorization[7:])
+
+
 VECTURL_SMOKE_URL = "https://example.com/"
 
 
@@ -381,6 +400,20 @@ class Default(WorkerEntrypoint):
         if path == "/health":
             ok = await _store(self.env).healthcheck()
             return Response.json({"ok": ok})
+
+        if path == TC_P008_OVERLAP_PATH:
+            if not _tc_p008_overlap_authorized(self.env, request):
+                return Response.json({"ok": False, "error": "not_found"}, status=404)
+            try:
+                from trendcite.cloud.tc_p008_hosted_backend_overlap import attest_hosted_overlap
+
+                result = await attest_hosted_overlap(_connector(self.env))
+                return Response.json(result)
+            except Exception as exc:
+                _log_event(
+                    {"event": "trendcite.tc_p008.overlap_failed", "error_type": type(exc).__name__}
+                )
+                return Response.json({"ok": False, "error": "overlap_probe_failed"}, status=502)
 
         if path == VECTURL_SMOKE_PATH:
             if not _vecturl_smoke_authorized(self.env, request):
