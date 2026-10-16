@@ -37,7 +37,8 @@ async def attest_hosted_overlap(connector: Connector) -> dict[str, Any]:
                 "end": result["finished_at"],
             }
         finally:
-            await connection.close()
+            # Never let a stalled close keep the diagnostic Worker alive indefinitely.
+            await asyncio.wait_for(connection.close(), timeout=3)
 
     a, b = await asyncio.wait_for(asyncio.gather(sample(), sample()), timeout=12)
     return validate_backend_samples(a, b)
@@ -45,12 +46,18 @@ async def attest_hosted_overlap(connector: Connector) -> dict[str, Any]:
 
 def validate_backend_samples(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
     """Fail-closed classification, independently testable without network access."""
+    if any(not isinstance(r["pid"], int) or r["pid"] <= 0 for r in (a, b)):
+        raise RuntimeError("invalid PostgreSQL backend identifier")
     if a["pid"] == b["pid"]:
         raise RuntimeError("two independent PostgreSQL backends not established")
     for record in (a, b):
         if (
             not isinstance(record["start"], datetime)
             or not isinstance(record["end"], datetime)
+            or record["start"].tzinfo is None
+            or record["end"].tzinfo is None
+            or record["start"].utcoffset() is None
+            or record["end"].utcoffset() is None
             or record["start"] >= record["end"]
         ):
             raise RuntimeError("invalid server-side PostgreSQL interval")
@@ -60,6 +67,7 @@ def validate_backend_samples(a: dict[str, Any], b: dict[str, Any]) -> dict[str, 
         "scope": "HOSTED_NONPROD_ONLY_WHEN_AUTHORIZED_CONNECTOR_SUPPLIED",
         "backends_distinct": True,
         "overlap": True,
+        "evidence_scope": "SQL_BACKEND_INTERVALS_ONLY_NOT_TRANSACTIONAL_CONTENTION",
         "samples": [
             {"pid": r["pid"], "start": r["start"].isoformat(), "end": r["end"].isoformat()}
             for r in (a, b)
