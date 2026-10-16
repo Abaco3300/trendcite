@@ -284,6 +284,16 @@ def _tc_p008_overlap_authorized(env: Any, request: Any) -> bool:
         return False
     if str(getattr(request, "method", "")).upper() != "POST":
         return False
+    expiry = str(getattr(env, "TRENDCITE_TC_P008_OVERLAP_EXPIRES_AT", "") or "")
+    try:
+        until = datetime.fromisoformat(expiry)
+    except ValueError:
+        return False
+    if until.tzinfo is None or until.utcoffset() is None:
+        return False
+    remaining = (until.astimezone(UTC) - datetime.now(UTC)).total_seconds()
+    if not (0 < remaining <= 600):
+        return False
     expected = str(getattr(env, "TRENDCITE_TC_P008_OVERLAP_TOKEN", "") or "")
     if len(expected) < 32:
         return False

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import hmac
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -17,7 +18,7 @@ def _guard():
         for n in module.body
         if isinstance(n, ast.FunctionDef) and n.name == "_tc_p008_overlap_authorized"
     )
-    namespace: dict[str, Any] = {"Any": Any, "hmac": hmac}
+    namespace: dict[str, Any] = {"Any": Any, "hmac": hmac, "datetime": datetime, "UTC": UTC}
     exec(compile(ast.Module(body=[node], type_ignores=[]), "<guard>", "exec"), namespace)
     return namespace[node.name]
 
@@ -36,9 +37,21 @@ def test_nonprod_probe_requires_all_guards() -> None:
         TRENDCITE_RUNTIME_ROLE="trendcite_nonprod_runtime",
         TRENDCITE_TC_P008_BACKEND_OVERLAP="nonprod-enabled",
         TRENDCITE_TC_P008_OVERLAP_TOKEN=key,
+        TRENDCITE_TC_P008_OVERLAP_EXPIRES_AT=(datetime.now(UTC) + timedelta(minutes=5)).isoformat(),
     )
     request = SimpleNamespace(method="POST", headers={"Authorization": "Bearer " + key})
     assert guard(env, request)
+    for expiry in (
+        "",
+        "nonsense",
+        "2026-10-16T12:00:00",
+        (datetime.now(UTC) - timedelta(seconds=1)).isoformat(),
+        (datetime.now(UTC) + timedelta(minutes=11)).isoformat(),
+    ):
+        assert not guard(
+            SimpleNamespace(**{**vars(env), "TRENDCITE_TC_P008_OVERLAP_EXPIRES_AT": expiry}),
+            request,
+        )
     assert not guard(
         SimpleNamespace(**{**vars(env), "TRENDCITE_RUNTIME_ROLE": "trendcite_prod_runtime"}),
         request,
