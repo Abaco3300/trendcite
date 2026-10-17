@@ -18,7 +18,7 @@ The acceptance matrix `NONPROD-QUEUE-ACCEPTANCE-MATRIX-2026-10-13.md` records re
 ## Execution order and safety gates
 
 1. **Read-only design stage:** inventory the existing SQL uniqueness constraint, Queue retry contract, PostgreSQL role, diagnostic allowlist and available isolated nonprod resources. This stage does not write to hosted infrastructure.
-2. **Unique-key test design:** create a migration-independent disposable namespace and cleanup contract, two distinct backend sessions, one attempt per contender, bounded timeouts, evidence from server clock and final row count. No live test until bounded cost/risk, rollback and authorization are satisfied.
+2. **Unique-key test design:** follow `UNIQUE-KEY-CONTENTION-DESIGN-2026-10-17.md` for an independently provisioned disposable nonprod schema/table, two distinct backend sessions, one attempt per contender, observed blocking, bounded timeouts, durable final count and targeted cleanup. A new isolated table would require separately authorized provisioning; no live test until cost/risk, rollback and authorization are satisfied.
 3. **Worker termination and lost ACK:** treat as separate provider fault domains. Do not infer either from already certified application-exception redelivery. Keep these NOT VERIFIED absent direct independent provider evidence.
 4. **Certification closure:** refresh matrix and deployment state only with observed evidence, retain specific UNKNOWN/NOT VERIFIED labels, and recheck absence of transient bindings and DARK production state.
 
