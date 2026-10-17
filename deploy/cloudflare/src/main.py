@@ -438,7 +438,15 @@ class Default(WorkerEntrypoint):
                         "error_type": type(exc).__name__,
                     }
                 )
-                return Response.json({"ok": False, "error": "overlap_probe_failed"}, status=502)
+                return Response.json(
+                    {
+                        "ok": False,
+                        "error": "overlap_probe_failed",
+                        "stage": stage,
+                        "error_type": type(exc).__name__,
+                    },
+                    status=502,
+                )
 
         if path == VECTURL_SMOKE_PATH:
             if not _vecturl_smoke_authorized(self.env, request):
