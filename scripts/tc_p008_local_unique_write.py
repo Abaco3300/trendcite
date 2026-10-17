@@ -16,6 +16,8 @@ def run_local(dsn: str) -> dict[str, object]:
         info.scheme not in ("postgresql", "postgres")
         or info.hostname not in ("127.0.0.1", "localhost")
         or info.path != "/tc_p008_local"
+        or info.query
+        or info.fragment
     ):
         raise RuntimeError("local loopback DSN required")
     import psycopg
