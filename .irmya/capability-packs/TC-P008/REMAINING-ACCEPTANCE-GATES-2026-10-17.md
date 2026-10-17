@@ -28,3 +28,7 @@ The acceptance matrix `NONPROD-QUEUE-ACCEPTANCE-MATRIX-2026-10-13.md` records re
 - Do not modify production routes, Queue bindings, commercial switches, credentials or customer data.
 - Do not execute paid hosted synthetic loads, crash injection or transport interference in this design stage.
 - Do not upgrade an acceptance classification on tests, simulations, SQL plans or CI alone.
+
+## Local evidence classifier (17 October 2026)
+
+`src/trendcite/cloud/tc_p008_unique_write_contention.py` defines a strictly local, fail-closed evidence-shape validator with focused negative tests in `tests/test_tc_p008_unique_write_contention.py`. It requires distinct PIDs, observed blocking direction, durable holder result, zero contender insert, exactly one durable winning row, independently established zero residual rows after cleanup, and explicit nonprod isolation. It **does not connect to PostgreSQL or establish real concurrent transactions**. A synthetic passing dictionary is `PASS LOCAL CONTRACT` only, never `PASS HOSTED`; actual unique-key contention remains **NOT VERIFIED** pending separately authorized isolated execution and provider-side evidence. Worker termination and transport ACK loss remain **NOT VERIFIED**.
