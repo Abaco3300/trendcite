@@ -7,14 +7,15 @@ nonprod:
   dlq: ACTIVE
   worker: ACTIVE
   worker_name: trendcite-nonprod-runtime
-  worker_version: bc7df4d5-87ea-495d-b92a-5c0b8a1cac06
-  worker_version_verified_at: '2026-10-16T21:11:31Z'
+  worker_version: 66f70533-0b1d-4e53-9229-6a843ccf39da
+  worker_version_verified_at: '2026-10-17T15:02:45.9442Z'
+  worker_version_deployed_at: '2026-10-17T15:02:45.9442Z'
   worker_version_source: cloudflare_deployments_readback
-  code_deployment_version: 0fe96753-4329-4fec-8e09-f421ed1825c0
-  code_deployment_git_sha: f6db7c9b3c9e5fe08a1445f6ae64f8f3554b7a80
+  code_deployment_version: 7c3e3039-0c4f-4bcf-b404-fbff85266064
+  code_deployment_git_sha: 471cb64f093d1e1304212f214c89955c3db3fabf
   tc_p008_temporary_bindings: ABSENT_VERIFIED
-  tc_p008_hosted_diagnostic: NOT_VERIFIED
-  tc_p008_http_observation: 'curl 404 expected unauthorized; Python urllib 403 observed'
+  tc_p008_hosted_diagnostic: PASS_HOSTED_BACKEND_OVERLAP_AND_TRANSACTION_ADVISORY_LOCK
+  tc_p008_http_observation: '2026-10-17 authorized curl HTTP 200; Ray a4c02f4e0f889aa6-MIA; cleanup verified'
   cron: ACTIVE
   cron_schedule: "*/5 * * * *"
   health: PASS
