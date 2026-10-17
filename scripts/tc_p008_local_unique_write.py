@@ -5,17 +5,21 @@ import json
 import threading
 import time
 import uuid
-
-import psycopg
-from psycopg.conninfo import conninfo_to_dict
+from urllib.parse import urlsplit
 
 from trendcite.cloud.tc_p008_unique_write_contention import validate_unique_write_contention
 
 
 def run_local(dsn: str) -> dict[str, object]:
-    info = conninfo_to_dict(dsn)
-    if info.get("host") not in ("127.0.0.1", "localhost") or info.get("dbname") != "tc_p008_local":
+    info = urlsplit(dsn)
+    if (
+        info.scheme not in ("postgresql", "postgres")
+        or info.hostname not in ("127.0.0.1", "localhost")
+        or info.path != "/tc_p008_local"
+    ):
         raise RuntimeError("local loopback DSN required")
+    import psycopg
+
     run_id, key = uuid.uuid4(), uuid.uuid4()
     a_inserted = threading.Event()
     b_attempting = threading.Event()
