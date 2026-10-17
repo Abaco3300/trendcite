@@ -30,6 +30,10 @@ Updated: 2026-10-17. Authority: hosted evidence under TC-P008; production DARK. 
 - Hosted SQL postcommit probe `tc-p008-postcommit-20261014-auditprobe-03`: one logical row, two physical attempt audit rows.
 - Hosted SQL distinct-message concurrency probe `tc-p008-concurrency-20261014-hosted-a-*`: 12 logical rows, 12 finished physical invocation spans.
 
+## Remaining proof gates
+
+See `REMAINING-ACCEPTANCE-GATES-2026-10-17.md` for the distinct direct-evidence criteria, authorization and isolation requirements, and explicit hard stops for unique-key write contention, platform-enforced Worker termination, and transport-level ACK loss. None are certified by the 2026-10-17 advisory-lock attestation.
+
 ## Operating boundary
 
 No additional synthetic fault, producer load or active Queue probe is needed to reconfirm established PASS evidence. Any further test must target a *different*, explicitly unverified property (unique-key write contention; actual process crash or true transport ACK loss) and preserve nonprod-only scope, strict bounds, restoration and independent read-back. Worker runtime termination or transport interference must not be simulated and reported as an actual crash/lost ACK. Production, billing, customers and credentials are out of scope.
