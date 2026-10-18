@@ -103,15 +103,16 @@ def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict
                 state["cleanup_count"] = remaining
     if faults:
         raise RuntimeError("hosted probe failed closed: " + ",".join(faults))
+    audited_remaining = independently_audit_cleanup(connect, run_id, key)
     state["isolated_nonprod"] = True
     cleanup_evidence = {
         "target_isolated": True,
         "cleanup_targeted": True,
-        "independent_readback": False,
+        "independent_readback": True,
         "sessions_closed": True,
         "probe_run": run_id,
         "probe_key": key,
-        "remaining_rows": state["cleanup_count"],
+        "remaining_rows": audited_remaining,
     }
     return assess_hosted_probe(state, cleanup_evidence, hosted_run_attested=False)
 
