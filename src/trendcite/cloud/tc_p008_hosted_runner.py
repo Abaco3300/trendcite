@@ -114,3 +114,18 @@ def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict
         "remaining_rows": state["cleanup_count"],
     }
     return assess_hosted_probe(state, cleanup_evidence, hosted_run_attested=False)
+
+
+def independently_audit_cleanup(connect: Callable[[], Any], run_id: str, key: str) -> int:
+    """Read exact probe scope via a new connection; reject any residue."""
+    if not run_id or not key:
+        raise RuntimeError("cleanup audit identifiers missing")
+    with connect() as observer:
+        record = observer.execute(
+            "SELECT count(*) FROM tc_p008_isolated.unique_write_probe "
+            "WHERE probe_run=%s AND probe_key=%s",
+            (run_id, key),
+        ).fetchone()
+    if record is None or len(record) != 1 or type(record[0]) is not int or record[0] != 0:
+        raise RuntimeError("independent cleanup audit failed closed")
+    return record[0]
