@@ -42,7 +42,7 @@ def connection_from_environment() -> tuple[dict[str, str], str]:
     dsn = os.environ.get("TC_P008_HOSTED_DSN", "")
     metadata = validate_hosted_dsn(dsn)
     password = os.environ.get("TC_P008_HOSTED_PASSWORD", "")
-    if not password or "\\n" in password or "\\r" in password:
+    if not password or "\n" in password or "\r" in password:
         raise RuntimeError("protected sandbox password unavailable")
     return metadata, password
 
