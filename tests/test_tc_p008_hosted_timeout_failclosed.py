@@ -53,4 +53,3 @@ def test_no_connection_for_incomplete_runner(approved: bool) -> None:
 
     with pytest.raises(RuntimeError, match=r"approval required|audit not implemented"):
         execute_probe(forbidden, approved=approved)
-
