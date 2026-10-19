@@ -18,7 +18,7 @@ def test_offline_internal_flow_attempts_cleanup_after_connection_failure() -> No
         connection_attempts.append(1)
         raise OSError("synthetic offline connection failure")
 
-    with pytest.raises(OSError, match="synthetic offline connection failure"):
+    with pytest.raises(RuntimeError, match="observer:OSError,cleanup:OSError"):
         _run_probe_with_injected_connections(unavailable_connection)
 
     # Both participants, independent observer, and final cleanup attempted.

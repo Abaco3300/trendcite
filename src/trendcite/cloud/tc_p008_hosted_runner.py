@@ -25,6 +25,8 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
     ready, begun, release = threading.Event(), threading.Event(), threading.Event()
     faults: list[str] = []
     threads: list[threading.Thread] = []
+    observer_failure: Exception | None = None
+    cleanup_failure: Exception | None = None
 
     def participant(name: str) -> None:
         db = None
@@ -83,38 +85,48 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
                         state["blocking_pid"], state["blocked_pid"] = a, b
                         break
                 time.sleep(0.05)
+    except Exception as exc:
+        observer_failure = exc
     finally:
         release.set()
         for thread in threads:
             thread.join(timeout=11)
         if any(thread.is_alive() for thread in threads):
             faults.append("sessions_not_closed")
-        # A failed observer connection must not silently bypass cleanup.
-        with connect() as cleanup:
-            try:
-                if not faults:
-                    rows = cleanup.execute(
-                        "SELECT contender FROM tc_p008_isolated.unique_write_probe "
+        # Failed observation cannot suppress the attempt to clean up.
+        try:
+            with connect() as cleanup:
+                try:
+                    if not faults:
+                        rows = cleanup.execute(
+                            "SELECT contender FROM tc_p008_isolated.unique_write_probe "
+                            "WHERE probe_key=%s AND probe_run=%s",
+                            (key, run_id),
+                        ).fetchall()
+                        state["durable_count"] = len(rows)
+                        state["winner"] = rows[0][0] if len(rows) == 1 else None
+                finally:
+                    cleanup.execute(
+                        "DELETE FROM tc_p008_isolated.unique_write_probe "
                         "WHERE probe_key=%s AND probe_run=%s",
                         (key, run_id),
-                    ).fetchall()
-                    state["durable_count"] = len(rows)
-                    state["winner"] = rows[0][0] if len(rows) == 1 else None
-            finally:
-                cleanup.execute(
-                    "DELETE FROM tc_p008_isolated.unique_write_probe "
-                    "WHERE probe_key=%s AND probe_run=%s",
-                    (key, run_id),
-                )
-                cleanup.commit()
-                remaining = cleanup.execute(
-                    "SELECT count(*) FROM tc_p008_isolated.unique_write_probe "
-                    "WHERE probe_key=%s AND probe_run=%s",
-                    (key, run_id),
-                ).fetchone()[0]
-                state["cleanup_count"] = remaining
-    if faults:
-        raise RuntimeError("hosted probe failed closed: " + ",".join(faults))
+                    )
+                    cleanup.commit()
+                    remaining = cleanup.execute(
+                        "SELECT count(*) FROM tc_p008_isolated.unique_write_probe "
+                        "WHERE probe_key=%s AND probe_run=%s",
+                        (key, run_id),
+                    ).fetchone()[0]
+                    state["cleanup_count"] = remaining
+        except Exception as exc:
+            cleanup_failure = exc
+    if observer_failure is not None or cleanup_failure is not None or faults:
+        failures = list(faults)
+        if observer_failure is not None:
+            failures.append("observer:" + type(observer_failure).__name__)
+        if cleanup_failure is not None:
+            failures.append("cleanup:" + type(cleanup_failure).__name__)
+        raise RuntimeError("hosted probe failed closed: " + ",".join(failures))
     audited_remaining = independently_audit_cleanup(connect, run_id, key)
     state["isolated_nonprod"] = True
     cleanup_evidence = {
