@@ -27,6 +27,10 @@ class Connection:
             self.result = [("winner",)] if self.kind == "holder" else []
         elif "pg_blocking_pids" in sql:
             self.result = [([101],)]
+        elif "SELECT contender FROM tc_p008_isolated" in sql:
+            self.result = [("holder",)]
+        elif "SELECT count(*) FROM tc_p008_isolated" in sql:
+            self.result = [(0,)]
         elif "DELETE FROM tc_p008_isolated" in sql:
             self.factory.deleted = True
             self.result = []
@@ -75,3 +79,12 @@ def test_live_backend_blocks_cleanup_despite_finished_threads():
         _run_probe_with_injected_connections(factory)
     assert factory.deleted is False
     assert factory.main_count == 2
+
+
+def test_zero_backends_allows_scoped_cleanup_but_never_hosted_attestation():
+    factory = Connections()
+    factory.active = False
+    with pytest.raises(RuntimeError, match="hosted execution attestation missing"):
+        _run_probe_with_injected_connections(factory)
+    assert factory.deleted is True
+    assert factory.main_count == 4
