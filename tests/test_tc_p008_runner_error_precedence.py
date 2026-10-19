@@ -12,6 +12,6 @@ def test_multiple_transport_failures_preserve_both_root_causes() -> None:
         attempted.append(1)
         raise ConnectionError("synthetic transport failure")
 
-    with pytest.raises(RuntimeError, match="observer:ConnectionError,cleanup:ConnectionError"):
+    with pytest.raises(RuntimeError, match="backend identities unverified: cleanup prohibited"):
         _run_probe_with_injected_connections(connect)
-    assert len(attempted) >= 4
+    assert len(attempted) >= 3

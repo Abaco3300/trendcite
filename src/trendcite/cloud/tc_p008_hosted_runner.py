@@ -95,6 +95,19 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
             # There is no safe claim of cleanup while a writer may still be active.
             # Do not mutate the probe table until backend termination is proven.
             raise RuntimeError("TC-P008 active sessions: cleanup prohibited")
+        # Thread termination alone never proves the PostgreSQL backend exited.
+        # Unknown backend identity or unverified sessions must block mutation.
+        holder_pid, contender_pid = state.get("holder_pid"), state.get("contender_pid")
+        if not (
+            type(holder_pid) is int
+            and type(contender_pid) is int
+            and holder_pid > 0
+            and contender_pid > 0
+            and holder_pid != contender_pid
+        ):
+            raise RuntimeError("TC-P008 backend identities unverified: cleanup prohibited")
+        if not independently_verify_backends_terminated(connect, (holder_pid, contender_pid)):
+            raise RuntimeError("TC-P008 active PostgreSQL backends: cleanup prohibited")
         # Failed observation cannot suppress the attempt to clean up.
         try:
             with connect() as cleanup:
@@ -164,3 +177,23 @@ def independently_audit_cleanup(connect: Callable[[], Any], run_id: str, key: st
     if record is None or len(record) != 1 or type(record[0]) is not int or record[0] != 0:
         raise RuntimeError("independent cleanup audit failed closed")
     return record[0]
+
+
+def independently_verify_backends_terminated(
+    connect: Callable[[], Any], pids: tuple[int, int]
+) -> bool:
+    """Fail closed unless an independent session confirms both backends gone."""
+    if (
+        len(pids) != 2
+        or any(type(pid) is not int or pid <= 0 for pid in pids)
+        or pids[0] == pids[1]
+    ):
+        raise RuntimeError("invalid PostgreSQL backend identities")
+    with connect() as observer:
+        row = observer.execute(
+            "SELECT count(*) FROM pg_catalog.pg_stat_activity WHERE pid = ANY(%s)",
+            (list(pids),),
+        ).fetchone()
+    if row is None or len(row) != 1 or type(row[0]) is not int:
+        raise RuntimeError("backend termination evidence malformed")
+    return row[0] == 0

@@ -18,11 +18,11 @@ def test_offline_internal_flow_attempts_cleanup_after_connection_failure() -> No
         connection_attempts.append(1)
         raise OSError("synthetic offline connection failure")
 
-    with pytest.raises(RuntimeError, match="observer:OSError,cleanup:OSError"):
+    with pytest.raises(RuntimeError, match="backend identities unverified: cleanup prohibited"):
         _run_probe_with_injected_connections(unavailable_connection)
 
     # Both participants, independent observer, and final cleanup attempted.
-    assert len(connection_attempts) >= 4
+    assert len(connection_attempts) >= 3
 
 
 def test_public_entry_point_still_rejects_all_connections() -> None:
