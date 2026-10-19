@@ -106,7 +106,9 @@ def test_zero_backends_allows_scoped_cleanup_but_never_hosted_attestation():
         _run_probe_with_injected_connections(factory)
     assert factory.deleted is True
     assert factory.main_count == 4
-    assert {"contender", "holder"}.issubset(factory.closed_roles)
+    assert sorted(factory.closed_roles) == sorted(
+        ["holder", "contender", "observer", "backend", "cleanup", "audit"]
+    )
 
 
 def test_cancelled_backends_must_disappear_before_cleanup():
@@ -116,3 +118,16 @@ def test_cancelled_backends_must_disappear_before_cleanup():
         _run_probe_with_injected_connections(factory)
     assert sorted(factory.cancelled) == [101, 202]
     assert factory.deleted is True
+    assert sorted(factory.closed_roles) == sorted(
+        [
+            "holder",
+            "contender",
+            "observer",
+            "backend",
+            "cancel",
+            "cancel",
+            "backend",
+            "cleanup",
+            "audit",
+        ]
+    )
