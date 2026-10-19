@@ -17,7 +17,7 @@ def test_public_gate_never_invokes_prepared_driver(approved):
         raise AssertionError("no live connection authorized")
 
     factory = prepare_sandbox_connection(DSN, "synthetic-password", driver_connect=forbidden_driver)
-    with pytest.raises(RuntimeError, match="approval required|hosted runner blocked"):
+    with pytest.raises(RuntimeError, match=r"approval required|hosted runner blocked"):
         execute_probe(factory, approved=approved)
     assert calls == []
 
