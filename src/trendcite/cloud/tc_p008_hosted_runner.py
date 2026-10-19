@@ -7,6 +7,7 @@ from collections.abc import Callable
 from typing import Any
 
 from trendcite.cloud.tc_p008_hosted_evidence_gate import assess_hosted_probe
+from trendcite.cloud.tc_p008_session_abort import abort_session
 
 
 def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict[str, str]:
@@ -21,6 +22,7 @@ def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict
     threads: list[threading.Thread] = []
 
     def participant(name: str) -> None:
+        db = None
         try:
             if name == "contender" and not ready.wait(6):
                 raise RuntimeError("holder deadline")
@@ -51,6 +53,11 @@ def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict
                     db.commit()
         except Exception as exc:
             faults.append(name + ":" + type(exc).__name__)
+            if db is not None:
+                try:
+                    abort_session(db)
+                except RuntimeError:
+                    faults.append(name + ":abort_incomplete")
             ready.set()
             begun.set()
 
