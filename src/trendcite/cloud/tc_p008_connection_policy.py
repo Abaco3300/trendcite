@@ -10,7 +10,7 @@ from scripts.tc_p008_hosted_preflight import EXPECTED_HOST, EXPECTED_USER, valid
 def build_secure_connection_kwargs(dsn: str, password: str) -> dict[str, object]:
     """Exact hosted target, TLS hostname validation and finite connect timeout."""
     validate_hosted_dsn(dsn)
-    if not password or not isinstance(password, str) or "\n" in password or "\r" in password:
+    if not isinstance(password, str) or not password or "\n" in password or "\r" in password:
         raise RuntimeError("protected sandbox password unavailable")
     return {
         "host": EXPECTED_HOST,
