@@ -21,6 +21,12 @@ class Connection:
     def execute(self, sql, params=None):
         if "pg_stat_activity" in sql:
             return self
+        if "pg_cancel_backend" in sql:
+            self.factory.cancelled.append(params[0])
+            if self.factory.clear_after_cancellation and len(self.factory.cancelled) == 2:
+                self.factory.active = False
+            self.result = [(True,)]
+            return self
         if sql == "SELECT pg_backend_pid()":
             self.result = [(101 if self.kind == "holder" else 202,)]
         elif "INSERT INTO tc_p008_isolated" in sql:
@@ -56,6 +62,8 @@ class Connections:
     def __init__(self):
         self.deleted = False
         self.active = True
+        self.cancelled = []
+        self.clear_after_cancellation = False
         self.main_count = 0
         self.thread_roles = {}
         self.lock = threading.Lock()
@@ -64,7 +72,13 @@ class Connections:
         with self.lock:
             if threading.current_thread() is threading.main_thread():
                 self.main_count += 1
-                kind = ["observer", "backend", "cleanup", "audit"][self.main_count - 1]
+                kind = (
+                    ["observer", "backend", "cancel", "cancel", "backend", "cleanup", "audit"][
+                        self.main_count - 1
+                    ]
+                    if self.active or self.cancelled
+                    else ["observer", "backend", "cleanup", "audit"][self.main_count - 1]
+                )
             else:
                 name = threading.current_thread().name
                 if name not in self.thread_roles:
@@ -88,3 +102,12 @@ def test_zero_backends_allows_scoped_cleanup_but_never_hosted_attestation():
         _run_probe_with_injected_connections(factory)
     assert factory.deleted is True
     assert factory.main_count == 4
+
+
+def test_cancelled_backends_must_disappear_before_cleanup():
+    factory = Connections()
+    factory.clear_after_cancellation = True
+    with pytest.raises(RuntimeError, match="hosted execution attestation missing"):
+        _run_probe_with_injected_connections(factory)
+    assert sorted(factory.cancelled) == [101, 202]
+    assert factory.deleted is True
