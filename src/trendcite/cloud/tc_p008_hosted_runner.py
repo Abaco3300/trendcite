@@ -8,6 +8,7 @@ from typing import Any
 
 from trendcite.cloud.tc_p008_hosted_evidence_gate import assess_hosted_probe
 from trendcite.cloud.tc_p008_session_abort import abort_session
+from trendcite.cloud.tc_p008_shutdown_classification import classify_shutdown
 
 
 def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict[str, str]:
@@ -121,6 +122,14 @@ def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict
         "probe_key": key,
         "remaining_rows": audited_remaining,
     }
+    classification = classify_shutdown(
+        observer_ok=state.get("blocking_pid") == state.get("holder_pid"),
+        cleanup_ok=state.get("cleanup_count") == 0,
+        sessions_closed=not any(thread.is_alive() for thread in threads),
+        audited_zero=audited_remaining == 0,
+    )
+    if classification != "REQUIRES_INDEPENDENT_HOSTED_REVIEW":
+        raise RuntimeError("TC-P008 shutdown: " + classification)
     return assess_hosted_probe(state, cleanup_evidence, hosted_run_attested=False)
 
 
