@@ -6,6 +6,7 @@ import uuid
 from collections.abc import Callable
 from typing import Any
 
+from trendcite.cloud.tc_p008_backend_cancel import cancel_and_verify_backends
 from trendcite.cloud.tc_p008_hosted_evidence_gate import assess_hosted_probe
 from trendcite.cloud.tc_p008_session_abort import abort_session
 from trendcite.cloud.tc_p008_shutdown_classification import classify_shutdown
@@ -107,7 +108,25 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
         ):
             raise RuntimeError("TC-P008 backend identities unverified: cleanup prohibited")
         if not independently_verify_backends_terminated(connect, (holder_pid, contender_pid)):
-            raise RuntimeError("TC-P008 active PostgreSQL backends: cleanup prohibited")
+            # Do not assume that a finished Python thread means a finished
+            # PostgreSQL backend. Cancellation itself is not proof.
+            def cancel_backend(pid: int) -> bool:
+                with connect() as canceller:
+                    row = canceller.execute("SELECT pg_cancel_backend(%s)", (pid,)).fetchone()
+                return row is not None and len(row) == 1 and row[0] is True
+
+            try:
+                cancel_and_verify_backends(
+                    (holder_pid, contender_pid),
+                    cancel=cancel_backend,
+                    verify_absent=lambda pids: independently_verify_backends_terminated(
+                        connect, pids
+                    ),
+                )
+            except Exception as exc:
+                raise RuntimeError(
+                    "TC-P008 backend cancellation NOT_VERIFIED: cleanup prohibited"
+                ) from exc
         # Failed observation cannot suppress the attempt to clean up.
         try:
             with connect() as cleanup:

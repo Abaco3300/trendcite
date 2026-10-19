@@ -75,10 +75,10 @@ class Connections:
 
 def test_live_backend_blocks_cleanup_despite_finished_threads():
     factory = Connections()
-    with pytest.raises(RuntimeError, match="active PostgreSQL backends"):
+    with pytest.raises(RuntimeError, match="backend cancellation NOT_VERIFIED"):
         _run_probe_with_injected_connections(factory)
     assert factory.deleted is False
-    assert factory.main_count == 2
+    assert factory.main_count == 5
 
 
 def test_zero_backends_allows_scoped_cleanup_but_never_hosted_attestation():
