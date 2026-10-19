@@ -1,0 +1,77 @@
+"""End-to-end offline active-backend safety test."""
+
+import threading
+
+import pytest
+
+from trendcite.cloud.tc_p008_hosted_runner import _run_probe_with_injected_connections
+
+
+class Connection:
+    def __init__(self, factory, kind):
+        self.factory = factory
+        self.kind = kind
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def execute(self, sql, params=None):
+        if "pg_stat_activity" in sql:
+            return self
+        if sql == "SELECT pg_backend_pid()":
+            self.result = [(101 if self.kind == "holder" else 202,)]
+        elif "INSERT INTO tc_p008_isolated" in sql:
+            self.result = [("winner",)] if self.kind == "holder" else []
+        elif "pg_blocking_pids" in sql:
+            self.result = [([101],)]
+        elif "DELETE FROM tc_p008_isolated" in sql:
+            self.factory.deleted = True
+            self.result = []
+        else:
+            self.result = []
+        return self
+
+    def fetchone(self):
+        if self.kind == "backend" and self.factory.active:
+            return (1,)
+        if self.kind == "backend":
+            return (0,)
+        return self.result[0] if self.result else None
+
+    def fetchall(self):
+        return self.result
+
+    def commit(self):
+        pass
+
+
+class Connections:
+    def __init__(self):
+        self.deleted = False
+        self.active = True
+        self.main_count = 0
+        self.thread_roles = {}
+        self.lock = threading.Lock()
+
+    def __call__(self):
+        with self.lock:
+            if threading.current_thread() is threading.main_thread():
+                self.main_count += 1
+                kind = ["observer", "backend", "cleanup", "audit"][self.main_count - 1]
+            else:
+                name = threading.current_thread().name
+                if name not in self.thread_roles:
+                    self.thread_roles[name] = "holder" if not self.thread_roles else "contender"
+                kind = self.thread_roles[name]
+        return Connection(self, kind)
+
+
+def test_live_backend_blocks_cleanup_despite_finished_threads():
+    factory = Connections()
+    with pytest.raises(RuntimeError, match="active PostgreSQL backends"):
+        _run_probe_with_injected_connections(factory)
+    assert factory.deleted is False
+    assert factory.main_count == 2
