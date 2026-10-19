@@ -92,7 +92,9 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
         for thread in threads:
             thread.join(timeout=11)
         if any(thread.is_alive() for thread in threads):
-            faults.append("sessions_not_closed")
+            # There is no safe claim of cleanup while a writer may still be active.
+            # Do not mutate the probe table until backend termination is proven.
+            raise RuntimeError("TC-P008 active sessions: cleanup prohibited")
         # Failed observation cannot suppress the attempt to clean up.
         try:
             with connect() as cleanup:
