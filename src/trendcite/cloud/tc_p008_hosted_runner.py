@@ -4,12 +4,24 @@ import threading
 import time
 import uuid
 from collections.abc import Callable
+from contextlib import contextmanager
 from typing import Any
 
 from trendcite.cloud.tc_p008_backend_cancel import cancel_and_verify_backends
 from trendcite.cloud.tc_p008_hosted_evidence_gate import assess_hosted_probe
 from trendcite.cloud.tc_p008_session_abort import abort_session
 from trendcite.cloud.tc_p008_shutdown_classification import classify_shutdown
+
+
+@contextmanager
+def _closing_connection(connect: Callable[[], Any]):
+    """Close the driver session, including after transaction-context exit."""
+    connection = connect()
+    try:
+        with connection as db:
+            yield db
+    finally:
+        connection.close()
 
 
 def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict[str, str]:
@@ -86,7 +98,7 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
             thread.start()
         if not begun.wait(7):
             raise RuntimeError("contender start deadline")
-        with connect() as observer:
+        with _closing_connection(connect) as observer:
             deadline = time.monotonic() + 4
             while time.monotonic() < deadline:
                 a, b = state.get("holder_pid"), state.get("contender_pid")
@@ -121,7 +133,7 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
             # Do not assume that a finished Python thread means a finished
             # PostgreSQL backend. Cancellation itself is not proof.
             def cancel_backend(pid: int) -> bool:
-                with connect() as canceller:
+                with _closing_connection(connect) as canceller:
                     row = canceller.execute("SELECT pg_cancel_backend(%s)", (pid,)).fetchone()
                 return row is not None and len(row) == 1 and row[0] is True
 
@@ -139,7 +151,7 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
                 ) from exc
         # Failed observation cannot suppress the attempt to clean up.
         try:
-            with connect() as cleanup:
+            with _closing_connection(connect) as cleanup:
                 try:
                     if not faults:
                         rows = cleanup.execute(
@@ -197,7 +209,7 @@ def independently_audit_cleanup(connect: Callable[[], Any], run_id: str, key: st
     """Read exact probe scope via a new connection; reject any residue."""
     if not run_id or not key:
         raise RuntimeError("cleanup audit identifiers missing")
-    with connect() as observer:
+    with _closing_connection(connect) as observer:
         record = observer.execute(
             "SELECT count(*) FROM tc_p008_isolated.unique_write_probe "
             "WHERE probe_run=%s AND probe_key=%s",
@@ -218,7 +230,7 @@ def independently_verify_backends_terminated(
         or pids[0] == pids[1]
     ):
         raise RuntimeError("invalid PostgreSQL backend identities")
-    with connect() as observer:
+    with _closing_connection(connect) as observer:
         row = observer.execute(
             "SELECT count(*) FROM pg_catalog.pg_stat_activity WHERE pid = ANY(%s)",
             (list(pids),),

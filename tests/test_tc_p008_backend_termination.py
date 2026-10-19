@@ -16,6 +16,9 @@ class Connection:
     def __exit__(self, *_args):
         return False
 
+    def close(self):
+        pass
+
     def execute(self, query, params):
         assert "pg_catalog.pg_stat_activity" in query
         assert "pid = ANY(%s)" in query

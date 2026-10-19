@@ -12,6 +12,9 @@ class BrokenConnection:
     def __enter__(self) -> "BrokenConnection":
         raise OSError("synthetic connection failure")
 
+    def close(self) -> None:
+        pass
+
     def __exit__(self, *_args: object) -> None:
         pass
 
@@ -19,6 +22,9 @@ class BrokenConnection:
 class BrokenQuery:
     def __enter__(self) -> "BrokenQuery":
         return self
+
+    def close(self) -> None:
+        pass
 
     def __exit__(self, *_args: object) -> None:
         pass

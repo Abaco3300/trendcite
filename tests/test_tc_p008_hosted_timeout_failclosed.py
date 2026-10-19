@@ -22,6 +22,9 @@ class InjectedFailure:
             raise TimeoutError("synthetic connection deadline")
         return self
 
+    def close(self) -> None:
+        pass
+
     def __exit__(self, *_args: object) -> None:
         return None
 

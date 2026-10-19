@@ -13,6 +13,9 @@ class FakeSession:
     def __enter__(self) -> "FakeSession":
         return self
 
+    def close(self) -> None:
+        pass
+
     def __exit__(self, *_args: object) -> None:
         return None
 
