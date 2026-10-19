@@ -68,6 +68,16 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
                     faults.append(name + ":abort_incomplete")
             ready.set()
             begun.set()
+        finally:
+            # DB-API transaction context managers may commit/rollback without
+            # closing the underlying PostgreSQL connection.
+            if db is not None:
+                try:
+                    db.close()
+                except Exception:
+                    faults.append(name + ":close_failed")
+                    ready.set()
+                    begun.set()
 
     try:
         for name in ("holder", "contender"):

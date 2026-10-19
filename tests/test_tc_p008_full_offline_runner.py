@@ -57,10 +57,14 @@ class Connection:
     def commit(self):
         pass
 
+    def close(self):
+        self.factory.closed_roles.append(self.kind)
+
 
 class Connections:
     def __init__(self):
         self.deleted = False
+        self.closed_roles = []
         self.active = True
         self.cancelled = []
         self.clear_after_cancellation = False
@@ -102,6 +106,7 @@ def test_zero_backends_allows_scoped_cleanup_but_never_hosted_attestation():
         _run_probe_with_injected_connections(factory)
     assert factory.deleted is True
     assert factory.main_count == 4
+    assert sorted(factory.closed_roles) == ["contender", "holder"]
 
 
 def test_cancelled_backends_must_disappear_before_cleanup():
