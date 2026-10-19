@@ -3,7 +3,7 @@
 import threading
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any
 
@@ -14,7 +14,7 @@ from trendcite.cloud.tc_p008_shutdown_classification import classify_shutdown
 
 
 @contextmanager
-def _closing_connection(connect: Callable[[], Any]):
+def _closing_connection(connect: Callable[[], Any]) -> Iterator[Any]:
     """Close the driver session, including after transaction-context exit."""
     connection = connect()
     try:
