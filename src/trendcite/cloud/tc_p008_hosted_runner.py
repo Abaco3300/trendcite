@@ -5,7 +5,7 @@ import time
 import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, cast
 
 from trendcite.cloud.tc_p008_backend_cancel import cancel_and_verify_backends
 from trendcite.cloud.tc_p008_hosted_evidence_gate import assess_hosted_probe
@@ -22,6 +22,32 @@ def _closing_connection(connect: Callable[[], Any]) -> Iterator[Any]:
             yield db
     finally:
         connection.close()
+
+
+def _recover_stalled_participants(
+    connect: Callable[[], Any],
+    threads: list[threading.Thread],
+    pids: tuple[object, object],
+) -> None:
+    """Try query cancellation before allowing any subsequent cleanup."""
+    if any(type(pid) is not int or pid <= 0 for pid in pids) or pids[0] == pids[1]:
+        raise RuntimeError("TC-P008 stalled backends unverified: cleanup prohibited")
+    cancellation_errors: list[str] = []
+    for pid in pids:
+        try:
+            with _closing_connection(connect) as canceller:
+                canceller.execute("SELECT pg_cancel_backend(%s)", (pid,)).fetchone()
+        except Exception as exc:
+            # Continue attempting cancellation of the other backend.
+            cancellation_errors.append(type(exc).__name__)
+    for thread in threads:
+        thread.join(timeout=2)
+    if any(thread.is_alive() for thread in threads):
+        raise RuntimeError("TC-P008 stalled threads remain active: cleanup prohibited")
+    if not independently_verify_backends_terminated(
+        connect, (cast(int, pids[0]), cast(int, pids[1]))
+    ):
+        raise RuntimeError("TC-P008 stalled backends remain active: cleanup prohibited")
 
 
 def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict[str, str]:
@@ -115,9 +141,13 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
         for thread in threads:
             thread.join(timeout=11)
         if any(thread.is_alive() for thread in threads):
-            # There is no safe claim of cleanup while a writer may still be active.
-            # Do not mutate the probe table until backend termination is proven.
-            raise RuntimeError("TC-P008 active sessions: cleanup prohibited")
+            # Attempt bounded cancellation on independent connections; no
+            # cleanup until both threads and both backends are gone.
+            _recover_stalled_participants(
+                connect,
+                threads,
+                (state.get("holder_pid"), state.get("contender_pid")),
+            )
         # Thread termination alone never proves the PostgreSQL backend exited.
         # Unknown backend identity or unverified sessions must block mutation.
         holder_pid, contender_pid = state.get("holder_pid"), state.get("contender_pid")
