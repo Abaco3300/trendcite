@@ -36,7 +36,9 @@ def _recover_stalled_participants(
     for pid in pids:
         try:
             with _closing_connection(connect) as canceller:
-                canceller.execute("SELECT pg_cancel_backend(%s)", (pid,)).fetchone()
+                row = canceller.execute("SELECT pg_cancel_backend(%s)", (pid,)).fetchone()
+                if row is None or len(row) != 1 or row[0] is not True:
+                    cancellation_errors.append("cancel_not_confirmed")
         except Exception as exc:
             # Continue attempting cancellation of the other backend.
             cancellation_errors.append(type(exc).__name__)
@@ -48,6 +50,8 @@ def _recover_stalled_participants(
         connect, (cast(int, pids[0]), cast(int, pids[1]))
     ):
         raise RuntimeError("TC-P008 stalled backends remain active: cleanup prohibited")
+    if cancellation_errors:
+        raise RuntimeError("TC-P008 stalled cancellation unverified: cleanup prohibited")
 
 
 def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict[str, str]:
