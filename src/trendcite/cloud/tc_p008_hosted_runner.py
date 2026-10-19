@@ -16,6 +16,10 @@ def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict
     if approved is not True:
         raise RuntimeError("explicit hosted probe approval required")
     raise RuntimeError("hosted runner blocked: independent cleanup audit not implemented")
+
+
+def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str, str]:
+    """Untrusted offline integration seam. Not a hosted execution entry point."""
     run_id, key = str(uuid.uuid4()), str(uuid.uuid4())
     state: dict[str, object] = {"probe_run": run_id, "probe_key": key}
     ready, begun, release = threading.Event(), threading.Event(), threading.Event()
