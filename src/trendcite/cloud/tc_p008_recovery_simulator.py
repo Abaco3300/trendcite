@@ -7,6 +7,7 @@ rollback/close and result-classification contract independently of a live host.
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from trendcite.cloud.tc_p008_failure_disposition import record_failure
 from trendcite.cloud.tc_p008_session_abort import abort_session
 from trendcite.cloud.tc_p008_shutdown_classification import classify_shutdown
 
@@ -65,6 +66,19 @@ def simulate_recovery(
         sessions_closed=not abort_error,
         audited_zero=audited_zero,
     )
+    if observer_error or cleanup_error or abort_error:
+        primary = (
+            "observer_exception"
+            if observer_error
+            else "cleanup_exception"
+            if cleanup_error
+            else "session_abort_exception"
+        )
+        record_failure(
+            primary,
+            cleanup_failure="cleanup_exception" if cleanup_error else None,
+            active_sessions=abort_error,
+        )
     return RecoveryResult(
         classification=classification,
         observer_error=observer_error,
