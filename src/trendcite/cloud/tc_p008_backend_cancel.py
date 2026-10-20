@@ -11,8 +11,8 @@ def cancel_and_verify_backends(
 ) -> str:
     """Try cancellation for both backends, then independently require absence.
 
-    Cancellation failure is not itself evidence of backend activity: a backend
-    may have already exited. Verification must still be independently checked.
+    Every cancellation must be confirmed and both backend sessions must be
+    independently absent. Unknown cancellation outcomes cannot certify cleanup.
     """
     if (
         len(pids) != 2
@@ -31,6 +31,6 @@ def cancel_and_verify_backends(
         absent = verify_absent(pids) is True
     except Exception:
         absent = False
-    if not absent:
+    if errors or not absent:
         raise RuntimeError("backend termination NOT_VERIFIED: " + ",".join(errors))
     return "TERMINATION_OBSERVED_NOT_HOSTED_ATTESTED"

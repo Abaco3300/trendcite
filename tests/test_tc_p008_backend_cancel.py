@@ -24,7 +24,7 @@ def test_independent_absence_is_mandatory(outcomes):
     except RuntimeError as exc:
         result_or_error = str(exc)
     assert cancelled == [101, 202]
-    if outcomes[2]:
+    if all(outcomes):
         assert result_or_error == "TERMINATION_OBSERVED_NOT_HOSTED_ATTESTED"
     else:
         assert "NOT_VERIFIED" in result_or_error
@@ -48,3 +48,17 @@ def test_cancel_exception_does_not_skip_second_backend():
 def test_invalid_identity_denied(pids):
     with pytest.raises(RuntimeError, match="invalid backend"):
         cancel_and_verify_backends(pids, cancel=lambda _: True, verify_absent=lambda _: True)
+
+
+def test_backend_absent_but_cancel_exception_still_fails_closed():
+    attempted = []
+
+    def cancel(pid):
+        attempted.append(pid)
+        if pid == 101:
+            raise TimeoutError("synthetic")
+        return True
+
+    with pytest.raises(RuntimeError, match="NOT_VERIFIED"):
+        cancel_and_verify_backends((101, 202), cancel=cancel, verify_absent=lambda _: True)
+    assert attempted == [101, 202]
