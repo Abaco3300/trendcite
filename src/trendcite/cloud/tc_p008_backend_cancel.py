@@ -27,10 +27,12 @@ def cancel_and_verify_backends(
                 errors.append("cancel_not_confirmed")
         except Exception:
             errors.append("cancel_failed")
+    if errors:
+        raise RuntimeError("backend termination NOT_VERIFIED: " + ",".join(errors))
     try:
         absent = verify_absent(pids) is True
     except Exception:
         absent = False
-    if errors or not absent:
-        raise RuntimeError("backend termination NOT_VERIFIED: " + ",".join(errors))
+    if not absent:
+        raise RuntimeError("backend termination NOT_VERIFIED: independent absence failed")
     return "TERMINATION_OBSERVED_NOT_HOSTED_ATTESTED"

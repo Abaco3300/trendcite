@@ -62,3 +62,18 @@ def test_backend_absent_but_cancel_exception_still_fails_closed():
     with pytest.raises(RuntimeError, match="NOT_VERIFIED"):
         cancel_and_verify_backends((101, 202), cancel=cancel, verify_absent=lambda _: True)
     assert attempted == [101, 202]
+
+
+def test_failed_cancel_does_not_attempt_backend_readback():
+    attempted = []
+
+    def cancel(pid):
+        attempted.append(pid)
+        return pid == 202
+
+    def forbidden_readback(_):
+        raise AssertionError("readback after cancellation failure")
+
+    with pytest.raises(RuntimeError, match="NOT_VERIFIED"):
+        cancel_and_verify_backends((101, 202), cancel=cancel, verify_absent=forbidden_readback)
+    assert attempted == [101, 202]
