@@ -17,20 +17,20 @@ BLOCKED_NAMES = {
 
 
 def validate_isolated_fault_config(config: dict) -> None:
+    if not isinstance(config, dict) or set(config) != {"name", "workers_dev", "vars", "queues"}:
+        raise RuntimeError("unexpected Worker configuration fields")
     name = config.get("name")
     if not isinstance(name, str) or not name.startswith("trendcite-tcp008-"):
         raise RuntimeError("dedicated TC-P008 Worker identity required")
     if name in BLOCKED_NAMES:
         raise RuntimeError("shared Worker forbidden")
-    if config.get("routes") or config.get("route") or config.get("workers_dev") is not False:
+    if config.get("workers_dev") is not False:
         raise RuntimeError("public routing forbidden")
-    if config.get("triggers") or config.get("hyperdrive") or config.get("assets"):
-        raise RuntimeError("shared runtime bindings forbidden")
     vars_ = config.get("vars", {})
     if vars_ != {"TC_P008_FAULT_SANDBOX": "isolated-dark"}:
         raise RuntimeError("isolated-dark guard required")
     queues = config.get("queues")
-    if not isinstance(queues, dict):
+    if not isinstance(queues, dict) or set(queues) != {"producers", "consumers"}:
         raise RuntimeError("dedicated Queue required")
     producers = queues.get("producers")
     consumers = queues.get("consumers")
@@ -38,6 +38,17 @@ def validate_isolated_fault_config(config: dict) -> None:
         raise RuntimeError("exactly one dedicated producer required")
     if not isinstance(consumers, list) or len(consumers) != 1:
         raise RuntimeError("exactly one dedicated consumer required")
+    if not isinstance(producers[0], dict) or set(producers[0]) != {"binding", "queue"}:
+        raise RuntimeError("unexpected producer configuration")
+    if producers[0]["binding"] != "PROBE_QUEUE":
+        raise RuntimeError("dedicated producer binding required")
+    if not isinstance(consumers[0], dict) or set(consumers[0]) != {
+        "queue",
+        "dead_letter_queue",
+        "max_batch_size",
+        "max_retries",
+    }:
+        raise RuntimeError("unexpected consumer configuration")
     prod = producers[0].get("queue")
     cons = consumers[0].get("queue")
     dlq = consumers[0].get("dead_letter_queue")
