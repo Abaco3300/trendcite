@@ -24,7 +24,7 @@ Canonical identity: legalEntityCode=ISTRIADE_GROUP_LLC; brandCode=TRENDCITE_PRO;
 | PostgreSQL login trendcite_prod_hyperdrive_login | YES | NO | credential setup needs explicit authority | LOGIN/NOINHERIT; no plaintext in repository |
 | Production secrets and delivery | NOT VERIFIED | NO | NO | Never disclose, invent or provision values |
 | Public route, cron and customer runtime | NO | NO | NO | Human Gate required |
-| IRCL production commerce | routing architecture only | NO | NO | Dodo TEST and LIVE frozen |
+| IRCL production commerce | routing architecture only | NO | NO | Dodo provider-wide freeze lifted 2026-10-13; TrendCite checkout/production commerce remains BLOCKED pending project-specific IRCL certification and authorization |
 
 Cloudflare account: a4c8274fca447382525edd54ee20fd74. Database project ref: yntcafxmjgfjrdinwdmo; schema trendcite. All remote assertions above are dated previous evidence; refresh before using operationally.
 
@@ -40,6 +40,10 @@ Cloudflare account: a4c8274fca447382525edd54ee20fd74. Database project ref: yntc
 - Dark foundation: code/static guard PASS, remote no-target/no-bindings evidence, production Queue/DLQ zero producers/consumers, no production secrets; may be considered DARK_READY only.
 - Production integration ready: all dependencies reviewed, explicit credential/binding gate obtained, nonprod E2E demonstrated; currently BLOCKED.
 - Public customer ready: separate production-traffic gate, tenant-safe end-to-end validation and incident procedures; currently BLOCKED.
-- Commercial ready: IRCL/Dodo provider review and commercial authorization; currently BLOCKED and Dodo frozen.
+- Commercial ready: IRCL/Dodo provider review and commercial authorization; currently BLOCKED for TrendCite; Dodo provider-wide freeze is lifted but does not authorize this product's commercial activation.
 
 The source inventory must never substitute for remote inspection, customer activation approval, or commercial readiness.
+
+## 2026-10-20 governance reconciliation (documentary only)
+
+Canonical global governance v1.16.0: `Abaco3300/chatgpt-global-governance/.chatgpt/governance/IRCL-DODO-PORTFOLIO-INTEGRATION-CONTRACT.md` v1.0.0 and `IRCL-DODO-PORTFOLIO-ADOPTION-REGISTER.md`. Dodo operational availability for authorized projects resumed 2026-10-13. TrendCite still requires independent IRCL consumer onboarding, legal entity/brand/product/price mapping, signed webhook and refund/dispute verification, isolated nonprod certification, full automation gate, and explicit commercial activation authority. This amendment does not assert current provider review approval, deploy readiness, credential availability or checkout authority. No provider or runtime mutation is authorized by this document.
