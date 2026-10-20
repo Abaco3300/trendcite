@@ -46,12 +46,14 @@ def _recover_stalled_participants(
         thread.join(timeout=2)
     if any(thread.is_alive() for thread in threads):
         raise RuntimeError("TC-P008 stalled threads remain active: cleanup prohibited")
+    # Cancellation failures cannot be reclassified as success by a later
+    # point-in-time backend readback. Preserve the failure before new SQL.
+    if cancellation_errors:
+        raise RuntimeError("TC-P008 stalled cancellation unverified: cleanup prohibited")
     if not independently_verify_backends_terminated(
         connect, (cast(int, pids[0]), cast(int, pids[1]))
     ):
         raise RuntimeError("TC-P008 stalled backends remain active: cleanup prohibited")
-    if cancellation_errors:
-        raise RuntimeError("TC-P008 stalled cancellation unverified: cleanup prohibited")
 
 
 def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict[str, str]:
