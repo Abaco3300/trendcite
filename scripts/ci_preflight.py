@@ -106,6 +106,11 @@ def step_types() -> None:
     run([PY, "-m", "mypy"])
 
 
+def step_fault_isolation_manifest() -> None:
+    manifest = ROOT / "deploy/cloudflare/tc_p008_fault_isolation_manifest.json"
+    run([PY, "scripts/tc_p008_isolated_fault_config_gate.py", str(manifest)])
+
+
 def step_tests() -> None:
     require_module("pytest")
     run([PY, "-m", "pytest", "-q"])
@@ -176,6 +181,7 @@ STEPS = [
     ("ruff format --check", step_format),
     ("ruff check", step_lint),
     ("mypy", step_types),
+    ("TC-P008 fault isolation manifest", step_fault_isolation_manifest),
     ("pytest", step_tests),
     ("customer frontend tests + build", step_frontend),
     ("offline demo smoke test", step_demo),

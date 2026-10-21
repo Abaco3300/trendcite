@@ -1,26 +1,16 @@
 """Fail-closed checks of dedicated TC-P008 Worker/Queue identity."""
 
+import json
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 from scripts.tc_p008_isolated_fault_config_gate import validate_isolated_fault_config
 
-GOOD = {
-    "name": "trendcite-tcp008-fault-worker",
-    "workers_dev": False,
-    "vars": {"TC_P008_FAULT_SANDBOX": "isolated-dark"},
-    "queues": {
-        "producers": [{"binding": "PROBE_QUEUE", "queue": "trendcite-tcp008-fault-queue"}],
-        "consumers": [
-            {
-                "queue": "trendcite-tcp008-fault-queue",
-                "dead_letter_queue": "trendcite-tcp008-fault-dlq",
-                "max_batch_size": 1,
-                "max_retries": 1,
-            }
-        ],
-    },
-}
+MANIFEST = (
+    Path(__file__).resolve().parents[1] / "deploy/cloudflare/tc_p008_fault_isolation_manifest.json"
+)
+GOOD = json.loads(MANIFEST.read_text(encoding="utf-8"))
 
 
 def test_dedicated_synthetic_configuration_passes() -> None:
