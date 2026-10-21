@@ -68,5 +68,3 @@ def test_bool_not_accepted_as_integer_one(field) -> None:
 def test_duplicate_manifest_keys_rejected() -> None:
     with pytest.raises(RuntimeError, match="duplicate JSON"):
         json.loads('{"name":"dedicated","name":"shared"}', object_pairs_hook=reject_duplicate_keys)
-
-[executed on device: LAPTOP-JOSEMILE (e3783d8f-dbcd-4581-97c5-a40e83710681)]
