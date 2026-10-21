@@ -31,6 +31,11 @@ def test_dedicated_synthetic_configuration_passes() -> None:
     "mutate",
     [
         lambda c: c.update(name="trendcite-nonprod-runtime"),
+        lambda c: c.update(name="trendcite-tcp008-foreign-worker"),
+        lambda c: c["queues"]["producers"][0].update(queue="trendcite-tcp008-foreign-queue"),
+        lambda c: c["queues"]["consumers"][0].update(
+            dead_letter_queue="trendcite-tcp008-foreign-dlq"
+        ),
         lambda c: c.update(workers_dev=True),
         lambda c: c.update(route=""),
         lambda c: c.update(triggers={}),

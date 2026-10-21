@@ -20,7 +20,7 @@ def validate_isolated_fault_config(config: dict) -> None:
     if not isinstance(config, dict) or set(config) != {"name", "workers_dev", "vars", "queues"}:
         raise RuntimeError("unexpected Worker configuration fields")
     name = config.get("name")
-    if not isinstance(name, str) or not name.startswith("trendcite-tcp008-"):
+    if name != "trendcite-tcp008-fault-worker":
         raise RuntimeError("dedicated TC-P008 Worker identity required")
     if name in BLOCKED_NAMES:
         raise RuntimeError("shared Worker forbidden")
@@ -53,9 +53,9 @@ def validate_isolated_fault_config(config: dict) -> None:
     cons = consumers[0].get("queue")
     dlq = consumers[0].get("dead_letter_queue")
     if (
-        not all(isinstance(q, str) and q.startswith("trendcite-tcp008-") for q in (prod, cons, dlq))
-        or len({prod, dlq}) != 2
-        or prod != cons
+        prod != "trendcite-tcp008-fault-queue"
+        or cons != prod
+        or dlq != "trendcite-tcp008-fault-dlq"
         or any(q in BLOCKED_NAMES for q in (prod, cons, dlq))
     ):
         raise RuntimeError("independent Queue and DLQ required")
