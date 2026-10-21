@@ -59,8 +59,22 @@ def validate_isolated_fault_config(config: dict) -> None:
         or any(q in BLOCKED_NAMES for q in (prod, cons, dlq))
     ):
         raise RuntimeError("independent Queue and DLQ required")
-    if consumers[0].get("max_batch_size") != 1 or consumers[0].get("max_retries") != 1:
+    if (
+        type(consumers[0].get("max_batch_size")) is not int
+        or consumers[0]["max_batch_size"] != 1
+        or type(consumers[0].get("max_retries")) is not int
+        or consumers[0]["max_retries"] != 1
+    ):
         raise RuntimeError("bounded fault delivery required")
+
+
+def reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise RuntimeError("duplicate JSON key prohibited")
+        result[key] = value
+    return result
 
 
 def main() -> None:
@@ -69,10 +83,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("config", type=Path)
     args = parser.parse_args()
-    validate_isolated_fault_config(json.loads(args.config.read_text(encoding="utf-8")))
+    validate_isolated_fault_config(
+        json.loads(args.config.read_text(encoding="utf-8"), object_pairs_hook=reject_duplicate_keys)
+    )
     print("TC_P008_ISOLATION_CONFIG_PASS")
     print("HOSTED_EXECUTION_NOT_ATTEMPTED")
 
 
 if __name__ == "__main__":
     main()
+
+[executed on device: LAPTOP-JOSEMILE (e3783d8f-dbcd-4581-97c5-a40e83710681)]
