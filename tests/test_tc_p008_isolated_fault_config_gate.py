@@ -5,7 +5,10 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
-from scripts.tc_p008_isolated_fault_config_gate import validate_isolated_fault_config
+from scripts.tc_p008_isolated_fault_config_gate import (
+    reject_duplicate_keys,
+    validate_isolated_fault_config,
+)
 
 MANIFEST = (
     Path(__file__).resolve().parents[1] / "deploy/cloudflare/tc_p008_fault_isolation_manifest.json"
@@ -52,3 +55,18 @@ def test_shared_or_unbounded_configuration_denied(mutate) -> None:
     mutate(config)
     with pytest.raises(RuntimeError):
         validate_isolated_fault_config(config)
+
+
+@pytest.mark.parametrize("field", ["max_batch_size", "max_retries"])
+def test_bool_not_accepted_as_integer_one(field) -> None:
+    config = deepcopy(GOOD)
+    config["queues"]["consumers"][0][field] = True
+    with pytest.raises(RuntimeError, match="bounded fault"):
+        validate_isolated_fault_config(config)
+
+
+def test_duplicate_manifest_keys_rejected() -> None:
+    with pytest.raises(RuntimeError, match="duplicate JSON"):
+        json.loads('{"name":"dedicated","name":"shared"}', object_pairs_hook=reject_duplicate_keys)
+
+[executed on device: LAPTOP-JOSEMILE (e3783d8f-dbcd-4581-97c5-a40e83710681)]
