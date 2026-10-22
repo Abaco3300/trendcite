@@ -25,9 +25,13 @@ def test_offline_internal_flow_attempts_cleanup_after_connection_failure() -> No
     assert len(connection_attempts) >= 3
 
 
-def test_public_entry_point_still_rejects_all_connections() -> None:
-    def forbidden_connection() -> None:
+def test_public_entry_point_requires_approval_before_any_connection() -> None:
+    attempts: list[int] = []
+
+    def counted_connection() -> None:
+        attempts.append(1)
         raise AssertionError("external connection must not happen")
 
-    with pytest.raises(RuntimeError, match="blocked"):
-        execute_probe(forbidden_connection, approved=True)
+    with pytest.raises(RuntimeError, match="approval required"):
+        execute_probe(counted_connection)
+    assert attempts == []

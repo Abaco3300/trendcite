@@ -1,4 +1,4 @@
-"""The hosted runner is non-executable without an explicit execution gate."""
+"""The hosted runner never runs without an explicit execution gate."""
 
 import pytest
 
@@ -22,9 +22,14 @@ def test_false_approval_denied() -> None:
         execute_probe(lambda: None, approved=False)
 
 
-def test_approval_does_not_bypass_incomplete_audit() -> None:
-    def forbidden_connect() -> None:
-        raise AssertionError("network attempted")
+def test_approved_run_with_unusable_connection_fails_closed_without_cleanup() -> None:
+    def unusable_connect() -> None:
+        raise OSError("synthetic: sandbox unreachable")
 
-    with pytest.raises(RuntimeError, match="independent cleanup audit"):
-        execute_probe(forbidden_connect, approved=True)
+    with pytest.raises(RuntimeError, match="backend identities unverified: cleanup prohibited"):
+        execute_probe(unusable_connect, approved=True)
+
+
+def test_non_callable_factory_rejected() -> None:
+    with pytest.raises(RuntimeError, match="connection factory unavailable"):
+        execute_probe(None, approved=True)  # type: ignore[arg-type]

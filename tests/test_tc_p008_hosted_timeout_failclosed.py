@@ -49,10 +49,14 @@ def test_residual_row_is_rejected_after_query() -> None:
         independently_audit_cleanup(lambda: InjectedFailure("residue"), "run", "key")
 
 
-@pytest.mark.parametrize("approved", [True, False])
-def test_no_connection_for_incomplete_runner(approved: bool) -> None:
+def test_no_connection_without_approval() -> None:
     def forbidden() -> None:
         raise AssertionError("database connection must not happen")
 
-    with pytest.raises(RuntimeError, match=r"approval required|audit not implemented"):
-        execute_probe(forbidden, approved=approved)
+    with pytest.raises(RuntimeError, match=r"approval required"):
+        execute_probe(forbidden, approved=False)
+
+
+def test_approved_connect_deadline_fails_closed() -> None:
+    with pytest.raises(RuntimeError, match="cleanup prohibited"):
+        execute_probe(lambda: InjectedFailure("connect"), approved=True)

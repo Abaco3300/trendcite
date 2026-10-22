@@ -33,16 +33,16 @@ class BrokenQuery:
         raise RuntimeError("synthetic SQL failure")
 
 
-def test_execution_denied_even_when_approved() -> None:
+def test_approved_execution_with_broken_connections_fails_closed() -> None:
     connections: list[bool] = []
 
     def connect() -> BrokenConnection:
         connections.append(True)
         return BrokenConnection()
 
-    with pytest.raises(RuntimeError, match="independent cleanup audit not implemented"):
+    with pytest.raises(RuntimeError, match="backend identities unverified: cleanup prohibited"):
         execute_probe(connect, approved=True)
-    assert connections == []
+    assert connections
 
 
 @pytest.mark.parametrize("connect", [BrokenConnection, BrokenQuery])

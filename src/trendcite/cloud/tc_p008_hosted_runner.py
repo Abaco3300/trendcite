@@ -1,4 +1,8 @@
-"""Offline-testable hosted proof executor. Never invoked by CI or import."""
+"""Gated hosted proof executor for the dedicated TC-P008 sandbox.
+
+Never invoked by CI or import. A successful run returns raw, secret-free
+evidence for independent review; it never certifies the hosted criterion.
+"""
 
 import threading
 import time
@@ -8,9 +12,17 @@ from contextlib import contextmanager
 from typing import Any, cast
 
 from trendcite.cloud.tc_p008_backend_cancel import cancel_and_verify_backends
-from trendcite.cloud.tc_p008_hosted_evidence_gate import assess_hosted_probe
+from trendcite.cloud.tc_p008_cleanup_evidence import verify_probe_cleanup
 from trendcite.cloud.tc_p008_session_abort import abort_session
 from trendcite.cloud.tc_p008_shutdown_classification import classify_shutdown
+from trendcite.cloud.tc_p008_unique_write_contention import validate_unique_write_contention
+
+HOSTED_RESULT_PENDING = "NOT_VERIFIED_PENDING_INDEPENDENT_REVIEW"
+# A closed client socket is not instantly removed from pg_stat_activity.
+# Re-read on the same independent session for a bounded period before
+# declaring a backend still alive (and escalating to cancellation).
+BACKEND_EXIT_POLL_ATTEMPTS = 10
+BACKEND_EXIT_POLL_INTERVAL_S = 0.2
 
 
 @contextmanager
@@ -56,15 +68,22 @@ def _recover_stalled_participants(
         raise RuntimeError("TC-P008 stalled backends remain active: cleanup prohibited")
 
 
-def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict[str, str]:
-    """Single bounded run on a separately authenticated and verified sandbox."""
+def execute_probe(connect: Callable[[], Any], *, approved: bool = False) -> dict[str, object]:
+    """Single bounded run on a separately authenticated and verified sandbox.
+
+    ``connect`` must come from ``prepare_sandbox_connection`` (allowlisted
+    target, verify-full TLS, restricted role). The result is evidence for
+    independent review only; hosted certification stays NOT_VERIFIED.
+    """
     if approved is not True:
         raise RuntimeError("explicit hosted probe approval required")
-    raise RuntimeError("hosted runner blocked: independent cleanup audit not implemented")
+    if not callable(connect):
+        raise RuntimeError("TC-P008 sandbox connection factory unavailable")
+    return _run_probe_with_injected_connections(connect)
 
 
-def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str, str]:
-    """Untrusted offline integration seam. Not a hosted execution entry point."""
+def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str, object]:
+    """Probe orchestration; offline tests inject synthetic connections."""
     run_id, key = str(uuid.uuid4()), str(uuid.uuid4())
     state: dict[str, object] = {"probe_run": run_id, "probe_key": key}
     ready, begun, release = threading.Event(), threading.Event(), threading.Event()
@@ -238,7 +257,32 @@ def _run_probe_with_injected_connections(connect: Callable[[], Any]) -> dict[str
     )
     if classification != "REQUIRES_INDEPENDENT_HOSTED_REVIEW":
         raise RuntimeError("TC-P008 shutdown: " + classification)
-    return assess_hosted_probe(state, cleanup_evidence, hosted_run_attested=False)
+    contract = validate_unique_write_contention(state)
+    cleanup_contract = verify_probe_cleanup(cleanup_evidence)
+    evidence: dict[str, object] = {
+        key_name: state.get(key_name)
+        for key_name in (
+            "probe_run",
+            "probe_key",
+            "holder_pid",
+            "contender_pid",
+            "blocking_pid",
+            "blocked_pid",
+            "holder_commit",
+            "contender_insert_count",
+            "durable_count",
+            "winner",
+            "cleanup_count",
+        )
+    }
+    evidence["independent_audit_remaining_rows"] = audited_remaining
+    evidence["shutdown_classification"] = classification
+    evidence["contention_contract"] = contract["local_contract"]
+    evidence["cleanup_contract"] = cleanup_contract["cleanup_contract"]
+    # Certification needs independent review of provider-side evidence via
+    # tc_p008_hosted_evidence_gate.assess_hosted_probe(hosted_run_attested=True).
+    evidence["hosted_certification"] = HOSTED_RESULT_PENDING
+    return evidence
 
 
 def independently_audit_cleanup(connect: Callable[[], Any], run_id: str, key: str) -> int:
@@ -267,10 +311,18 @@ def independently_verify_backends_terminated(
     ):
         raise RuntimeError("invalid PostgreSQL backend identities")
     with _closing_connection(connect) as observer:
-        row = observer.execute(
-            "SELECT count(*) FROM pg_catalog.pg_stat_activity WHERE pid = ANY(%s)",
-            (list(pids),),
-        ).fetchone()
-    if row is None or len(row) != 1 or type(row[0]) is not int:
-        raise RuntimeError("backend termination evidence malformed")
-    return row[0] == 0
+        for attempt in range(BACKEND_EXIT_POLL_ATTEMPTS):
+            # Backend status is cached per transaction; without discarding the
+            # snapshot every re-read inside one transaction is stale.
+            observer.execute("SELECT pg_catalog.pg_stat_clear_snapshot()", ())
+            row = observer.execute(
+                "SELECT count(*) FROM pg_catalog.pg_stat_activity WHERE pid = ANY(%s)",
+                (list(pids),),
+            ).fetchone()
+            if row is None or len(row) != 1 or type(row[0]) is not int:
+                raise RuntimeError("backend termination evidence malformed")
+            if row[0] == 0:
+                return True
+            if attempt + 1 < BACKEND_EXIT_POLL_ATTEMPTS:
+                time.sleep(BACKEND_EXIT_POLL_INTERVAL_S)
+    return False

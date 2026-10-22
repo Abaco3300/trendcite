@@ -102,8 +102,13 @@ def test_live_backend_blocks_cleanup_despite_finished_threads():
 def test_zero_backends_allows_scoped_cleanup_but_never_hosted_attestation():
     factory = Connections()
     factory.active = False
-    with pytest.raises(RuntimeError, match="hosted execution attestation missing"):
-        _run_probe_with_injected_connections(factory)
+    evidence = _run_probe_with_injected_connections(factory)
+    assert evidence["hosted_certification"] == "NOT_VERIFIED_PENDING_INDEPENDENT_REVIEW"
+    assert evidence["contention_contract"] == "PASS"
+    assert evidence["cleanup_contract"] == "PASS"
+    assert evidence["winner"] == "holder"
+    assert evidence["durable_count"] == 1
+    assert evidence["independent_audit_remaining_rows"] == 0
     assert factory.deleted is True
     assert factory.main_count == 4
     assert sorted(factory.closed_roles) == sorted(
@@ -114,8 +119,8 @@ def test_zero_backends_allows_scoped_cleanup_but_never_hosted_attestation():
 def test_cancelled_backends_must_disappear_before_cleanup():
     factory = Connections()
     factory.clear_after_cancellation = True
-    with pytest.raises(RuntimeError, match="hosted execution attestation missing"):
-        _run_probe_with_injected_connections(factory)
+    evidence = _run_probe_with_injected_connections(factory)
+    assert evidence["hosted_certification"] == "NOT_VERIFIED_PENDING_INDEPENDENT_REVIEW"
     assert sorted(factory.cancelled) == [101, 202]
     assert factory.deleted is True
     assert sorted(factory.closed_roles) == sorted(
