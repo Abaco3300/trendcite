@@ -143,31 +143,45 @@ def test_failed_probe_still_attempts_revocation(monkeypatch, tmp_path):
 
 
 def test_driver_error_message_is_never_serialized(monkeypatch, tmp_path):
-    ca = tmp_path / 'ca.crt'
-    ca.write_bytes(b'-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n')
+    ca = tmp_path / "ca.crt"
+    ca.write_bytes(b"-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n")
+
     class LeakingSession(Session):
         def execute(self, sql, params=None):
-            if 'SELECT current_user' in sql:
-                raise RuntimeError('connection failed with password=' + SECRET)
+            if "SELECT current_user" in sql:
+                raise RuntimeError("connection failed with password=" + SECRET)
             return super().execute(sql, params)
-    monkeypatch.setattr(cli, 'load_driver', lambda: lambda **kwargs: LeakingSession())
-    report = cli.run('direct', str(ca), SECRET)
-    assert report['probe_status'] == 'FAILED_CLOSED'
-    assert report['probe_error'] == 'PROBE_EXCEPTION_REDACTED'
+
+    monkeypatch.setattr(cli, "load_driver", lambda: lambda **kwargs: LeakingSession())
+    report = cli.run("direct", str(ca), SECRET)
+    assert report["probe_status"] == "FAILED_CLOSED"
+    assert report["probe_error"] == "PROBE_EXCEPTION_REDACTED"
     assert SECRET not in json.dumps(report)
-    assert report['credential_revocation'] == 'PASSWORD_NULL_COMMITTED'
+    assert report["credential_revocation"] == "PASSWORD_NULL_COMMITTED"
 
 
 def test_preparation_exception_redacted_at_cli_boundary(monkeypatch, capsys, tmp_path):
-    monkeypatch.setattr(cli.getpass, 'getpass', lambda _prompt: SECRET)
+    monkeypatch.setattr(cli.getpass, "getpass", lambda _prompt: SECRET)
+
     def crash(*_args):
-        raise RuntimeError('driver traceback password=' + SECRET)
-    monkeypatch.setattr(cli, 'run', crash)
-    output = tmp_path / 'evidence.json'
-    code = cli.main(['--transport', 'direct', '--sslrootcert', 'ca.crt',
-                     '--evidence-out', str(output), '--confirm', cli.CONFIRMATION])
+        raise RuntimeError("driver traceback password=" + SECRET)
+
+    monkeypatch.setattr(cli, "run", crash)
+    output = tmp_path / "evidence.json"
+    code = cli.main(
+        [
+            "--transport",
+            "direct",
+            "--sslrootcert",
+            "ca.crt",
+            "--evidence-out",
+            str(output),
+            "--confirm",
+            cli.CONFIRMATION,
+        ]
+    )
     captured = capsys.readouterr()
     assert code == 1
-    assert 'PROBE_PREPARATION_FAILED_REDACTED' in captured.err
+    assert "PROBE_PREPARATION_FAILED_REDACTED" in captured.err
     assert SECRET not in captured.out + captured.err
     assert not output.exists()

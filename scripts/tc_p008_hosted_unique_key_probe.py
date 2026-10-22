@@ -120,7 +120,7 @@ def run(transport: str, sslrootcert: str, password: str) -> dict[str, object]:
         report["identity"] = verify_session_identity(connect)
         report["probe"] = execute_probe(connect, approved=True)
         report["probe_status"] = "COMPLETED_EVIDENCE_PENDING_REVIEW"
-    except Exception as exc:
+    except Exception:
         # Driver exception messages are untrusted and can contain passwords or DSNs.
         report["probe_status"] = "FAILED_CLOSED"
         report["probe_error"] = "PROBE_EXCEPTION_REDACTED"
