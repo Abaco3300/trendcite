@@ -156,3 +156,18 @@ def test_driver_error_message_is_never_serialized(monkeypatch, tmp_path):
     assert report['probe_error'] == 'PROBE_EXCEPTION_REDACTED'
     assert SECRET not in json.dumps(report)
     assert report['credential_revocation'] == 'PASSWORD_NULL_COMMITTED'
+
+
+def test_preparation_exception_redacted_at_cli_boundary(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(cli.getpass, 'getpass', lambda _prompt: SECRET)
+    def crash(*_args):
+        raise RuntimeError('driver traceback password=' + SECRET)
+    monkeypatch.setattr(cli, 'run', crash)
+    output = tmp_path / 'evidence.json'
+    code = cli.main(['--transport', 'direct', '--sslrootcert', 'ca.crt',
+                     '--evidence-out', str(output), '--confirm', cli.CONFIRMATION])
+    captured = capsys.readouterr()
+    assert code == 1
+    assert 'PROBE_PREPARATION_FAILED_REDACTED' in captured.err
+    assert SECRET not in captured.out + captured.err
+    assert not output.exists()

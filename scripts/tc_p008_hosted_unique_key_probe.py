@@ -147,7 +147,13 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     password = getpass.getpass(f"Temporary password for {EXPECTED_ROLE} (not echoed): ")
     try:
-        report = run(args.transport, args.sslrootcert, password)
+        try:
+            report = run(args.transport, args.sslrootcert, password)
+        except Exception:
+            # Preparation errors occur before run()'s internal redaction gate.
+            # Never propagate arbitrary driver text or a traceback to the terminal.
+            print("PROBE_PREPARATION_FAILED_REDACTED: no probe evidence", file=sys.stderr)
+            return 1
     finally:
         password = ""  # drop the only reference
     text = json.dumps(report, indent=2, sort_keys=True, default=str)
