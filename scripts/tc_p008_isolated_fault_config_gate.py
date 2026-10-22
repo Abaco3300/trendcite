@@ -33,7 +33,10 @@ def validate_isolated_fault_config(config: dict) -> None:
     if config.get("workers_dev") is not False:
         raise RuntimeError("public routing forbidden")
     vars_ = config.get("vars", {})
-    if vars_ != {"TC_P008_FAULT_SANDBOX": "isolated-dark"}:
+    if vars_ != {
+        "TC_P008_FAULT_SANDBOX": "isolated-dark",
+        "TC_P008_D1_NAME": "trendcite-tcp008-fault-d1",
+    }:
         raise RuntimeError("isolated-dark guard required")
     d1 = config.get("d1_databases")
     if d1 != [
