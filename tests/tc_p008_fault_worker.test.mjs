@@ -26,7 +26,7 @@ test("commit completes before fault-hook invocation", async () => {
   }});
 });
 test("fail closed on shared or missing binding", async () => {
-  for (const bad of [{}, {TC_P008_FAULT_SANDBOX:"isolated-dark"}, 
+  for (const bad of [{}, {TC_P008_FAULT_SANDBOX:"isolated-dark"},
     {TC_P008_FAULT_SANDBOX:"production", TC_P008_D1_NAME:"trendcite-tcp008-fault-d1", FAULT_DB:{prepare(){}}}]) {
     await assert.rejects(recordDurableCommit(bad, RUN_ID), /ISOLATED_ENVIRONMENT_REQUIRED/);
   }
