@@ -106,6 +106,11 @@ def step_types() -> None:
     run([PY, "-m", "mypy"])
 
 
+def step_fault_isolation_manifest() -> None:
+    manifest = ROOT / "deploy/cloudflare/tc_p008_fault_isolation_manifest.json"
+    run([PY, "scripts/tc_p008_isolated_fault_config_gate.py", str(manifest)])
+
+
 def step_tests() -> None:
     require_module("pytest")
     run([PY, "-m", "pytest", "-q"])
@@ -119,6 +124,13 @@ def step_frontend() -> None:
         raise StepFailed("frontend dependencies are missing; run: npm ci --prefix web")
     run([npm, "test"], cwd=WEB)
     run([npm, "run", "build"], cwd=WEB)
+
+
+def step_tc_p008_fault_worker_tests() -> None:
+    node = shutil.which("node")
+    if node is None:
+        raise StepFailed("node is not installed")
+    run([node, "--test", "tests/tc_p008_fault_worker.test.mjs"])
 
 
 def step_demo() -> None:
@@ -176,8 +188,10 @@ STEPS = [
     ("ruff format --check", step_format),
     ("ruff check", step_lint),
     ("mypy", step_types),
+    ("TC-P008 fault isolation manifest", step_fault_isolation_manifest),
     ("pytest", step_tests),
     ("customer frontend tests + build", step_frontend),
+    ("TC-P008 fault Worker offline tests", step_tc_p008_fault_worker_tests),
     ("offline demo smoke test", step_demo),
     ("build + wheel import check", step_build),
 ]
