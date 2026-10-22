@@ -17,7 +17,13 @@ BLOCKED_NAMES = {
 
 
 def validate_isolated_fault_config(config: dict) -> None:
-    if not isinstance(config, dict) or set(config) != {"name", "workers_dev", "vars", "queues"}:
+    if not isinstance(config, dict) or set(config) != {
+        "name",
+        "workers_dev",
+        "vars",
+        "queues",
+        "d1_databases",
+    }:
         raise RuntimeError("unexpected Worker configuration fields")
     name = config.get("name")
     if name != "trendcite-tcp008-fault-worker":
@@ -29,6 +35,15 @@ def validate_isolated_fault_config(config: dict) -> None:
     vars_ = config.get("vars", {})
     if vars_ != {"TC_P008_FAULT_SANDBOX": "isolated-dark"}:
         raise RuntimeError("isolated-dark guard required")
+    d1 = config.get("d1_databases")
+    if d1 != [
+        {
+            "binding": "FAULT_DB",
+            "database_name": "trendcite-tcp008-fault-d1",
+            "database_id": "bb27daa5-3f9e-488d-aa55-27c62a6dd325",
+        }
+    ]:
+        raise RuntimeError("dedicated TC-P008 D1 binding required")
     queues = config.get("queues")
     if not isinstance(queues, dict) or set(queues) != {"producers", "consumers"}:
         raise RuntimeError("dedicated Queue required")

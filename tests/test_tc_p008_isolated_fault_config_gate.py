@@ -30,6 +30,10 @@ def test_dedicated_synthetic_configuration_passes() -> None:
             dead_letter_queue="trendcite-tcp008-foreign-dlq"
         ),
         lambda c: c.update(workers_dev=True),
+        lambda c: c.update(d1_databases=[]),
+        lambda c: c["d1_databases"][0].update(database_name="ircl-certification-isolated-test"),
+        lambda c: c["d1_databases"][0].update(database_id="other-project"),
+        lambda c: c["d1_databases"][0].update(binding="SHARED_DB"),
         lambda c: c.update(route=""),
         lambda c: c.update(triggers={}),
         lambda c: c.update(hyperdrive=[]),
