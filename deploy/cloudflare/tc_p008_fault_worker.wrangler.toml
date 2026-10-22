@@ -1,0 +1,15 @@
+# Dark-only configuration; never deploy through CI.
+# No queue consumers or producers: message delivery remains disabled.
+name = "trendcite-tcp008-fault-worker"
+main = "tc_p008_fault_worker.mjs"
+compatibility_date = "2026-10-22"
+workers_dev = false
+
+[vars]
+TC_P008_FAULT_SANDBOX = "isolated-dark"
+TC_P008_D1_NAME = "trendcite-tcp008-fault-d1"
+
+[[d1_databases]]
+binding = "FAULT_DB"
+database_name = "trendcite-tcp008-fault-d1"
+database_id = "bb27daa5-3f9e-488d-aa55-27c62a6dd325"
