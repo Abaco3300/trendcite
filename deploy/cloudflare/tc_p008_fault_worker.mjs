@@ -20,8 +20,12 @@ export async function recordDurableCommit(env, runId) {
     "INSERT OR IGNORE INTO tc_p008_fault_commits (run_id, phase) VALUES (?, 'committed')"
   );
   const result = await statement.bind(runId).run();
-  if (!result?.success) throw new Error("TC_P008_DURABLE_COMMIT_UNCONFIRMED");
-  return {runId, committed: true, changes: result.meta?.changes ?? null};
+  if (!result?.success || ![0, 1].includes(result?.meta?.changes)) {
+    throw new Error("TC_P008_DURABLE_COMMIT_UNCONFIRMED");
+  }
+  // A duplicate attempt is not another committed write. Independent D1
+  // readback remains mandatory for any hosted evidence.
+  return {runId, committed: true, newlyInserted: result.meta.changes === 1};
 }
 
 // Injected afterCommit is reserved for an independently authorized provider-fault

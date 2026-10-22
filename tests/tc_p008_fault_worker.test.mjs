@@ -36,6 +36,18 @@ test("reject invalid run identifiers before any SQL", async () => {
   await assert.rejects(recordDurableCommit(env, "injection'--"), /INVALID_RUN_ID/);
   assert.equal(calls.length, 0);
 });
+test("duplicate write is not counted as newly inserted", async () => {
+  const {env} = environment();
+  env.FAULT_DB.prepare = () => ({bind: () => ({run: async () => ({success:true, meta:{changes:0}})})});
+  const result = await recordDurableCommit(env, RUN_ID);
+  assert.equal(result.committed, true);
+  assert.equal(result.newlyInserted, false);
+});
+test("reject D1 write without a countable outcome", async () => {
+  const {env} = environment();
+  env.FAULT_DB.prepare = () => ({bind: () => ({run: async () => ({success:true})})});
+  await assert.rejects(recordDurableCommit(env, RUN_ID), /DURABLE_COMMIT_UNCONFIRMED/);
+});
 test("reject unconfirmed D1 write", async () => {
   const {env} = environment();
   env.FAULT_DB.prepare = () => ({bind: () => ({run: async () => ({success:false})})});
