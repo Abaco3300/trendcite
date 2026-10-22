@@ -140,3 +140,19 @@ def test_failed_probe_still_attempts_revocation(monkeypatch, tmp_path):
     assert report["credential_revocation"] == "PASSWORD_NULL_COMMITTED"
     assert "ALTER ROLE CURRENT_USER PASSWORD NULL" in sessions[-1].statements
     assert SECRET not in json.dumps(report, default=str)
+
+
+def test_driver_error_message_is_never_serialized(monkeypatch, tmp_path):
+    ca = tmp_path / 'ca.crt'
+    ca.write_bytes(b'-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n')
+    class LeakingSession(Session):
+        def execute(self, sql, params=None):
+            if 'SELECT current_user' in sql:
+                raise RuntimeError('connection failed with password=' + SECRET)
+            return super().execute(sql, params)
+    monkeypatch.setattr(cli, 'load_driver', lambda: lambda **kwargs: LeakingSession())
+    report = cli.run('direct', str(ca), SECRET)
+    assert report['probe_status'] == 'FAILED_CLOSED'
+    assert report['probe_error'] == 'PROBE_EXCEPTION_REDACTED'
+    assert SECRET not in json.dumps(report)
+    assert report['credential_revocation'] == 'PASSWORD_NULL_COMMITTED'

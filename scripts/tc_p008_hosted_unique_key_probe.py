@@ -121,9 +121,9 @@ def run(transport: str, sslrootcert: str, password: str) -> dict[str, object]:
         report["probe"] = execute_probe(connect, approved=True)
         report["probe_status"] = "COMPLETED_EVIDENCE_PENDING_REVIEW"
     except Exception as exc:
-        # Type and message only; driver messages never contain the password.
+        # Driver exception messages are untrusted and can contain passwords or DSNs.
         report["probe_status"] = "FAILED_CLOSED"
-        report["probe_error"] = f"{type(exc).__name__}: {exc}"[:500]
+        report["probe_error"] = "PROBE_EXCEPTION_REDACTED"
     finally:
         try:
             report["credential_revocation"] = revoke_own_password(connect)
