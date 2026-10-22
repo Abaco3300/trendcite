@@ -66,3 +66,13 @@ Coste: plan Free de Supabase, sin recursos nuevos → USD 0 previsto.
 `PRODUCTION=DARK`
 `COMMERCIALIZATION=HOLD`
 `PR_121=DRAFT`
+
+## 7. Actualización de continuidad — 2026-10-22 (posterior a `5524731`)
+
+- El repositorio del operador se sincronizó por fast-forward con `707e73e`, y se publicó después `5524731` en la PR #121, que permanece **DRAFT**.
+- Corrección de seguridad en `5524731`: el CLI no serializa textos arbitrarios de excepciones del driver. Ante un fallo del probe, `probe_error=PROBE_EXCEPTION_REDACTED`; una prueba con un secreto sintético verifica que no aparece en JSON. Batería `python -m pytest -q` en Python 3.13.14: PASS (exit 0), y regresiones específicas: PASS. **La CI remota para ese commit no está confirmada**; no equiparar a certificación alojada.
+- El operador dispone de `psql` 17.11 en `C:\Program Files\PostgreSQL\17\bin\psql.exe`, Python 3.13.14 y psycopg 3.3.6. El import del CLI debe resolver `trendcite` desde el `src` de este repositorio (por ejemplo usando un entorno virtual con instalación editable), no desde otra instalación homónima. La validación local con 3.13 no sustituye la validación canónica con Python 3.11.
+- Se encontró en el equipo el archivo `C:\Users\angel\supabase-ca\prod-ca-2021.crt`; sus tres copias en Descargas tenían igual SHA-256. Una conexión `psql` a `aws-0-us-east-1.pooler.supabase.com:5432` con `sslmode=verify-full` y `sslrootcert=C:/Users/angel/supabase-ca/prod-ca-2021.crt` llegó a autenticación y terminó en `fe_sendauth: no password supplied`, sin enviar contraseña. **Sigue pendiente confirmar independientemente la procedencia de la CA desde el panel del proyecto.** En la cadena de conexión `libpq`, utilizar barras `/` en `sslrootcert` para evitar interpretación de escapes con rutas Windows.
+- Supabase `tc_p008_probe_login` seguía sin contraseña y con `VALID UNTIL` caducado en comprobación de solo lectura. No se ha restablecido la contraseña de administrador ni generado una credencial temporal. Mantener el gate: `psql \password`, vigencia corta, una ejecución y revocación obligatoria.
+- El conector de Cloudflare **sí** respondió posteriormente y permitió comprobar por lectura que existen `trendcite-nonprod-runtime` y `trendcite-prod-runtime`, sin D1 exclusivo ni Worker exclusivo TC-P008. Esto **no** autoriza experimentar sobre Workers/Queues compartidos; B continúa bloqueada por aislamiento y persistencia. C continúa NOT_VERIFIED por ausencia de prueba independiente de pérdida real del ACK.
+- Mantener las afirmaciones originales de 2026-10-21 como histórico de su sesión; este anexo prevalece donde exista contradicción. Sin activación de producción ni comercialización; `HOSTED_CERTIFICATION=NOT_VERIFIED`, `PRODUCTION=DARK`, `COMMERCIALIZATION=HOLD`.
