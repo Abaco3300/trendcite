@@ -126,6 +126,13 @@ def step_frontend() -> None:
     run([npm, "run", "build"], cwd=WEB)
 
 
+def step_tc_p008_fault_worker_tests() -> None:
+    node = shutil.which("node")
+    if node is None:
+        raise StepFailed("node is not installed")
+    run([node, "--test", "tests/tc_p008_fault_worker.test.mjs"])
+
+
 def step_demo() -> None:
     out = run([PY, "-m", "trendcite", "demo", "--format", "json"], capture=True)
     data = json.loads(out)
@@ -184,6 +191,7 @@ STEPS = [
     ("TC-P008 fault isolation manifest", step_fault_isolation_manifest),
     ("pytest", step_tests),
     ("customer frontend tests + build", step_frontend),
+    ("TC-P008 fault Worker offline tests", step_tc_p008_fault_worker_tests),
     ("offline demo smoke test", step_demo),
     ("build + wheel import check", step_build),
 ]
