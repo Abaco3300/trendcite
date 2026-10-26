@@ -165,8 +165,10 @@ def test_contention_failure_reports_only_safe_phase(monkeypatch, tmp_path):
     ca = tmp_path / "ca.crt"
     ca.write_bytes(b"-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n")
     monkeypatch.setattr(cli, "load_driver", lambda: lambda **_kwargs: Session(GOOD_ROW))
+
     def failing_probe(*_args, **_kwargs):
         raise RuntimeError("driver secret=" + SECRET)
+
     monkeypatch.setattr(cli, "execute_probe", failing_probe)
     report = cli.run("direct", str(ca), SECRET)
     assert report["probe_status"] == "FAILED_CLOSED"
