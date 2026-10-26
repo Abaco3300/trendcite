@@ -137,6 +137,7 @@ def test_failed_probe_still_attempts_revocation(monkeypatch, tmp_path):
     monkeypatch.setattr(cli, "load_driver", lambda: driver)
     report = cli.run("direct", str(ca), SECRET)
     assert report["probe_status"] == "FAILED_CLOSED"
+    assert report["failure_phase"] == "IDENTITY_VERIFICATION"
     assert report["credential_revocation"] == "PASSWORD_NULL_COMMITTED"
     assert "ALTER ROLE CURRENT_USER PASSWORD NULL" in sessions[-1].statements
     assert SECRET not in json.dumps(report, default=str)
@@ -158,6 +159,20 @@ def test_driver_error_message_is_never_serialized(monkeypatch, tmp_path):
     assert report["probe_error"] == "PROBE_EXCEPTION_REDACTED"
     assert SECRET not in json.dumps(report)
     assert report["credential_revocation"] == "PASSWORD_NULL_COMMITTED"
+
+
+def test_contention_failure_reports_only_safe_phase(monkeypatch, tmp_path):
+    ca = tmp_path / "ca.crt"
+    ca.write_bytes(b"-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n")
+    monkeypatch.setattr(cli, "load_driver", lambda: lambda **_kwargs: Session(GOOD_ROW))
+    def failing_probe(*_args, **_kwargs):
+        raise RuntimeError("driver secret=" + SECRET)
+    monkeypatch.setattr(cli, "execute_probe", failing_probe)
+    report = cli.run("direct", str(ca), SECRET)
+    assert report["probe_status"] == "FAILED_CLOSED"
+    assert report["failure_phase"] == "HOSTED_CONTENTION"
+    assert report["credential_revocation"] == "PASSWORD_NULL_COMMITTED"
+    assert SECRET not in json.dumps(report)
 
 
 def test_preparation_exception_redacted_at_cli_boundary(monkeypatch, capsys, tmp_path):

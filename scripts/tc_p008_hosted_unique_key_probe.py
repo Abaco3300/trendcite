@@ -116,14 +116,17 @@ def run(transport: str, sslrootcert: str, password: str) -> dict[str, object]:
         "started_at": _now(),
         "hosted_certification": "NOT_VERIFIED_PENDING_INDEPENDENT_REVIEW",
     }
+    phase = "IDENTITY_VERIFICATION"
     try:
         report["identity"] = verify_session_identity(connect)
+        phase = "HOSTED_CONTENTION"
         report["probe"] = execute_probe(connect, approved=True)
         report["probe_status"] = "COMPLETED_EVIDENCE_PENDING_REVIEW"
     except Exception:
-        # Driver exception messages are untrusted and can contain passwords or DSNs.
+        # Phase names are fixed literals; driver errors may contain credentials.
         report["probe_status"] = "FAILED_CLOSED"
         report["probe_error"] = "PROBE_EXCEPTION_REDACTED"
+        report["failure_phase"] = phase
     finally:
         try:
             report["credential_revocation"] = revoke_own_password(connect)
