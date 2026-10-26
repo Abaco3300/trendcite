@@ -43,6 +43,14 @@ test("duplicate write is not counted as newly inserted", async () => {
   assert.equal(result.committed, true);
   assert.equal(result.newlyInserted, false);
 });
+test("duplicate delivery never triggers the provider fault hook", async () => {
+  const {env} = environment();
+  env.FAULT_DB.prepare = () => ({bind: () => ({run: async () => ({success:true, meta:{changes:0}})})});
+  let faults = 0;
+  const result = await handleFaultMessage(env, {run_id: RUN_ID}, {afterCommit: () => { faults++; }});
+  assert.equal(result.newlyInserted, false);
+  assert.equal(faults, 0);
+});
 test("reject D1 write without a countable outcome", async () => {
   const {env} = environment();
   env.FAULT_DB.prepare = () => ({bind: () => ({run: async () => ({success:true})})});

@@ -33,7 +33,10 @@ export async function recordDurableCommit(env, runId) {
 export async function handleFaultMessage(env, body, {afterCommit} = {}) {
   const runId = body?.run_id;
   const committed = await recordDurableCommit(env, runId);
-  if (typeof afterCommit === "function") await afterCommit(committed);
+  // A replay must never trigger a second provider-fault experiment.
+  if (committed.newlyInserted && typeof afterCommit === "function") {
+    await afterCommit(committed);
+  }
   return committed;
 }
 
