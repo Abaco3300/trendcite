@@ -177,6 +177,23 @@ def test_contention_failure_reports_only_safe_phase(monkeypatch, tmp_path):
     assert SECRET not in json.dumps(report)
 
 
+@pytest.mark.parametrize(
+    ("detail", "code"),
+    [
+        ("password authentication failed for password=" + SECRET, "AUTHENTICATION_REJECTED"),
+        ("certificate verify failed: " + SECRET, "TLS_VERIFICATION_FAILED"),
+        ("timeout expired " + SECRET, "CONNECTION_TIMEOUT"),
+        ("could not translate host name " + SECRET, "DNS_RESOLUTION_FAILED"),
+        ("unknown error " + SECRET, "CONNECTION_OPERATIONAL_ERROR"),
+    ],
+)
+def test_connection_diagnostic_has_fixed_code_and_never_leaks(detail, code):
+    OperationalError = type("OperationalError", (Exception,), {})
+    result = cli._safe_connection_failure_code(OperationalError(detail))
+    assert result == code
+    assert SECRET not in result
+
+
 def test_preparation_exception_redacted_at_cli_boundary(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(cli.getpass, "getpass", lambda _prompt: SECRET)
 

@@ -54,6 +54,34 @@ def load_driver() -> Callable[..., Any]:
     return connect  # type: ignore[no-any-return]
 
 
+def _safe_connection_failure_code(exc: Exception) -> str:
+    """Emit only fixed diagnostic labels, never raw libpq error text."""
+    if getattr(exc, "sqlstate", None) == "28P01":
+        return "AUTHENTICATION_REJECTED"
+    if getattr(exc, "sqlstate", None) == "28000":
+        return "AUTHORIZATION_REJECTED"
+    if isinstance(exc, (ConnectionError, TimeoutError)):
+        return "CONNECTION_UNAVAILABLE"
+    if type(exc).__name__ == "OperationalError":
+        # libpq reports TLS/host/auth failures as OperationalError, often
+        # without SQLSTATE. Examine privately but output an allowlisted label.
+        detail = str(exc).lower()
+        if "password authentication failed" in detail or "invalid password" in detail:
+            return "AUTHENTICATION_REJECTED"
+        if (
+            "certificate verify failed" in detail
+            or "certificate has expired" in detail
+            or "hostname mismatch" in detail
+        ):
+            return "TLS_VERIFICATION_FAILED"
+        if "timeout expired" in detail or "connection timed out" in detail:
+            return "CONNECTION_TIMEOUT"
+        if "could not translate host name" in detail or "name or service not known" in detail:
+            return "DNS_RESOLUTION_FAILED"
+        return "CONNECTION_OPERATIONAL_ERROR"
+    return "UNCLASSIFIED_REDACTED_FAILURE"
+
+
 def verify_session_identity(connect: Callable[[], Any]) -> dict[str, object]:
     """One read-only session: restricted identity, TLS in use, expected schema."""
     connection = connect()
@@ -122,11 +150,13 @@ def run(transport: str, sslrootcert: str, password: str) -> dict[str, object]:
         phase = "HOSTED_CONTENTION"
         report["probe"] = execute_probe(connect, approved=True)
         report["probe_status"] = "COMPLETED_EVIDENCE_PENDING_REVIEW"
-    except Exception:
-        # Phase names are fixed literals; driver errors may contain credentials.
+    except Exception as exc:
+        # All exported values are fixed labels. Never serialize raw driver text.
         report["probe_status"] = "FAILED_CLOSED"
         report["probe_error"] = "PROBE_EXCEPTION_REDACTED"
         report["failure_phase"] = phase
+        if phase == "IDENTITY_VERIFICATION":
+            report["failure_code"] = _safe_connection_failure_code(exc)
     finally:
         try:
             report["credential_revocation"] = revoke_own_password(connect)
