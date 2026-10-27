@@ -25,6 +25,14 @@ test("commit completes before fault-hook invocation", async () => {
     assert.equal(calls.at(-1)[0], "run");
   }});
 });
+test("afterCommit rejected promise leaves one successful write", async () => {
+  const {calls, env} = environment();
+  await assert.rejects(handleFaultMessage(env, {run_id: RUN_ID}, {
+    afterCommit: async () => { throw new Error("LOCAL_TEST_ONLY"); }
+  }), /LOCAL_TEST_ONLY/);
+  assert.equal(calls.filter(([kind]) => kind === "run").length, 1);
+});
+
 test("fail closed on shared or missing binding", async () => {
   for (const bad of [{}, {TC_P008_FAULT_SANDBOX:"isolated-dark"},
     {TC_P008_FAULT_SANDBOX:"production", TC_P008_D1_NAME:"trendcite-tcp008-fault-d1", FAULT_DB:{prepare(){}}}]) {
