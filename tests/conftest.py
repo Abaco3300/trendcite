@@ -47,3 +47,11 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(socket, "create_connection", guard)
     monkeypatch.setattr(socket.socket, "connect", guard)
+
+
+@pytest.fixture(autouse=True)
+def _tc_p008_no_backend_poll_sleep(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep the bounded backend-exit polling deterministic and fast offline."""
+    from trendcite.cloud import tc_p008_hosted_runner
+
+    monkeypatch.setattr(tc_p008_hosted_runner, "BACKEND_EXIT_POLL_INTERVAL_S", 0.0)
