@@ -91,7 +91,7 @@ def test_password_only_from_getpass_and_never_in_output(monkeypatch, capsys, tmp
     monkeypatch.setattr(cli.getpass, "getpass", lambda _prompt: SECRET)
     seen = {}
 
-    def fake_run(transport, sslrootcert, password):
+    def fake_run(transport, sslrootcert, password, *, auth_only=False):
         seen["password"] = password
         return {
             "probe_status": "COMPLETED_EVIDENCE_PENDING_REVIEW",
@@ -159,6 +159,30 @@ def test_driver_error_message_is_never_serialized(monkeypatch, tmp_path):
     assert report["probe_error"] == "PROBE_EXCEPTION_REDACTED"
     assert SECRET not in json.dumps(report)
     assert report["credential_revocation"] == "PASSWORD_NULL_COMMITTED"
+
+
+def test_auth_only_never_runs_contention_and_revokes(monkeypatch, tmp_path):
+    ca = tmp_path / "ca.crt"
+    ca.write_bytes(b"-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n")
+    sessions = []
+
+    def driver(**_kwargs):
+        s = Session(GOOD_ROW)
+        sessions.append(s)
+        return s
+
+    monkeypatch.setattr(cli, "load_driver", lambda: driver)
+    monkeypatch.setattr(
+        cli,
+        "execute_probe",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("contention forbidden")),
+    )
+    report = cli.run("direct", str(ca), SECRET, auth_only=True)
+    assert report["probe_status"] == "AUTHENTICATION_VERIFIED_ONLY"
+    assert "probe" not in report
+    assert report["credential_revocation"] == "PASSWORD_NULL_COMMITTED"
+    assert "ALTER ROLE CURRENT_USER PASSWORD NULL" in sessions[-1].statements
+    assert SECRET not in json.dumps(report)
 
 
 def test_contention_failure_reports_only_safe_phase(monkeypatch, tmp_path):

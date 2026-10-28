@@ -130,7 +130,9 @@ def revoke_own_password(connect: Callable[[], Any]) -> str:
     return "PASSWORD_NULL_COMMITTED"
 
 
-def run(transport: str, sslrootcert: str, password: str) -> dict[str, object]:
+def run(
+    transport: str, sslrootcert: str, password: str, *, auth_only: bool = False
+) -> dict[str, object]:
     connect = prepare_sandbox_connection(
         sandbox_dsn(transport),
         password,
@@ -147,9 +149,12 @@ def run(transport: str, sslrootcert: str, password: str) -> dict[str, object]:
     phase = "IDENTITY_VERIFICATION"
     try:
         report["identity"] = verify_session_identity(connect)
-        phase = "HOSTED_CONTENTION"
-        report["probe"] = execute_probe(connect, approved=True)
-        report["probe_status"] = "COMPLETED_EVIDENCE_PENDING_REVIEW"
+        if auth_only:
+            report["probe_status"] = "AUTHENTICATION_VERIFIED_ONLY"
+        else:
+            phase = "HOSTED_CONTENTION"
+            report["probe"] = execute_probe(connect, approved=True)
+            report["probe_status"] = "COMPLETED_EVIDENCE_PENDING_REVIEW"
     except Exception as exc:
         # All exported values are fixed labels. Never serialize raw driver text.
         report["probe_status"] = "FAILED_CLOSED"
@@ -173,6 +178,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--transport", choices=sorted(SANDBOX_TARGETS), required=True)
     parser.add_argument("--sslrootcert", required=True, help="Supabase root CA (PEM) path")
     parser.add_argument("--evidence-out", type=Path, help="write secret-free JSON here")
+    parser.add_argument(
+        "--auth-only", action="store_true", help="verify identity without running contention"
+    )
     parser.add_argument("--confirm", required=True, help=f"must equal {CONFIRMATION}")
     args = parser.parse_args(argv)
     if args.confirm != CONFIRMATION:
@@ -181,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
     password = getpass.getpass(f"Temporary password for {EXPECTED_ROLE} (not echoed): ")
     try:
         try:
-            report = run(args.transport, args.sslrootcert, password)
+            report = run(args.transport, args.sslrootcert, password, auth_only=args.auth_only)
         except Exception:
             # Preparation errors occur before run()'s internal redaction gate.
             # Never propagate arbitrary driver text or a traceback to the terminal.
@@ -193,7 +201,10 @@ def main(argv: list[str] | None = None) -> int:
     print(text)
     if args.evidence_out is not None:
         args.evidence_out.write_text(text + "\n", encoding="utf-8")
-    ok = report.get("probe_status") == "COMPLETED_EVIDENCE_PENDING_REVIEW"
+    expected_status = (
+        "AUTHENTICATION_VERIFIED_ONLY" if args.auth_only else "COMPLETED_EVIDENCE_PENDING_REVIEW"
+    )
+    ok = report.get("probe_status") == expected_status
     revoked = report.get("credential_revocation") == "PASSWORD_NULL_COMMITTED"
     return 0 if ok and revoked else 1
 
